@@ -116,11 +116,9 @@ extension LiteralPrinter {
       outputNode(child)
       output(")")
       
-    case let .ignoreCapturesInTypedOutput(child):
+    case let .ignoreCapturesInTypedOutput(child),
+         let .limitCaptureNesting(child):
       outputNode(child)
-    case .convertedRegexLiteral(let node, _):
-      outputNode(node)
-
     case let .quantification(amount, kind, node):
       outputQuantification(amount, kind, node)
     case let .customCharacterClass(charClass):

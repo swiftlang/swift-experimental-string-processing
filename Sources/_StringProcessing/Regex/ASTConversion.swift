@@ -13,27 +13,27 @@ internal import _RegexParser
 
 extension AST {
   var dslTree: DSLTree {
-    return DSLTree(root.dslTreeNode)
+    return DSLTree(.limitCaptureNesting(root.dslTreeNode))
   }
 }
 
 extension AST.Node {
   /// Converts an AST node to a `convertedRegexLiteral` node.
   var dslTreeNode: DSLTree.Node {
-    func wrap(_ node: DSLTree.Node) -> DSLTree.Node {
-      switch node {
-      case .convertedRegexLiteral:
-        // FIXME: DSL can have one item concats
-//        assertionFailure("Double wrapping?")
-        return node
-      default:
-        break
-      }
-      // TODO: Should we do this for the
-      // single-concatenation child too, or should?
-      // we wrap _that_?
-      return .convertedRegexLiteral(node, .init(ast: self))
-    }
+//    func wrap(_ node: DSLTree.Node) -> DSLTree.Node {
+//      switch node {
+//      case .convertedRegexLiteral(let child, _):
+//        // FIXME: DSL can have one item concats
+////        assertionFailure("Double wrapping?")
+//        return child
+//      default:
+//        break
+//      }
+//      // TODO: Should we do this for the
+//      // single-concatenation child too, or should?
+//      // we wrap _that_?
+//      return node
+//    }
 
     // Convert the top-level node without wrapping
     func convert() throws -> DSLTree.Node {
@@ -107,7 +107,8 @@ extension AST.Node {
 
     // FIXME: make total function again
     let converted = try! convert()
-    return wrap(converted)
+//    return wrap(converted)
+    return converted
   }
 }
 

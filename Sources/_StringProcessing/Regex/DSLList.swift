@@ -67,8 +67,9 @@ extension DSLTree.Node {
     case .orderedChoice(let c), .concatenation(let c):
       return c.count
       
-    case .convertedRegexLiteral, .capture, .nonCapturingGroup,
-        .quantification, .ignoreCapturesInTypedOutput, .conditional:
+    case .capture, .nonCapturingGroup,
+        .quantification, .ignoreCapturesInTypedOutput,
+        .limitCaptureNesting, .conditional:
       return 1
       
     case .absentFunction:

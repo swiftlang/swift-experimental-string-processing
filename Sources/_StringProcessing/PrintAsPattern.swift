@@ -179,6 +179,9 @@ extension PrettyPrinter {
     case let .ignoreCapturesInTypedOutput(child):
       printAsPattern(convertedFromAST: child, isTopLevel: isTopLevel)
       
+    case let .limitCaptureNesting(child):
+      printAsPattern(convertedFromAST: child, isTopLevel: isTopLevel)
+      
     case .conditional:
       print("/* TODO: conditional */")
 
@@ -258,20 +261,6 @@ extension PrettyPrinter {
           
           break
           
-        case let .convertedRegexLiteral(.atom(a), _):
-          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
-            printAtom(pattern.0)
-            return
-          }
-          
-          break
-        case let .convertedRegexLiteral(.customCharacterClass(ccc), _):
-          if ccc.isSimplePrint {
-            printSimpleCCC(ccc)
-            return
-          }
-          
-          break
         default:
           break
         }
@@ -304,13 +293,6 @@ extension PrettyPrinter {
 
     case let .quotedLiteral(v):
       print(v._quoted)
-
-    case let .convertedRegexLiteral(n, _):
-      // FIXME: This recursion coordinates with back-off
-      // check above, so it should work out. Need a
-      // cleaner way to do this. This means the argument
-      // label is a lie.
-      printAsPattern(convertedFromAST: n, isTopLevel: isTopLevel)
 
     case let .customCharacterClass(ccc):
       printAsPattern(ccc)
@@ -1430,9 +1412,6 @@ extension DSLTree.Node {
       for node in nodes {
         result += node.getNamedCaptures()
       }
-      
-    case .convertedRegexLiteral(let node, _):
-      result += node.getNamedCaptures()
       
     case .quantification(_, _, let node):
       result += node.getNamedCaptures()

@@ -44,7 +44,8 @@ extension DSLTree {
 
     /// Marks all captures in a subpattern as ignored in strongly-typed output.
     case ignoreCapturesInTypedOutput(Node)
-    
+    case limitCaptureNesting(Node)
+
     // TODO: Consider splitting off grouped conditions, or have
     // our own kind
 
@@ -78,13 +79,6 @@ extension DSLTree {
     ///
     /// TODO: Consider splitting off expression functions, or have our own kind
     case absentFunction(_AST.AbsentFunction)
-
-    // MARK: - Tree conversions
-
-    /// The target of AST conversion.
-    ///
-    /// Keeps original AST around for rich syntactic and source information
-    case convertedRegexLiteral(Node, _AST.ASTNode)
 
     // MARK: - Extensibility points
 
@@ -384,8 +378,9 @@ extension DSLTree.Node {
     case .orderedChoice(let c), .concatenation(let c):
       return !c.isEmpty
       
-    case .convertedRegexLiteral, .capture, .nonCapturingGroup,
-        .quantification, .ignoreCapturesInTypedOutput, .conditional:
+    case .capture, .nonCapturingGroup,
+        .quantification, .ignoreCapturesInTypedOutput, .limitCaptureNesting,
+        .conditional:
       return true
       
     case .absentFunction(let abs):
@@ -400,14 +395,14 @@ extension DSLTree.Node {
     case let .orderedChoice(v):   return v
     case let .concatenation(v): return v
 
-    case let .convertedRegexLiteral(n, _):
-      // Treat this transparently
-      return n.children
-
     case let .capture(_, _, n, _):        return [n]
     case let .nonCapturingGroup(_, n):    return [n]
     case let .quantification(_, _, n):    return [n]
-    case let .ignoreCapturesInTypedOutput(n):        return [n]
+    case let .ignoreCapturesInTypedOutput(n): return [n]
+    
+    case let .limitCaptureNesting(n):
+      // This is a transparent wrapper
+      return n.children
 
     case let .conditional(_, t, f): return [t,f]
 
@@ -424,18 +419,12 @@ extension DSLTree.Node {
 
 extension DSLTree.Node {
   var astNode: AST.Node? {
-    switch self {
-    case let .convertedRegexLiteral(_, literal): return literal.ast
-    default: return nil
-    }
+    nil
   }
 
   /// If this node is for a converted literal, look through it.
   var lookingThroughConvertedLiteral: Self {
-    switch self {
-    case let .convertedRegexLiteral(n, _): return n
-    default: return self
-    }
+    self
   }
 }
 
@@ -468,10 +457,6 @@ extension DSLTree.Node {
     switch self {
     case .capture:
       return true
-    case let .convertedRegexLiteral(n, re):
-      assert(n.hasCapture == re.ast.hasCapture)
-      return n.hasCapture
-
     default:
       return self.children.any(\.hasCapture)
     }
@@ -655,6 +640,9 @@ extension CaptureList.Builder {
     case let .ignoreCapturesInTypedOutput(child):
       addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: false)
 
+    case let .limitCaptureNesting(child):
+      addCaptures(of: child, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
+      
     case let .conditional(cond, trueBranch, falseBranch):
       switch cond.ast {
       case .group(let g):
@@ -685,11 +673,11 @@ extension CaptureList.Builder {
       #endif
       }
 
-    case let .convertedRegexLiteral(n, _):
-      // We disable nesting for converted AST trees, as literals do not nest
-      // captures. This includes literals nested in a DSL.
-      return addCaptures(of: n, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
-
+//    case let .convertedRegexLiteral(n, _):
+//      // We disable nesting for converted AST trees, as literals do not nest
+//      // captures. This includes literals nested in a DSL.
+//      return addCaptures(of: n, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
+//
     case .matcher:
       break
 
@@ -717,8 +705,8 @@ extension DSLTree.Node {
       return true
     case .orderedChoice, .concatenation, .capture,
          .conditional, .quantification, .customCharacterClass, .atom,
-         .trivia, .empty, .quotedLiteral, .absentFunction,
-         .convertedRegexLiteral, .consumer,
+         .trivia, .empty, .quotedLiteral, .limitCaptureNesting,
+         .consumer, .absentFunction,
          .characterPredicate, .matcher:
       return false
     }
@@ -805,8 +793,7 @@ extension DSLTree.Node {
       options.beginScope()
       defer { options.endScope() }
       return child._canOnlyMatchAtStartImpl(&options)
-    case .ignoreCapturesInTypedOutput(let child),
-        .convertedRegexLiteral(let child, _):
+    case .ignoreCapturesInTypedOutput(let child), .limitCaptureNesting(let child):
       return child._canOnlyMatchAtStartImpl(&options)
 
     // A quantification that doesn't require its child to exist can still
@@ -869,14 +856,13 @@ extension DSLTree {
       case let .orderedChoice(v): return v.map(_Tree.init)
       case let .concatenation(v): return v.map(_Tree.init)
 
-      case let .convertedRegexLiteral(n, _):
-        // Treat this transparently
-        return _Tree(n).children
-
       case let .capture(_, _, n, _):        return [_Tree(n)]
       case let .nonCapturingGroup(_, n):    return [_Tree(n)]
       case let .quantification(_, _, n):    return [_Tree(n)]
-      case let .ignoreCapturesInTypedOutput(n):        return [_Tree(n)]
+      case let .ignoreCapturesInTypedOutput(n): return [_Tree(n)]
+      case let .limitCaptureNesting(n):
+        // This is a transparent wrapper
+        return _Tree(n).children
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
 
