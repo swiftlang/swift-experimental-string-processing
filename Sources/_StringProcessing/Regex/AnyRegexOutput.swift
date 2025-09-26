@@ -381,7 +381,12 @@ extension AnyRegexOutput.ElementRepresentation {
   }
 
   var type: Any.Type {
-    content?.value.map { Swift.type(of: $0) }
-      ?? TypeConstruction.optionalType(of: Substring.self, depth: optionalDepth)
+    func wrapIfNecessary<U>(_: U.Type) -> Any.Type {
+      TypeConstruction.optionalType(of: U.self, depth: optionalDepth)
+    }
+
+    return content?.value.map {
+      _openExistential(Swift.type(of: $0), do: wrapIfNecessary)
+    } ?? TypeConstruction.optionalType(of: Substring.self, depth: optionalDepth)
   }
 }

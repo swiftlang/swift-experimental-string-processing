@@ -1962,6 +1962,59 @@ extension RegexDSLTests {
     XCTAssertNotNil(clip.contains(pattern))
     XCTAssertNotNil(clip2.contains(pattern))
   }
+  
+  func testIssue83022() throws {
+    // Original report from https://github.com/swiftlang/swift/issues/83022
+    // rdar://155710126
+    let mixedNumberRegex = Regex {
+       // whole number
+       Optionally {
+           Capture {
+               OneOrMore(.digit)
+           } transform: { Int($0)! }
+           OneOrMore { " " }
+       }
+       // numerator
+       Capture {
+           OneOrMore(.digit)
+       } transform: { Int($0)! }
+       "/"
+       // denominator (modified to test for double optional)
+       Capture {
+           OneOrMore(.digit)
+       } transform: { Optional.some(Int($0)) }
+    }
+    
+    do {
+      let match = try XCTUnwrap(mixedNumberRegex.wholeMatch(in: "1 3/4"))
+      XCTAssertEqual(match.1, 1)
+      XCTAssertEqual(match.2, 3)
+      XCTAssertEqual(match.3, 4)
+      
+      let erasedMatch = Regex<AnyRegexOutput>.Match(match)
+      XCTAssert(erasedMatch.output[0].type == Substring.self)
+      XCTAssert(erasedMatch.output[1].type == Int?.self)
+      XCTAssert(erasedMatch.output[2].type == Int.self)
+      XCTAssert(erasedMatch.output[3].type == Int??.self)
+    }
+
+    do {
+      let match = try XCTUnwrap(mixedNumberRegex.wholeMatch(in: "3/4"))
+      XCTAssertNil(match.1)
+      XCTAssertEqual(match.2, 3)
+      XCTAssertEqual(match.3, 4)
+      
+      let erasedMatch = Regex<AnyRegexOutput>.Match(match)
+      XCTAssert(erasedMatch.output[0].type == Substring.self)
+      XCTAssert(erasedMatch.output[2].type == Int.self)
+      XCTAssert(erasedMatch.output[3].type == Int??.self)
+
+      XCTExpectFailure {
+        // `nil` value is interpreted as `Substring?` instead of `Int?`
+        XCTAssert(erasedMatch.output[1].type == Int?.self)
+      }
+    }
+  }
 }
 
 extension Unicode.Scalar {
