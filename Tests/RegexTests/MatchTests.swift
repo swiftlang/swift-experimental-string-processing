@@ -2884,7 +2884,8 @@ extension RegexTests {
     )
   }
 
-  func testIssue81789() throws {
+  func testIssue815() throws {
+    // Original report from https://github.com/swiftlang/swift-experimental-string-processing/issues/815
     let matches = "dispatchWithName".matches(of: #/(?!^)(With(?!No)|For|In|At|To)(?=[A-Z])/#)
     XCTAssert(matches[0].output == ("With", "With"))
   }
