@@ -791,6 +791,10 @@ extension DSLTree.Node {
 
     // Groups (and other parent nodes) defer to the child.
     case .nonCapturingGroup(let kind, let child):
+      // Don't let a negative lookahead affect this - need to continue to next sibling
+      if kind.isNegativeLookahead {
+        return nil
+      }
       options.beginScope()
       defer { options.endScope() }
       if case .changeMatchingOptions(let sequence) = kind.ast {
@@ -901,6 +905,10 @@ extension DSLTree {
       }
       public static var negativeLookahead: Self {
         .init(ast: .negativeLookahead)
+      }
+      
+      internal var isNegativeLookahead: Bool {
+        self.ast == .negativeLookahead
       }
     }
 

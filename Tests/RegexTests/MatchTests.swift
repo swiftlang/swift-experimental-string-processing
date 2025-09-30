@@ -46,7 +46,7 @@ func _firstMatch(
 ) throws -> (String, [String?])? {
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
-  
+
   func validateSubstring(_ substringInput: Substring) throws {
     // Sometimes the characters we add to a substring merge with existing
     // string members. This messes up cross-validation, so skip the test.
@@ -1629,6 +1629,14 @@ extension RegexTests {
     // engines generally enforce that lookbehinds are fixed width
     firstMatchTest(
       #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
+    
+    // Assertions inside negative lookahead
+    firstMatchTest(
+      #"(?!\b)(With)"#, input: "dispatchWithName", match: "With")
+    firstMatchTest(
+      #"(?!^)(With)"#, input: "dispatchWithName", match: "With")
+    firstMatchTest(
+      #"(?!\s)^dispatch"#, input: "dispatchWithName", match: "dispatch")
   }
 
   func testMatchAnchors() throws {
@@ -2874,6 +2882,12 @@ extension RegexTests {
       ("\r", "\r"),
       ("\r\n", "\r\n")
     )
+  }
+
+  func testIssue815() throws {
+    // Original report from https://github.com/swiftlang/swift-experimental-string-processing/issues/815
+    let matches = "dispatchWithName".matches(of: #/(?!^)(With(?!No)|For|In|At|To)(?=[A-Z])/#)
+    XCTAssert(matches[0].output == ("With", "With"))
   }
   
   func testNSRECompatibility() throws {

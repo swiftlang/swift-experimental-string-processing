@@ -589,5 +589,9 @@ extension RegexTests {
     try expectCanOnlyMatchAtStart("(foo)?^bar", true)  // The initial group must match ""
     try expectCanOnlyMatchAtStart("(?:foo)?^bar", true)
     try expectCanOnlyMatchAtStart("(foo)+^bar", false) // This can't actually match anywhere
+    
+    // Test lookahead assertions with anchor
+    try expectCanOnlyMatchAtStart("(?=^)foo", true)
+    try expectCanOnlyMatchAtStart("(?!^)foo", false)
   }
 }
