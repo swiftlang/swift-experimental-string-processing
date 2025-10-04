@@ -32,6 +32,10 @@ class Compiler {
   }
 
   __consuming func emit() throws -> MEProgram {
+    try emitViaList()
+  }
+  
+  __consuming func emitViaTree() throws -> MEProgram {
     // TODO: Handle global options
     var codegen = ByteCodeGen(
       options: options,

@@ -41,7 +41,7 @@ func _validateListCompilation<T>(
   _ regex: Regex<T>
 ) throws -> Bool {
   let treeCompiler = Compiler(tree: regex.program.tree)
-  let treeProgram = try treeCompiler.emit()
+  let treeProgram = try treeCompiler.emitViaTree()
   let listCompiler = Compiler(tree: regex.program.tree)
   let listProgram = try listCompiler.emitViaList()
   return treeProgram.instructions == listProgram.instructions
