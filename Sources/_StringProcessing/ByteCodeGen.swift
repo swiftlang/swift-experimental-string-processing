@@ -23,7 +23,7 @@ extension Compiler {
     var hasEmittedFirstMatchableAtom = false
 
     private let compileOptions: _CompileOptions
-    fileprivate var optimizationsEnabled: Bool {
+    internal var optimizationsEnabled: Bool {
       !compileOptions.contains(.disableOptimizations)
     }
 
@@ -61,7 +61,7 @@ extension Compiler.ByteCodeGen {
   }
 }
 
-fileprivate extension Compiler.ByteCodeGen {
+extension Compiler.ByteCodeGen {
   mutating func emitAtom(_ a: DSLTree.Atom) throws {
     defer {
       if a.isMatchable {

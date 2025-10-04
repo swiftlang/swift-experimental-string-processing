@@ -393,16 +393,72 @@ extension DSLTree.Node {
     switch self {
       
     case let .orderedChoice(v):   return v
-    case let .concatenation(v): return v
+    case let .concatenation(v):   return v
+      
+    case let .capture(_, _, n, _):        return [n]
+    case let .nonCapturingGroup(_, n):    return [n]
+    case let .quantification(_, _, n):    return [n]
+    case let .ignoreCapturesInTypedOutput(n): return [n]
+    case let .limitCaptureNesting(n):     return [n]
+      
+    case let .conditional(_, t, f): return [t,f]
+      
+    case .trivia, .empty, .quotedLiteral,
+        .consumer, .matcher, .characterPredicate,
+        .customCharacterClass, .atom:
+      return []
+      
+    case let .absentFunction(abs):
+      return abs.ast.children.map(\.dslTreeNode)
+    }
+  }
+  
+  public var coalescedChildren: [DSLTree.Node] {
+    // Before converting a concatenation in a tree to list form, we need to
+    // flatten out any nested concatenations, and coalesce any adjacent
+    // characters and scalars, forming quoted literals of their contents,
+    // over which we can perform grapheme breaking.
+
+    func flatten(_ node: DSLTree.Node) -> [DSLTree.Node] {
+      switch node {
+      case .concatenation(let ch):
+        return ch.flatMap(flatten)
+      case .ignoreCapturesInTypedOutput(let n), .limitCaptureNesting(let n):
+        return flatten(n)
+      default:
+        return [node]
+      }
+    }
+    
+    switch self {
+    case let .orderedChoice(v):   return v
+    case let .concatenation(v):
+      let children = v
+        .flatMap(flatten)
+        .coalescing(with: "", into: DSLTree.Node.quotedLiteral) { str, node in
+          switch node {
+          case .atom(let a):
+            guard let c = a.literalCharacterValue else { return false }
+            str.append(c)
+            return true
+          case .quotedLiteral(let q):
+            str += q
+            return true
+          case .trivia:
+            // Trivia can be completely ignored if we've already coalesced
+            // something.
+            return !str.isEmpty
+          default:
+            return false
+          }
+        }
+      return children
 
     case let .capture(_, _, n, _):        return [n]
     case let .nonCapturingGroup(_, n):    return [n]
     case let .quantification(_, _, n):    return [n]
     case let .ignoreCapturesInTypedOutput(n): return [n]
-    
-    case let .limitCaptureNesting(n):
-      // This is a transparent wrapper
-      return n.children
+    case let .limitCaptureNesting(n):     return [n]
 
     case let .conditional(_, t, f): return [t,f]
 

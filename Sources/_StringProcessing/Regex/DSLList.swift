@@ -1,9 +1,13 @@
+//===----------------------------------------------------------------------===//
 //
-//  DSLList.swift
-//  swift-experimental-string-processing
+// This source file is part of the Swift.org open source project
 //
-//  Created by Nate Cook on 9/25/25.
+// Copyright (c) 2025 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
 //
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
 
 struct DSLList {
   var nodes: [DSLTree.Node]
@@ -16,8 +20,8 @@ struct DSLList {
     self.nodes = nodes
   }
   
-  init(root: DSLTree.Node) {
-    self.nodes = Array(root)
+  init(tree: DSLTree) {
+    self.nodes = Array(tree.depthFirst)
   }
 }
 
@@ -78,8 +82,8 @@ extension DSLTree.Node {
   }
 }
 
-extension DSLTree.Node: Sequence {
-  struct Iterator: Sequence, IteratorProtocol {
+extension DSLTree {
+  struct DepthFirst: Sequence, IteratorProtocol {
     typealias Element = DSLTree.Node
     private var stack: [Frame]
     private let getChildren: (Element) -> [Element]
@@ -104,11 +108,24 @@ extension DSLTree.Node: Sequence {
       for child in top.children.reversed() {
         stack.append(Frame(node: child, children: getChildren(child)))
       }
-      return top.node
+      
+      // Since we coalesce the children before adding them to the stack,
+      // we need an exact matching number of children in the list's
+      // concatenation node, so that it can provide the correct component
+      // count. This will go away/change when .concatenation only stores
+      // a count.
+      return switch top.node {
+      case .concatenation:
+        .concatenation(top.node.coalescedChildren)
+      default:
+        top.node
+      }
     }
   }
   
-  func makeIterator() -> Iterator {
-    Iterator(root: self, getChildren: { $0.children })
+  var depthFirst: DepthFirst {
+    DepthFirst(root: root, getChildren: {
+      $0.coalescedChildren
+    })
   }
 }
