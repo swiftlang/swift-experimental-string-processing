@@ -26,14 +26,139 @@ extension Compiler.ByteCodeGen {
     var list = root.nodes[...]
     try emitNode(&list)
 
-    // FIXME: Restore this canOnlyMatchAtStart
-    // builder.canOnlyMatchAtStart = root.canOnlyMatchAtStart()
+    builder.canOnlyMatchAtStart = canOnlyMatchAtStart(in: root)
     builder.buildAccept()
     return try builder.assemble()
   }
 }
 
 fileprivate extension Compiler.ByteCodeGen {
+  /// Implementation for `canOnlyMatchAtStart`, which maintains the option
+  /// state.
+  ///
+  /// For a given specific node, this method can return one of three values:
+  ///
+  /// - `true`: This node is guaranteed to match only at the start of a subject.
+  /// - `false`: This node can match anywhere in the subject.
+  /// - `nil`: This node is inconclusive about where it can match.
+  ///
+  /// In particular, non-required groups and option-setting groups are
+  /// inconclusive about where they can match.
+  private mutating func _canOnlyMatchAtStartImpl(
+    _ list: inout ArraySlice<DSLTree.Node>
+  ) -> Bool? {
+    guard let node = list.popFirst() else { return false }
+    switch node {
+    // Defining cases
+    case .atom(.assertion(.startOfSubject)):
+      return true
+    case .atom(.assertion(.caretAnchor)):
+      return !options.anchorsMatchNewlines
+      
+    // Changing options doesn't determine `true`/`false`.
+    case .atom(.changeMatchingOptions(let sequence)):
+      options.apply(sequence.ast)
+      return nil
+      
+    // Any other atom or consuming node returns `false`.
+    case .atom, .customCharacterClass, .quotedLiteral:
+      return false
+      
+    // Trivia/empty have no effect.
+    case .trivia, .empty:
+      return nil
+      
+    // In an alternation, all of its children must match only at start.
+    case .orderedChoice(let children):
+      for _ in 0..<children.count {
+        guard _canOnlyMatchAtStartImpl(&list) == true else {
+          return false
+        }
+      }
+      return true
+      
+    case .concatenation(let children):
+      // In a concatenation, the first definitive child provides the answer.
+      var i = 0
+      var found = false
+      while i < children.count {
+        i += 1
+        if let result = _canOnlyMatchAtStartImpl(&list) {
+          found = result
+          break
+        }
+      }
+      // Once a definitive answer has been found, skip the rest of the nodes
+      // in the concatenation.
+      while i < children.count {
+        i += 1
+        try? skipNode(&list, preservingCaptures: false)
+      }
+      return found
+
+    // Groups (and other parent nodes) defer to the child.
+    case .nonCapturingGroup(let kind, _):
+      // Don't let a negative lookahead affect this - need to continue to next sibling
+      if kind.isNegativeLookahead {
+        try? skipNode(&list, preservingCaptures: false)
+        return nil
+      }
+      options.beginScope()
+      defer { options.endScope() }
+      if case .changeMatchingOptions(let sequence) = kind.ast {
+        options.apply(sequence)
+      }
+      return _canOnlyMatchAtStartImpl(&list)
+    case .capture:
+      options.beginScope()
+      defer { options.endScope() }
+      return _canOnlyMatchAtStartImpl(&list)
+    case .ignoreCapturesInTypedOutput, .limitCaptureNesting:
+      return _canOnlyMatchAtStartImpl(&list)
+
+    // A quantification that doesn't require its child to exist can still
+    // allow a start-only match. (e.g. `/(foo)?^bar/`)
+    case .quantification(let amount, _, _):
+      if amount.requiresAtLeastOne {
+        return _canOnlyMatchAtStartImpl(&list)
+      } else {
+        try? skipNode(&list, preservingCaptures: false)
+        return nil
+      }
+
+    // For conditional nodes, both sides must require matching at start.
+    case .conditional:
+      return _canOnlyMatchAtStartImpl(&list) == true
+        && _canOnlyMatchAtStartImpl(&list) == true
+
+    // Extended behavior isn't known, so we return `false` for safety.
+    case .consumer, .matcher, .characterPredicate, .absentFunction:
+      return false
+    }
+  }
+  
+  /// Returns a Boolean value indicating whether the regex with this node as
+  /// the root can _only_ match at the start of a subject.
+  ///
+  /// For example, these regexes can only match at the start of a subject:
+  ///
+  /// - `/^foo/`
+  /// - `/(^foo|^bar)/` (both sides of the alternation start with `^`)
+  ///
+  /// These can match other places in a subject:
+  ///
+  /// - `/(^foo)?bar/` (`^` is in an optional group)
+  /// - `/(^foo|bar)/` (only one side of the alternation starts with `^`)
+  /// - `/(?m)^foo/` (`^` means "the start of a line" due to `(?m)`)
+  mutating func canOnlyMatchAtStart(in list: DSLList) -> Bool {
+    let currentOptions = options
+    options = MatchingOptions()
+    defer { options = currentOptions }
+    
+    var list = list.nodes[...]
+    return _canOnlyMatchAtStartImpl(&list) ?? false
+  }
+
   mutating func emitAlternationGen<T>(
     _ elements: inout ArraySlice<T>,
     alternationCount: Int,
@@ -667,41 +792,48 @@ fileprivate extension Compiler.ByteCodeGen {
 // MARK: Skip node
 
 extension Compiler.ByteCodeGen {
-  mutating func skipNode(_ list: inout ArraySlice<DSLTree.Node>) throws {
+  mutating func skipNode(
+    _ list: inout ArraySlice<DSLTree.Node>,
+    preservingCaptures: Bool = true
+  ) throws {
     guard let node = list.popFirst() else { return }
     switch node {
     case let .orderedChoice(children):
       let n = children.count
       for _ in 0..<n {
-        try skipNode(&list)
+        try skipNode(&list, preservingCaptures: preservingCaptures)
       }
       
     case let .concatenation(children):
       let n = children.count
       for _ in 0..<n {
-        try skipNode(&list)
+        try skipNode(&list, preservingCaptures: preservingCaptures)
       }
 
     case let .capture(name, refId, _, transform):
       options.beginScope()
       defer { options.endScope() }
       
-      let cap = builder.makeCapture(id: refId, name: name)
-      builder.buildBeginCapture(cap)
-      try skipNode(&list)
-      builder.buildEndCapture(cap)
+      if preservingCaptures {
+        let cap = builder.makeCapture(id: refId, name: name)
+        builder.buildBeginCapture(cap)
+        try skipNode(&list, preservingCaptures: preservingCaptures)
+        builder.buildEndCapture(cap)
+      } else {
+        try skipNode(&list, preservingCaptures: preservingCaptures)
+      }
       
     case let .nonCapturingGroup(kind, _):
-      try skipNode(&list)
+      try skipNode(&list, preservingCaptures: preservingCaptures)
 
     case .ignoreCapturesInTypedOutput:
-      try skipNode(&list)
+      try skipNode(&list, preservingCaptures: preservingCaptures)
       
     case .limitCaptureNesting:
-      try skipNode(&list)
+      try skipNode(&list, preservingCaptures: preservingCaptures)
 
     case let .quantification(amt, kind, _):
-      try skipNode(&list)
+      try skipNode(&list, preservingCaptures: preservingCaptures)
       
     case .customCharacterClass, .atom, .quotedLiteral, .matcher:
       break

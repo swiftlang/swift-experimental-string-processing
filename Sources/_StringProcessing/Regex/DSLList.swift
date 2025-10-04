@@ -25,41 +25,6 @@ struct DSLList {
   }
 }
 
-extension DSLList {
-  struct Children: Sequence {
-    var nodes: [DSLTree.Node]
-    var firstChildIndex: Int
-    
-    struct Iterator: IteratorProtocol {
-      var nodes: [DSLTree.Node]
-      var currentIndex: Int
-      var remainingCount: Int
-      
-      mutating func next() -> DSLTree.Node? {
-        guard remainingCount > 0 else { return nil }
-        guard currentIndex < nodes.count else {
-          // FIXME: assert?
-          print("ERROR: index out of bounds")
-          return nil
-        }
-        remainingCount -= 1
-        var nextIndex = currentIndex
-        var inc = nodes[currentIndex].directChildren + 1
-        while inc > 0 {
-          nextIndex += 1
-          inc += nodes[nextIndex].directChildren - 1
-        }
-
-        return nodes[currentIndex]
-      }
-    }
-    
-    func makeIterator() -> Iterator {
-      Iterator(nodes: nodes, currentIndex: firstChildIndex, remainingCount: nodes[firstChildIndex].directChildren)
-    }
-  }
-}
-
 extension DSLTree.Node {
   var directChildren: Int {
     switch self {
