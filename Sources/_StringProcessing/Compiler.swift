@@ -44,9 +44,6 @@ class Compiler {
   __consuming func emitViaList() throws -> MEProgram {
     // TODO: Handle global options
     let dslList = DSLList(tree: tree)
-    for (n, el) in dslList.nodes.enumerated() {
-      print("\(n): \(el)")
-    }
     var codegen = ByteCodeGen(
       options: options,
       compileOptions:
