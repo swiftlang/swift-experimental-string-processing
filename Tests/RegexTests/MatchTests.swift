@@ -37,16 +37,34 @@ func _roundTripLiteral(
   return remadeRegex
 }
 
+func _validateListCompilation<T>(
+  _ regex: Regex<T>
+) throws -> Bool {
+  let treeCompiler = Compiler(tree: regex.program.tree)
+  let treeProgram = try treeCompiler.emitViaTree()
+  let listCompiler = Compiler(tree: regex.program.tree)
+  let listProgram = try listCompiler.emitViaList()
+  return treeProgram.instructions == listProgram.instructions
+}
+
 func _firstMatch(
   _ regexStr: String,
   input: String,
   validateOptimizations: Bool,
   semanticLevel: RegexSemanticLevel = .graphemeCluster,
-  syntax: SyntaxOptions = .traditional
+  syntax: SyntaxOptions = .traditional,
+  file: StaticString = #file,
+  line: UInt = #line
 ) throws -> (String, [String?])? {
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
-
+  
+  if try !_validateListCompilation(regex) {
+    XCTFail(
+      "List compilation failed for '\(regexStr)'",
+      file: file, line: line)
+  }
+  
   func validateSubstring(_ substringInput: Substring) throws {
     // Sometimes the characters we add to a substring merge with existing
     // string members. This messes up cross-validation, so skip the test.
@@ -105,14 +123,18 @@ func _firstMatch(
         For input '\(input)'
         Original: '\(regexStr)'
         _literalPattern: '\(roundTripRegex?._literalPattern ?? "<no pattern>")'
-        """)
+        """,
+        file: file,
+        line: line)
     case let (_, rtMatch?):
       XCTFail("""
         Incorrectly matched as '\(rtMatch)'
         For input '\(input)'
         Original: '\(regexStr)'
         _literalPattern: '\(roundTripRegex!._literalPattern!)'
-        """)
+        """,
+        file: file,
+        line: line)
     }
   }
 
@@ -184,7 +206,8 @@ func flatCaptureTest(
         input: test,
         validateOptimizations: validateOptimizations,
         semanticLevel: semanticLevel,
-        syntax: syntax
+        syntax: syntax,
+        file: file, line: line
       ) else {
         if expect == nil {
           continue
@@ -303,7 +326,8 @@ func firstMatchTest(
       input: input,
       validateOptimizations: validateOptimizations,
       semanticLevel: semanticLevel,
-      syntax: syntax)?.0
+      syntax: syntax,
+      file: file, line: line)?.0
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
