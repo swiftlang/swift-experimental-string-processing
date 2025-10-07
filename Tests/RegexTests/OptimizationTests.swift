@@ -13,8 +13,7 @@ import Testing
 @testable @_spi(RegexBuilder) import _StringProcessing
 @testable import _RegexParser
 
-@Suite
-struct OptimizationTests {
+@Suite struct OptimizationTests {
   @available(macOS 9999, *)
   @Test(arguments: [#/a/#, #/a+/#, #/(?:a+)/#, #/(?:a)+/#, #/(?m)a+/#, #/ab?c/#, #/(?:a+)+$/#])
   func requiredFirstAtom(pattern: Regex<Substring>) throws {
@@ -60,19 +59,34 @@ struct OptimizationTests {
   }
   
   @available(macOS 9999, *)
-  @Test(arguments: [#/(?:a+b|b+a)/#]) //[#/a+b/#, #/a*b/#, #/\d+a/#, #/\w+\s/#, #/(?:a+b|b+a)/#])
+  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#]) // , #/\d+a/#
   func autoPossessify(pattern: Regex<Substring>) throws {
     var list = DSLList(tree: pattern.program.tree)
-    var index = 0
-    _ = list.autoPossessifyNextQuantification(&index)
-    print(pattern._literalPattern!)
-    dump(list)
+    list.autoPossessify()
+    for node in list.nodes {
+      switch node {
+      case .quantification(_, let kind, _):
+        #expect(
+          kind.isExplicit && kind.quantificationKind?.ast == .possessive,
+          "Expected possessification in '\(pattern._literalPattern!)'")
+      default: break
+      }
+    }
   }
 
   @available(macOS 9999, *)
-  @Test(arguments: [#/a?/#, #/(?:a|b)/#, #/(?:a+|b+)/#, #/[a]/#, #/a?a/#])
+  @Test(arguments: [#/a?/#, #/a+a/#, #/(?:a|b)/#, #/(?:a+|b+)/#, #/[a]/#, #/a?a/#])
   func noAutoPossessify(pattern: Regex<Substring>) throws {
     var list = DSLList(tree: pattern.program.tree)
     list.autoPossessify()
+    for node in list.nodes {
+      switch node {
+      case .quantification(_, let kind, _):
+        #expect(
+          kind.quantificationKind?.ast != .possessive,
+          "Unexpected possessification in '\(pattern._literalPattern!)'")
+      default: break
+      }
+    }
   }
 }
