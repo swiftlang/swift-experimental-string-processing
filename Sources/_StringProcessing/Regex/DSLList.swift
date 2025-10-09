@@ -330,7 +330,14 @@ extension DSLTree.Atom {
       return a != b
     case (.characterClass(let a), .characterClass(let b)):
       return a.excludes(b)
-    
+    // FIXME: Need to track matching options so we can know if this actually matches
+    case (.characterClass(let a), .char(let b)), (.char(let b), .characterClass(let a)):
+      let s = "\(b)"
+      return a.asRuntimeModel(MatchingOptions()).matches(in: s, at: s.startIndex, limitedBy: s.endIndex) == nil
+    case (.characterClass(let a), .scalar(let b)), (.scalar(let b), .characterClass(let a)):
+      let s = "\(b)"
+      return a.asRuntimeModel(MatchingOptions()).matches(in: s, at: s.startIndex, limitedBy: s.endIndex) == nil
+
     default:
       return false
     }
