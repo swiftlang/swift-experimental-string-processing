@@ -216,10 +216,17 @@ extension DSLList {
     
     switch nodes[position] {
     case .quantification(let amount, _, _):
+      let quantPosition = position
       position += 1
+      
+      // Do a search within this quantification's contents
+      // FIXME: How to handle an inner quantification surfacing here?
+      var innerPosition = position
+      _ = autoPossessifyNextQuantification(&innerPosition)
+      
       switch _requiredAtomImpl(&position) {
       case .some(let atom?):
-        return (position - 1, atom)
+        return (quantPosition, atom)
       case .none, .some(.none):
         return nil
       }

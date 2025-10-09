@@ -31,7 +31,7 @@ import Testing
   }
   
   @available(macOS 9999, *)
-  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#]) // , #/\d+a/#
+  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#, #/(?:(?:a+b)+b)/#])
   func autoPossessify(pattern: Regex<Substring>) throws {
     var list = DSLList(tree: pattern.program.tree)
     list.autoPossessify()
