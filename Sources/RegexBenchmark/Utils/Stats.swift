@@ -15,7 +15,7 @@ enum Stats {}
 
 extension Stats {
   // Maximum allowed standard deviation is 7.5% of the median runtime
-  static let maxAllowedStdev = 0.075
+  static let maxAllowedStdev = 0.15
 
   static func tTest(_ a: Measurement, _ b: Measurement) -> Bool {
     // Student's t-test

@@ -115,12 +115,12 @@ extension BenchmarkRunner {
       .sorted(by: {(a,b) in a.diff!.seconds < b.diff!.seconds})
     
     print("Comparing against \(against)")
-    print("=== Regressions ======================================================================")
+    print("=== Regressions ================================================================")
     for item in regressions {
       print(item)
     }
     
-    print("=== Improvements =====================================================================")
+    print("=== Improvements ===============================================================")
     for item in improvements {
       print(item)
     }
@@ -128,7 +128,7 @@ extension BenchmarkRunner {
     #if os(macOS) && canImport(Charts)
     if showChart {
       print("""
-        === Comparison chart =================================================================
+        === Comparison chart ===========================================================
         Press Control-C to close...
         """)
       BenchmarkResultApp.comparisons = comparisons
@@ -234,9 +234,17 @@ extension BenchmarkResult {
         return "- \(name) N/A"
       }
       let percentage = (1000 * diff.seconds / baselineTime.seconds).rounded()/10
-      let len = max(40 - name.count, 1)
-      let nameSpacing = String(repeating: " ", count: len)
-      return "- \(name)\(nameSpacing)\(latestTime)\t\(baselineTime)\t\(diff)\t\t\(percentage)%"
+      let start = if name.count > 40 {
+        "- \(name)\n" + String(repeating: " ", count: 43)
+      } else {
+        "- \(name, paddingTo: 40) "
+      }
+      return start + """
+        \(latestTime, paddingTo: 8, alignRight: true)  \
+        \(baselineTime, paddingTo: 8, alignRight: true)  \
+        \(diff, paddingTo: 8, alignRight: true)  \
+        \(percentage, paddingTo: 5, alignRight: true)%
+        """
     }
     
     var asCsv: String {
@@ -332,5 +340,18 @@ extension SuiteResult: Codable {
     let decoder = JSONDecoder()
     let data = try Data(contentsOf: url)
     return try decoder.decode(SuiteResult.self, from: data)
+  }
+}
+
+extension DefaultStringInterpolation {
+  mutating func appendInterpolation<T>(_ value: T, paddingTo length: Int, alignRight: Bool = false) {
+    let s = String(describing: value)
+    let paddingCount = max(0, length - s.count)
+    let padding = String(repeating: " ", count: paddingCount)
+    if alignRight {
+      appendLiteral(padding + s)
+    } else {
+      appendLiteral(s + padding)
+    }
   }
 }
