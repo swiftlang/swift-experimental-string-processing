@@ -180,7 +180,12 @@ extension DSLList {
     case .orderedChoice, .conditional:
       return .some(nil)
 
-    // Groups (and other parent nodes) defer to the child.
+    // A negative lookahead rules out the existence of a safe required
+    // character.
+    case .nonCapturingGroup(let kind, _) where kind.isNegativeLookahead:
+      return .some(nil)
+      
+    // Other groups (and other parent nodes) defer to the child.
     case .nonCapturingGroup, .capture,
         .ignoreCapturesInTypedOutput,
         .limitCaptureNesting:
@@ -208,7 +213,6 @@ extension DSLList {
     return _requiredAtomImpl(&position) ?? nil
   }
 
-  
   internal mutating func autoPossessifyNextQuantification(_ position: inout Int) -> (Int, DSLTree.Atom)? {
     guard position < nodes.count else {
       return nil
