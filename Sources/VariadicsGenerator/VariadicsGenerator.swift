@@ -20,6 +20,8 @@ import Glibc
 import CRT
 #elseif canImport(Bionic)
 import Bionic
+#elseif os(WASI)
+import WASILibc
 #endif
 
 // (T), (T)
