@@ -136,13 +136,6 @@ let package = Package(
                 "_StringProcessing"
             ]),
         .executableTarget(
-            name: "Regex2BNF",
-            dependencies: [
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                "_RegexParser"
-            ],
-            swiftSettings: [availabilityDefinition]),
-        .executableTarget(
             name: "RegexTester",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
