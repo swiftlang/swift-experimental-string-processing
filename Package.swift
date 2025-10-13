@@ -7,7 +7,23 @@ let availabilityDefinition = PackageDescription.SwiftSetting.unsafeFlags([
     "-Xfrontend",
     "-define-availability",
     "-Xfrontend",
-    "SwiftStdlib 5.7:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
+    "SwiftStdlib 5.7:macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0",
+    "-Xfrontend",
+    "-define-availability",
+    "-Xfrontend",
+    "SwiftStdlib 5.8:macOS 13.3, iOS 16.4, watchOS 9.4, tvOS 16.4",
+    "-Xfrontend",
+    "-define-availability",
+    "-Xfrontend",
+    "SwiftStdlib 5.9:macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0",
+    "-Xfrontend",
+    "-define-availability",
+    "-Xfrontend",
+    "SwiftStdlib 5.10:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
+    "-Xfrontend",
+    "-define-availability",
+    "-Xfrontend",
+    "SwiftStdlib 6.0:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
 ])
 
 /// Swift settings for building a private stdlib-like module that is to be used
@@ -32,15 +48,20 @@ let package = Package(
         .library(
             name: "_StringProcessing",
             targets: ["_StringProcessing"]),
-        .library(
-            name: "Prototypes",
-            targets: ["Prototypes"]),
+        // FIXME: Disabled due to rdar://94763190.
+        // .library(
+        //     name: "Prototypes",
+        //     targets: ["Prototypes"]),
         .library(
             name: "_RegexParser",
             targets: ["_RegexParser"]),
         .executable(
             name: "VariadicsGenerator",
-            targets: ["VariadicsGenerator"])
+            targets: ["VariadicsGenerator"]),
+// Disable to work around rdar://126877024
+        .executable(
+          name: "RegexBenchmark",
+          targets: ["RegexBenchmark"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.0.0"),
@@ -67,24 +88,35 @@ let package = Package(
             name: "RegexBuilder",
             dependencies: ["_StringProcessing", "_RegexParser"],
             swiftSettings: publicStdlibSettings),
+        .target(name: "TestSupport",
+                swiftSettings: [availabilityDefinition]),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing"],
+            dependencies: ["_StringProcessing", "RegexBuilder", "TestSupport"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
+                availabilityDefinition
             ]),
         .testTarget(
             name: "RegexBuilderTests",
-            dependencies: ["_StringProcessing", "RegexBuilder"],
+            dependencies: ["_StringProcessing", "RegexBuilder", "TestSupport"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+                availabilityDefinition
             ]),
         .testTarget(
-            name: "Prototypes",
-            dependencies: ["_RegexParser", "_StringProcessing"],
+            name: "DocumentationTests",
+            dependencies: ["_StringProcessing", "RegexBuilder"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+                availabilityDefinition,
+                .unsafeFlags(["-enable-bare-slash-regex"]),
             ]),
+        
+        // FIXME: Disabled due to rdar://94763190.
+        // .testTarget(
+        //     name: "Prototypes",
+        //     dependencies: ["_RegexParser", "_StringProcessing"],
+        //     swiftSettings: [
+        //         .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+        //     ]),
 
         // MARK: Scripts
         .executableTarget(
@@ -105,6 +137,18 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 "_RegexParser",
                 "_StringProcessing"
+            ],
+            swiftSettings: [availabilityDefinition]),
+        .executableTarget(
+            name: "RegexBenchmark",
+            dependencies: [
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "_RegexParser",
+                "_StringProcessing",
+                "RegexBuilder"
+            ],
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
             ]),
 
         // MARK: Exercises

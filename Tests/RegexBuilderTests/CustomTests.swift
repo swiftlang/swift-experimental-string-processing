@@ -14,10 +14,12 @@ import _StringProcessing
 @testable import RegexBuilder
 
 // A nibbler processes a single character from a string
+@available(SwiftStdlib 5.7, *)
 private protocol Nibbler: CustomConsumingRegexComponent {
   func nibble(_: Character) -> RegexOutput?
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Nibbler {
   // Default implementation, just feed the character in
   func consuming(
@@ -34,6 +36,7 @@ extension Nibbler {
 
 
 // A number nibbler
+@available(SwiftStdlib 5.7, *)
 private struct Numbler: Nibbler {
   typealias RegexOutput = Int
   func nibble(_ c: Character) -> Int? {
@@ -42,6 +45,7 @@ private struct Numbler: Nibbler {
 }
 
 // An ASCII value nibbler
+@available(SwiftStdlib 5.7, *)
 private struct Asciibbler: Nibbler {
   typealias RegexOutput = UInt8
   func nibble(_ c: Character) -> UInt8? {
@@ -49,6 +53,7 @@ private struct Asciibbler: Nibbler {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 private struct IntParser: CustomConsumingRegexComponent {
   struct ParseError: Error, Hashable {}
   typealias RegexOutput = Int
@@ -59,7 +64,7 @@ private struct IntParser: CustomConsumingRegexComponent {
     guard index != bounds.upperBound else { return nil }
 
     let r = Regex {
-      Capture(OneOrMore(.digit)) { Int($0) }
+      Capture<(Substring, Int?)>(OneOrMore(.digit)) { Int($0) }
     }
 
     guard let match = input[index..<bounds.upperBound].prefixMatch(of: r),
@@ -71,6 +76,7 @@ private struct IntParser: CustomConsumingRegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 private struct CurrencyParser: CustomConsumingRegexComponent {
   enum Currency: String, Hashable {
     case usd = "USD"
@@ -117,9 +123,12 @@ enum MatchCall {
   case firstMatch
 }
 
-func customTest<Match: Equatable>(
+@available(SwiftStdlib 5.7, *)
+fileprivate func customTest<Match: Equatable>(
   _ regex: Regex<Match>,
-  _ tests: (input: String, call: MatchCall, match: Match?)...
+  _ tests: (input: String, call: MatchCall, match: Match?)...,
+  file: StaticString = #file,
+  line: UInt = #line
 ) {
   for (input, call, match) in tests {
     let result: Match?
@@ -129,7 +138,40 @@ func customTest<Match: Equatable>(
     case .firstMatch:
       result = input.firstMatch(of: regex)?.output
     }
-    XCTAssertEqual(result, match)
+    XCTAssertEqual(result, match, file: file, line: line)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+fileprivate func customTest<Match>(
+  _ regex: some RegexComponent<Match>,
+  _ isEquivalent: (Match, Match) -> Bool,
+  _ tests: (input: String, call: MatchCall, match: Match?)...,
+  file: StaticString = #file,
+  line: UInt = #line
+) {
+  for (input, call, match) in tests {
+    let result: Match?
+    switch call {
+    case .match:
+      result = input.wholeMatch(of: regex)?.output
+    case .firstMatch:
+      result = input.firstMatch(of: regex)?.output
+    }
+    switch (result, match) {
+    case let (result?, match?):
+      XCTAssert(
+        isEquivalent(result, match),
+        "'\(result)' isn't equal to '\(match)'.",
+        file: file, line: line)
+    case (nil, nil):
+      // Success
+      break
+    case (nil, _):
+      XCTFail("No match when expected", file: file, line: line)
+    case (_, nil):
+      XCTFail("Unexpected match", file: file, line: line)
+    }
   }
 }
 
@@ -178,6 +220,7 @@ extension Concat: BidirectionalCollection {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 class CustomRegexComponentTests: XCTestCase {
   // TODO: Refactor below into more exhaustive, declarative
   // tests.
@@ -211,39 +254,91 @@ class CustomRegexComponentTests: XCTestCase {
       ("55z", .match, nil),
       ("55z", .firstMatch, 5))
 
-    // TODO: Convert below tests to better infra. Right now
-    // it's hard because `Match` is constrained to be
-    // `Equatable` which tuples cannot be.
+//    customTest(
+//      Regex<Substring> {
+//        #/(?<prefix>\D+)/#
+//        Optionally("~")
+//      },
+//      ("ab123c", .firstMatch, "ab"),
+//      ("abc", .firstMatch, "abc"),
+//      ("123", .firstMatch, nil),
+//      ("a55z", .match, nil),
+//      ("a55z", .firstMatch, "a"))
 
-    let regex3 = Regex {
-      Capture {
-        OneOrMore {
-          Numbler()
+    customTest(
+      Regex<(Substring, Substring, Int)> {
+        #/(\D+)/#
+        Capture(Numbler())
+      },
+      ==,
+      ("ab123c", .firstMatch, ("ab1", "ab", 1)),
+      ("abc", .firstMatch, nil),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, nil),
+      ("a55z", .firstMatch, ("a5", "a", 5)))
+
+    customTest(
+      Regex<(Substring, prefix: Substring)> {
+        #/(?<prefix>\D+)/#
+      },
+      ==,
+      ("ab123c", .firstMatch, ("ab", "ab")),
+      ("abc", .firstMatch, ("abc", "abc")),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, nil),
+      ("a55z", .firstMatch, ("a", "a")))
+
+//    customTest(
+//      Regex<(Substring, Int)> {
+//        #/(?<prefix>\D+)/#
+//        Capture(Numbler())
+//      },
+//      ==,
+//      ("ab123c", .firstMatch, ("ab1", 1)),
+//      ("abc", .firstMatch, nil),
+//      ("123", .firstMatch, nil),
+//      ("a55z", .match, nil),
+//      ("a55z", .firstMatch, ("a5", 5)))
+    
+//    customTest(
+//      Regex<(Substring, Int, Substring)> {
+//        #/(?<prefix>\D+)/#
+//        Regex {
+//          Capture(Numbler())
+//          Capture(OneOrMore(.word))
+//        }
+//      },
+//      ==,
+//      ("ab123c", .firstMatch, ("ab123c", 1, "23c")),
+//      ("abc", .firstMatch, nil),
+//      ("123", .firstMatch, nil),
+//      ("a55z", .match, ("a55z", 5, "5z")),
+//      ("a55z", .firstMatch, ("a55z", 5, "5z")))
+    
+    customTest(
+      Regex<(Substring, Substring)> {
+        Capture {
+          OneOrMore {
+            Numbler()
+          }
         }
-      }
-    }
-
-    let str = "ab123c"
-    let res3 = try XCTUnwrap(str.firstMatch(of: regex3))
-
-    let expectedSubstring = str.dropFirst(2).prefix(3)
-    XCTAssertEqual(res3.range, expectedSubstring.startIndex..<expectedSubstring.endIndex)
-    XCTAssertEqual(res3.output.0, expectedSubstring)
-    XCTAssertEqual(res3.output.1, expectedSubstring)
-
-    let regex4 = Regex {
-      OneOrMore {
-        Capture { Numbler() }
-      }
-    }
-
-    guard let res4 = "ab123c".firstMatch(of: regex4) else {
-      XCTFail()
-      return
-    }
-
-    XCTAssertEqual(res4.output.0, "123")
-    XCTAssertEqual(res4.output.1, 3)
+      },
+      ==,
+      ("abc123", .firstMatch, ("123", "123")),
+      ("abc123", .match, nil),
+      ("abc", .firstMatch, nil))
+    
+    customTest(
+      Regex<(Substring, Int)> {
+        OneOrMore {
+          Capture { Numbler() }
+        }
+      },
+      ==,
+      ("ab123c", .firstMatch, ("123", 3)),
+      ("abc", .firstMatch, nil),
+      ("55z", .match, nil),
+      ("55z", .firstMatch, ("55", 5)))
   }
 
   func testRegexAbort() {
@@ -423,6 +518,38 @@ class CustomRegexComponentTests: XCTestCase {
       ("x10x", nil, IntParser.ParseError()),
       ("30", 30, nil)
     )
+    customTest(
+      Regex {
+        Optionally {
+          IntParser()
+        }
+      },
+      ("zzz", nil, IntParser.ParseError()),
+      ("x10x", nil, IntParser.ParseError()),
+      ("30", "30", nil)
+    )
+    customTest(
+      Regex {
+        Regex {
+          IntParser()
+        }
+      },
+      ("zzz", nil, IntParser.ParseError()),
+      ("x10x", nil, IntParser.ParseError()),
+      ("30", 30, nil)
+    )
+    customTest(
+      Regex {
+        Regex {
+          IntParser()
+        }
+        "x"
+      },
+      ("zzz", nil, IntParser.ParseError()),
+      ("x10x", nil, IntParser.ParseError()),
+      ("30", nil, nil),
+      ("30x", "30x", nil)
+    )
 
     customTest(
       Regex {
@@ -599,7 +726,7 @@ class CustomRegexComponentTests: XCTestCase {
       OneOrMore {
         CharacterClass("A"..."Z")
         OneOrMore(CharacterClass("a"..."z"))
-        Capture(Repeat(.digit, count: 2)) { Int($0) }
+        Capture<(Substring, Int?)>(Repeat(.digit, count: 2)) { Int($0) }
       }
     }
 

@@ -11,15 +11,15 @@
 
 // MARK: `SplitCollection`
 
-struct SplitCollection<Searcher: CollectionSearcher> {
-  public typealias Base = Searcher.Searched
+struct SplitSequence<Searcher: CollectionSearcher> {
+  typealias Input = Searcher.Searched
   
-  let ranges: RangesCollection<Searcher>
+  let ranges: RangesSequence<Searcher>
   var maxSplits: Int
   var omittingEmptySubsequences: Bool
 
   init(
-    ranges: RangesCollection<Searcher>,
+    ranges: RangesSequence<Searcher>,
     maxSplits: Int,
     omittingEmptySubsequences: Bool)
   {
@@ -29,53 +29,53 @@ struct SplitCollection<Searcher: CollectionSearcher> {
   }
 
   init(
-    base: Base,
+    input: Input,
     searcher: Searcher,
     maxSplits: Int,
     omittingEmptySubsequences: Bool)
   {
-    self.ranges = base._ranges(of: searcher)
+    self.ranges = input._ranges(of: searcher)
     self.maxSplits = maxSplits
     self.omittingEmptySubsequences = omittingEmptySubsequences
   }
 }
 
-extension SplitCollection: Sequence {
-  public struct Iterator: IteratorProtocol {
-    let base: Base
-    var index: Base.Index
-    var ranges: RangesCollection<Searcher>.Iterator
-    var maxSplits: Int
-    var omittingEmptySubsequences: Bool
+extension SplitSequence: Sequence {
+  struct Iterator: IteratorProtocol {
+    var ranges: RangesSequence<Searcher>.Iterator
+    var index: Input.Index
 
+    var maxSplits: Int
     var splitCounter = 0
+    var omittingEmptySubsequences: Bool
     var isDone = false
 
+    var input: Input { ranges.base.input }
+
     init(
-      ranges: RangesCollection<Searcher>,
+      ranges: RangesSequence<Searcher>,
       maxSplits: Int,
       omittingEmptySubsequences: Bool
     ) {
-      self.base = ranges.base
-      self.index = base.startIndex
+      self.index = ranges.input.startIndex
       self.ranges = ranges.makeIterator()
       self.maxSplits = maxSplits
       self.omittingEmptySubsequences = omittingEmptySubsequences
     }
     
-    public mutating func next() -> Base.SubSequence? {
+    mutating func next() -> Input.SubSequence? {
       guard !isDone else { return nil }
       
       /// Return the rest of base if it's non-empty or we're including
       /// empty subsequences.
-      func finish() -> Base.SubSequence? {
+      func finish() -> Input.SubSequence? {
         isDone = true
-        return index == base.endIndex && omittingEmptySubsequences
+        return index == input.endIndex && omittingEmptySubsequences
           ? nil
-          : base[index...]
+          : input[index...]
       }
       
-      if index == base.endIndex {
+      if index == input.endIndex {
         return finish()
       }
       
@@ -96,195 +96,29 @@ extension SplitCollection: Sequence {
         }
         
         splitCounter += 1
-        return base[index..<range.lowerBound]
+        return input[index..<range.lowerBound]
       }
     }
   }
   
-  public func makeIterator() -> Iterator {
+  func makeIterator() -> Iterator {
     Iterator(ranges: ranges, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
   }
 }
 
-//extension SplitCollection: Collection {
-//  public struct Index {
-//    var start: Base.Index
-//    var base: RangesCollection<Searcher>.Index
-//    var isEndIndex: Bool
-//  }
-//
-//  public var startIndex: Index {
-//    let base = ranges.startIndex
-//    return Index(start: ranges.base.startIndex, base: base, isEndIndex: false)
-//  }
-//
-//  public var endIndex: Index {
-//    Index(start: ranges.base.endIndex, base: ranges.endIndex, isEndIndex: true)
-//  }
-//
-//  public func formIndex(after index: inout Index) {
-//    guard !index.isEndIndex else { fatalError("Cannot advance past endIndex") }
-//
-//    if let range = index.base.range {
-//      let newStart = range.upperBound
-//      ranges.formIndex(after: &index.base)
-//      index.start = newStart
-//    } else {
-//      index.isEndIndex = true
-//    }
-//  }
-//
-//  public func index(after index: Index) -> Index {
-//    var index = index
-//    formIndex(after: &index)
-//    return index
-//  }
-//
-//  public subscript(index: Index) -> Base.SubSequence {
-//    guard !index.isEndIndex else {
-//      fatalError("Cannot subscript using endIndex")
-//    }
-//    let end = index.base.range?.lowerBound ?? ranges.base.endIndex
-//    return ranges.base[index.start..<end]
-//  }
-//}
-//
-//extension SplitCollection.Index: Comparable {
-//   static func == (lhs: Self, rhs: Self) -> Bool {
-//    switch (lhs.isEndIndex, rhs.isEndIndex) {
-//    case (false, false):
-//      return lhs.start == rhs.start
-//    case (let lhs, let rhs):
-//      return lhs == rhs
-//    }
-//  }
-//
-//  static func < (lhs: Self, rhs: Self) -> Bool {
-//    switch (lhs.isEndIndex, rhs.isEndIndex) {
-//    case (true, _):
-//      return false
-//    case (_, true):
-//      return true
-//    case (false, false):
-//      return lhs.start < rhs.start
-//    }
-//  }
-//}
-
-// MARK: `ReversedSplitCollection`
-
-struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
-  public typealias Base = Searcher.BackwardSearched
-  
-  let ranges: ReversedRangesCollection<Searcher>
-  
-  init(ranges: ReversedRangesCollection<Searcher>) {
-    self.ranges = ranges
-  }
-
-  init(base: Base, searcher: Searcher) {
-    self.ranges = base._rangesFromBack(of: searcher)
-  }
-}
-
-extension ReversedSplitCollection: Sequence {
-  public struct Iterator: IteratorProtocol {
-    let base: Base
-    var index: Base.Index
-    var ranges: ReversedRangesCollection<Searcher>.Iterator
-    var isDone: Bool
-    
-    init(ranges: ReversedRangesCollection<Searcher>) {
-      self.base = ranges.base
-      self.index = base.endIndex
-      self.ranges = ranges.makeIterator()
-      self.isDone = false
-    }
-    
-    public mutating func next() -> Base.SubSequence? {
-      guard !isDone else { return nil }
-      
-      guard let range = ranges.next() else {
-        isDone = true
-        return base[..<index]
-      }
-      
-      defer { index = range.lowerBound }
-      return base[range.upperBound..<index]
-    }
-  }
-  
-  public func makeIterator() -> Iterator {
-    Iterator(ranges: ranges)
-  }
-}
-
-// TODO: `Collection` conformance
-
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  func split<Searcher: CollectionSearcher>(
+  func _split<Searcher: CollectionSearcher>(
     by separator: Searcher,
     maxSplits: Int,
     omittingEmptySubsequences: Bool
-  ) -> SplitCollection<Searcher> where Searcher.Searched == Self {
-    SplitCollection(
-      base: self,
+  ) -> SplitSequence<Searcher> where Searcher.Searched == Self {
+    SplitSequence(
+      input: self,
       searcher: separator,
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences)
-  }
-}
-
-extension BidirectionalCollection {
-  func splitFromBack<Searcher: BackwardCollectionSearcher>(
-    by separator: Searcher
-  ) -> ReversedSplitCollection<Searcher>
-    where Searcher.BackwardSearched == Self
-  {
-    ReversedSplitCollection(base: self, searcher: separator)
-  }
-}
-
-// MARK: Predicate algorithms
-
-extension Collection {
-  // TODO: Non-escaping and throwing
-  func split(
-    whereSeparator predicate: @escaping (Element) -> Bool,
-    maxSplits: Int,
-    omittingEmptySubsequences: Bool
-  ) -> SplitCollection<PredicateConsumer<Self>> {
-    split(by: PredicateConsumer(predicate: predicate), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
-  }
-}
-
-extension BidirectionalCollection where Element: Equatable {
-  func splitFromBack(
-    whereSeparator predicate: @escaping (Element) -> Bool
-  ) -> ReversedSplitCollection<PredicateConsumer<Self>> {
-    splitFromBack(by: PredicateConsumer(predicate: predicate))
-  }
-}
-
-// MARK: Single element algorithms
-
-extension Collection where Element: Equatable {
-  func split(
-    by separator: Element,
-    maxSplits: Int,
-    omittingEmptySubsequences: Bool
-  ) -> SplitCollection<PredicateConsumer<Self>> {
-    split(whereSeparator: { $0 == separator }, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
-  }
-}
-
-extension BidirectionalCollection where Element: Equatable {
-  func splitFromBack(
-    by separator: Element
-  ) -> ReversedSplitCollection<PredicateConsumer<Self>> {
-    splitFromBack(whereSeparator: { $0 == separator })
   }
 }
 
@@ -292,12 +126,12 @@ extension BidirectionalCollection where Element: Equatable {
 
 extension Collection where Element: Equatable {
   @_disfavoredOverload
-  func split<C: Collection>(
+  func _split<C: Collection>(
     by separator: C,
     maxSplits: Int,
     omittingEmptySubsequences: Bool
-  ) -> SplitCollection<ZSearcher<Self>> where C.Element == Element {
-    split(by: ZSearcher(pattern: Array(separator), by: ==), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
+  ) -> SplitSequence<ZSearcher<Self>> where C.Element == Element {
+    _split(by: ZSearcher(pattern: Array(separator), by: ==), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
   }
 
   // FIXME: Return `some Collection<SubSequence>` for SE-0346
@@ -314,46 +148,23 @@ extension Collection where Element: Equatable {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] where C.Element == Element {
-    Array(split(
-      by: ZSearcher(pattern: Array(separator), by: ==),
-      maxSplits: maxSplits,
-      omittingEmptySubsequences: omittingEmptySubsequences))
+    switch (self, separator) {
+    case (let str as String, let sep as String):
+      return str[...]._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+    case (let str as String, let sep as Substring):
+      return str[...]._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+    case (let str as Substring, let sep as String):
+      return str._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+    case (let str as Substring, let sep as Substring):
+      return str._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+      
+    default:
+      return Array(_split(
+        by: ZSearcher(pattern: Array(separator), by: ==),
+        maxSplits: maxSplits,
+        omittingEmptySubsequences: omittingEmptySubsequences))
+    }
   }
-}
-
-extension BidirectionalCollection where Element: Equatable {
-  // FIXME
-//  public func splitFromBack<S: Sequence>(
-//    separator: S
-//  ) -> ReversedSplitCollection<ZSearcher<SubSequence>>
-//    where S.Element == Element
-//  {
-//    splitFromBack(separator: ZSearcher(pattern: Array(separator), by: ==))
-//  }
-}
-
-extension BidirectionalCollection where Element: Comparable {
-  func split<C: Collection>(
-    by separator: C,
-    maxSplits: Int,
-    omittingEmptySubsequences: Bool
-  ) -> SplitCollection<PatternOrEmpty<TwoWaySearcher<Self>>>
-    where C.Element == Element
-  {
-    split(
-      by: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(separator))),
-    maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
-  }
-  
-  // FIXME
-//  public func splitFromBack<S: Sequence>(
-//    separator: S
-//  ) -> ReversedSplitCollection<PatternOrEmpty<TwoWaySearcher<SubSequence>>>
-//    where S.Element == Element
-//  {
-//    splitFromBack(separator: PatternOrEmpty(
-//      searcher: TwoWaySearcher(pattern: Array(separator))))
-//  }
 }
 
 // String split overload breakers
@@ -375,8 +186,8 @@ extension StringProtocol where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
-    Array(split(
-      by: ZSearcher(pattern: Array(separator), by: ==),
+    Array(self[...]._split(
+      by: SubstringSearcher(text: "" as Substring, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
   }
@@ -388,8 +199,8 @@ extension StringProtocol where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
-    Array(split(
-      by: ZSearcher(pattern: Array(separator), by: ==),
+    Array(self[...]._split(
+      by: SubstringSearcher(text: "" as Substring, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
   }
@@ -399,21 +210,6 @@ extension StringProtocol where SubSequence == Substring {
 
 @available(SwiftStdlib 5.7, *)
 extension BidirectionalCollection where SubSequence == Substring {
-  @_disfavoredOverload
-  func split<R: RegexComponent>(
-    by separator: R,
-    maxSplits: Int,
-    omittingEmptySubsequences: Bool
-  ) -> SplitCollection<RegexConsumer<R, Self>> {
-    split(by: RegexConsumer(separator), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
-  }
-  
-  func splitFromBack<R: RegexComponent>(
-    by separator: R
-  ) -> ReversedSplitCollection<RegexConsumer<R, Self>> {
-    splitFromBack(by: RegexConsumer(separator))
-  }
-
   // TODO: Is this @_disfavoredOverload necessary?
   // It prevents split(separator: String) from choosing this overload instead
   // of the collection-based version when String has RegexComponent conformance
@@ -431,9 +227,34 @@ extension BidirectionalCollection where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] {
-    Array(split(
-      by: RegexConsumer(separator),
-      maxSplits: maxSplits,
-      omittingEmptySubsequences: omittingEmptySubsequences))
+    var result: [SubSequence] = []
+    var subSequenceStart = startIndex
+    
+    func appendSubsequence(end: Index) -> Bool {
+      if subSequenceStart == end && omittingEmptySubsequences {
+        return false
+      }
+      result.append(self[subSequenceStart..<end])
+      return true
+    }
+    
+    guard maxSplits > 0 && !isEmpty else {
+      _ = appendSubsequence(end: endIndex)
+      return result
+    }
+
+    for match in _matches(of: separator) {
+      defer { subSequenceStart = match.range.upperBound }
+      let didAppend = appendSubsequence(end: match.range.lowerBound)
+      if didAppend && result.count == maxSplits {
+        break
+      }
+    }
+    
+    if subSequenceStart != endIndex || !omittingEmptySubsequences {
+      result.append(self[subSequenceStart..<endIndex])
+    }
+    
+    return result
   }
 }

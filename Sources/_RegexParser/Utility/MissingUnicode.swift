@@ -12,14 +12,14 @@
 // MARK: - Missing stdlib API
 
 extension Unicode {
-  // Note: The `Script` enum includes the "meta" script type "Katakana_Or_Hiragana", which
-  // isn't defined by https://www.unicode.org/Public/UCD/latest/ucd/Scripts.txt,
-  // but is defined by https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
-  // We may want to split it out, as it's the only case that is a union of
-  // other script types.
-
   /// Character script types.
-  public enum Script: String, Hashable, CaseIterable, Sendable {
+  ///
+  /// Note this includes the "meta" script type "Katakana_Or_Hiragana", which
+  /// isn't defined by https://www.unicode.org/Public/UCD/latest/ucd/Scripts.txt,
+  /// but is defined by https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
+  /// We may want to split it out, as it's the only case that is a union of
+  /// other script types.
+  public enum Script: String, Hashable, CaseIterable {
     case adlam = "Adlam"
     case ahom = "Ahom"
     case anatolianHieroglyphs = "Anatolian_Hieroglyphs"
@@ -59,6 +59,7 @@ extension Unicode {
     case elbasan = "Elbasan"
     case elymaic = "Elymaic"
     case ethiopic = "Ethiopic"
+    case garay = "Garay"
     case georgian = "Georgian"
     case glagolitic = "Glagolitic"
     case gothic = "Gothic"
@@ -67,6 +68,7 @@ extension Unicode {
     case gujarati = "Gujarati"
     case gunjalaGondi = "Gunjala_Gondi"
     case gurmukhi = "Gurmukhi"
+    case gurungKhema = "Gurung_Khema"
     case han = "Han"
     case hangul = "Hangul"
     case hanifiRohingya = "Hanifi_Rohingya"
@@ -83,6 +85,7 @@ extension Unicode {
     case kannada = "Kannada"
     case katakana = "Katakana"
     case katakanaOrHiragana = "Katakana_Or_Hiragana"
+    case kawi = "Kawi"
     case kayahLi = "Kayah_Li"
     case kharoshthi = "Kharoshthi"
     case khitanSmallScript = "Khitan_Small_Script"
@@ -98,6 +101,7 @@ extension Unicode {
     case lisu = "Lisu"
     case lycian = "Lycian"
     case lydian = "Lydian"
+    case kiratRai = "Kirat_Rai"
     case mahajani = "Mahajani"
     case makasar = "Makasar"
     case malayalam = "Malayalam"
@@ -117,6 +121,7 @@ extension Unicode {
     case multani = "Multani"
     case myanmar = "Myanmar"
     case nabataean = "Nabataean"
+    case nagMundari = "Nag_Mundari"
     case nandinagari = "Nandinagari"
     case newa = "Newa"
     case newTaiLue = "New_Tai_Lue"
@@ -134,6 +139,7 @@ extension Unicode {
     case oldSouthArabian = "Old_South_Arabian"
     case oldTurkic = "Old_Turkic"
     case oldUyghur = "Old_Uyghur"
+    case olOnal = "Ol_Onal"
     case oriya = "Oriya"
     case osage = "Osage"
     case osmanya = "Osmanya"
@@ -156,6 +162,7 @@ extension Unicode {
     case soraSompeng = "Sora_Sompeng"
     case soyombo = "Soyombo"
     case sundanese = "Sundanese"
+    case sunuwar = "Sunuwar"
     case sylotiNagri = "Syloti_Nagri"
     case syriac = "Syriac"
     case tagalog = "Tagalog"
@@ -173,7 +180,9 @@ extension Unicode {
     case tibetan = "Tibetan"
     case tifinagh = "Tifinagh"
     case tirhuta = "Tirhuta"
+    case todhri = "Todhri"
     case toto = "Toto"
+    case tuluTigalari = "Tulu_Tigalari"
     case ugaritic = "Ugaritic"
     case unknown = "Unknown"
     case vai = "Vai"
@@ -187,7 +196,7 @@ extension Unicode {
 
   /// POSIX character properties not already covered by general categories or
   /// binary properties.
-  public enum POSIXProperty: String, Hashable, CaseIterable, Sendable {
+  public enum POSIXProperty: String, Hashable, CaseIterable {
     case alnum = "alnum"
     case blank = "blank"
     case graph = "graph"
@@ -204,7 +213,7 @@ extension Unicode {
 
   /// Unicode.GeneralCategory + cases for "meta categories" such as "L", which
   /// encompasses Lu | Ll | Lt | Lm | Lo.
-  public enum ExtendedGeneralCategory: String, Hashable, CaseIterable, Sendable {
+  public enum ExtendedGeneralCategory: String, Hashable, CaseIterable {
     case other = "C"
     case control = "Cc"
     case format = "Cf"
@@ -254,7 +263,7 @@ extension Unicode {
   /// A list of Unicode properties that can either be true or false.
   ///
   /// https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
-  public enum BinaryProperty: String, Hashable, CaseIterable, Sendable {
+  public enum BinaryProperty: String, Hashable, CaseIterable {
     case asciiHexDigit = "ASCII_Hex_Digit"
     case alphabetic = "Alphabetic"
     case bidiControl = "Bidi_Control"
@@ -326,7 +335,7 @@ extension Unicode {
 
   /// A list of unicode character blocks, including `No_Block`.
   /// https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt
-  public enum Block: String, Hashable, CaseIterable, Sendable {
+  public enum Block: String, Hashable, CaseIterable {
     /// 0000..007F; Basic Latin
     case basicLatin                                  = "Basic_Latin"
     /// 0080..00FF; Latin-1 Supplement

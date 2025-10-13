@@ -11,144 +11,33 @@
 
 // MARK: `RangesCollection`
 
-struct RangesCollection<Searcher: CollectionSearcher> {
-  public typealias Base = Searcher.Searched
-  
-  let base: Base
+struct RangesSequence<Searcher: CollectionSearcher> {
+  let input: Searcher.Searched
   let searcher: Searcher
-  private(set) public var startIndex: Index
 
-  init(base: Base, searcher: Searcher) {
-    self.base = base
+  init(input: Searcher.Searched, searcher: Searcher) {
+    self.input = input
     self.searcher = searcher
-    
-    var state = searcher.state(for: base, in: base.startIndex..<base.endIndex)
-    self.startIndex = Index(range: nil, state: state)
-
-    if let range = searcher.search(base, &state) {
-      self.startIndex = Index(range: range, state: state)
-    } else {
-      self.startIndex = endIndex
-    }
-  }
-}
-
-struct RangesIterator<Searcher: CollectionSearcher>: IteratorProtocol {
-  public typealias Base = Searcher.Searched
-  
-  let base: Base
-  let searcher: Searcher
-  var state: Searcher.State
-
-  init(base: Base, searcher: Searcher) {
-    self.base = base
-    self.searcher = searcher
-    self.state = searcher.state(for: base, in: base.startIndex..<base.endIndex)
   }
 
-  public mutating func next() -> Range<Base.Index>? {
-    searcher.search(base, &state)
-  }
-}
-
-extension RangesCollection: Sequence {
-  public func makeIterator() -> RangesIterator<Searcher> {
-    Iterator(base: base, searcher: searcher)
-  }
-}
-
-extension RangesCollection: Collection {
-  // TODO: Custom `SubSequence` for the sake of more efficient slice iteration
-  
-  public struct Index {
-    var range: Range<Searcher.Searched.Index>?
+  struct Iterator: IteratorProtocol {
+    let base: RangesSequence
     var state: Searcher.State
-  }
 
-  public var endIndex: Index {
-    // TODO: Avoid calling `state(for:startingAt)` here
-    Index(
-      range: nil,
-      state: searcher.state(for: base, in: base.startIndex..<base.endIndex))
-  }
-
-  public func formIndex(after index: inout Index) {
-    guard index != endIndex else { fatalError("Cannot advance past endIndex") }
-    index.range = searcher.search(base, &index.state)
-  }
-
-  public func index(after index: Index) -> Index {
-    var index = index
-    formIndex(after: &index)
-    return index
-  }
-
-  public subscript(index: Index) -> Range<Base.Index> {
-    guard let range = index.range else {
-      fatalError("Cannot subscript using endIndex")
-    }
-    return range
-  }
-}
-
-extension RangesCollection.Index: Comparable {
-  static func == (lhs: Self, rhs: Self) -> Bool {
-    switch (lhs.range, rhs.range) {
-    case (nil, nil):
-      return true
-    case (nil, _?), (_?, nil):
-      return false
-    case (let lhs?, let rhs?):
-      return lhs.lowerBound == rhs.lowerBound
-    }
-  }
-
-  static func < (lhs: Self, rhs: Self) -> Bool {
-    switch (lhs.range, rhs.range) {
-    case (nil, _):
-      return false
-    case (_, nil):
-      return true
-    case (let lhs?, let rhs?):
-      return lhs.lowerBound < rhs.lowerBound
-    }
-  }
-}
-
-// MARK: `ReversedRangesCollection`
-
-struct ReversedRangesCollection<Searcher: BackwardCollectionSearcher> {
-  typealias Base = Searcher.BackwardSearched
-  
-  let base: Base
-  let searcher: Searcher
-  
-  init(base: Base, searcher: Searcher) {
-    self.base = base
-    self.searcher = searcher
-  }
-}
-
-extension ReversedRangesCollection: Sequence {
-  public struct Iterator: IteratorProtocol {
-    let base: Base
-    let searcher: Searcher
-    var state: Searcher.BackwardState
-    
-    init(base: Base, searcher: Searcher) {
+    init(_ base: RangesSequence) {
       self.base = base
-      self.searcher = searcher
-      self.state = searcher.backwardState(
-        for: base, in: base.startIndex..<base.endIndex)
+      self.state = base.searcher.state(for: base.input, in: base.input.startIndex..<base.input.endIndex)
     }
-    
-    public mutating func next() -> Range<Base.Index>? {
-      searcher.searchBack(base, &state)
+
+    mutating func next() -> Range<Searcher.Searched.Index>? {
+      base.searcher.search(base.input, &state)
     }
   }
-  
-  public func makeIterator() -> Iterator {
-    Iterator(base: base, searcher: searcher)
+}
+
+extension RangesSequence: Sequence {
+  func makeIterator() -> Iterator {
+    Iterator(self)
   }
 }
 
@@ -159,16 +48,8 @@ extension ReversedRangesCollection: Sequence {
 extension Collection {
   func _ranges<S: CollectionSearcher>(
     of searcher: S
-  ) -> RangesCollection<S> where S.Searched == Self {
-    RangesCollection(base: self, searcher: searcher)
-  }
-}
-
-extension BidirectionalCollection {
-  func _rangesFromBack<S: BackwardCollectionSearcher>(
-    of searcher: S
-  ) -> ReversedRangesCollection<S> where S.BackwardSearched == Self {
-    ReversedRangesCollection(base: self, searcher: searcher)
+  ) -> RangesSequence<S> where S.Searched == Self {
+    RangesSequence(input: self, searcher: searcher)
   }
 }
 
@@ -177,10 +58,10 @@ extension BidirectionalCollection {
 extension Collection where Element: Equatable {
   func _ranges<C: Collection>(
     of other: C
-  ) -> RangesCollection<ZSearcher<Self>> where C.Element == Element {
+  ) -> RangesSequence<ZSearcher<Self>> where C.Element == Element {
     _ranges(of: ZSearcher(pattern: Array(other), by: ==))
   }
-
+  
   // FIXME: Return `some Collection<Range<Index>>` for SE-0346
   /// Finds and returns the ranges of the all occurrences of a given sequence
   /// within the collection.
@@ -191,59 +72,85 @@ extension Collection where Element: Equatable {
   public func ranges<C: Collection>(
     of other: C
   ) -> [Range<Index>] where C.Element == Element {
-    Array(_ranges(of: other))
+    switch (self, other) {
+    case (let str as String, let other as String):
+      return Array(SubstringSearcher(text: str[...], pattern: other[...])) as! [Range<Index>]
+    case (let str as Substring, let other as String):
+      return Array(SubstringSearcher(text: str, pattern: other[...])) as! [Range<Index>]
+    case (let str as String, let other as Substring):
+      return Array(SubstringSearcher(text: str[...], pattern: other)) as! [Range<Index>]
+    case (let str as Substring, let other as Substring):
+      return Array(SubstringSearcher(text: str, pattern: other)) as! [Range<Index>]
+      
+    default:
+      return Array(_ranges(of: other))
+    }
   }
 }
 
-extension BidirectionalCollection where Element: Equatable {
-  // FIXME
-//  public func rangesFromBack<S: Sequence>(
-//    of other: S
-//  ) -> ReversedRangesCollection<ZSearcher<SubSequence>>
-//    where S.Element == Element
-//  {
-//    fatalError()
-//  }
+@available(SwiftStdlib 5.7, *)
+struct RegexRangesSequence<Output> {
+  let base: RegexMatchesSequence<Output>
+
+  init(
+    input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>,
+    regex: Regex<Output>
+  ) {
+    self.base = .init(
+      program: regex.regex.program.loweredProgram,
+      input: input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds)
+  }
 }
 
-extension BidirectionalCollection where Element: Comparable {
-  func _ranges<C: Collection>(
-    of other: C
-  ) -> RangesCollection<PatternOrEmpty<TwoWaySearcher<Self>>>
-    where C.Element == Element
-  {
-    _ranges(of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
+@available(SwiftStdlib 5.7, *)
+extension RegexRangesSequence: Sequence {
+  struct Iterator: IteratorProtocol {
+    var matchesBase: RegexMatchesSequence<Output>.Iterator
+    
+    mutating func next() -> Range<String.Index>? {
+      matchesBase.next().map(\.range)
+    }
   }
   
-  // FIXME
-//  public func rangesFromBack<S: Sequence>(
-//    of other: S
-//  ) -> ReversedRangesCollection<PatternOrEmpty<TwoWaySearcher<SubSequence>>>
-//    where S.Element == Element
-//  {
-//    rangesFromBack(
-//      of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
-//  }
+  func makeIterator() -> Iterator {
+    Iterator(matchesBase: base.makeIterator())
+  }
 }
 
 // MARK: Regex algorithms
 
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
+  @available(SwiftStdlib 5.7, *)
+  @_disfavoredOverload
+  func _ranges<R: RegexComponent>(
+    of regex: R,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>
+  ) -> RegexRangesSequence<R.RegexOutput> {
+    RegexRangesSequence(
+      input: self[...].base,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      regex: regex.regex)
+  }
+  
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   func _ranges<R: RegexComponent>(
     of regex: R
-  ) -> RangesCollection<RegexConsumer<R, Self>> {
-    _ranges(of: RegexConsumer(regex))
+  ) -> RegexRangesSequence<R.RegexOutput> {
+    _ranges(
+      of: regex,
+      subjectBounds: startIndex..<endIndex,
+      searchBounds: startIndex..<endIndex)
   }
+}
 
-  @available(SwiftStdlib 5.7, *)
-  func _rangesFromBack<R: RegexComponent>(
-    of regex: R
-  ) -> ReversedRangesCollection<RegexConsumer<R, Self>> {
-    _rangesFromBack(of: RegexConsumer(regex))
-  }
-
+extension BidirectionalCollection where SubSequence == Substring {
   // FIXME: Return `some Collection<Range<Index>>` for SE-0346
   /// Finds and returns the ranges of the all occurrences of a given sequence
   /// within the collection.

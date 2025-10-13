@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 struct SentinelValue: Hashable, CustomStringConvertible {
   var description: String { "<value sentinel>" }
@@ -18,166 +18,130 @@ struct SentinelValue: Hashable, CustomStringConvertible {
 extension Processor {
   /// Our register file
   struct Registers {
-    // currently, these are static readonly
+
+    // MARK: static / read-only, non-resettable
+
+    // Verbatim elements to compare against
     var elements: [Element]
 
-    // currently, these are static readonly
-    //
-    // TODO: We want to be `String` instead of `[Character]`...
-    var sequences: [[Element]] = []
+    // Verbatim bytes to compare against
+    var utf8Contents: [[UInt8]]
 
-    // currently, hold output of assertions
-    var bools: [Bool] // TODO: bitset
+    var bitsets: [DSLTree.CustomCharacterClass.AsciiBitset]
 
-    // currently, these are static readonly
-    var consumeFunctions: [MEProgram<Input>.ConsumeFunction]
-
-    // currently, these are static readonly
-    var assertionFunctions: [MEProgram<Input>.AssertionFunction]
+    var consumeFunctions: [MEProgram.ConsumeFunction]
 
     // Captured-value constructors
-    var transformFunctions: [MEProgram<Input>.TransformFunction]
+    var transformFunctions: [MEProgram.TransformFunction]
 
     // Value-constructing matchers
-    var matcherFunctions: [MEProgram<Input>.MatcherFunction]
+    var matcherFunctions: [MEProgram.MatcherFunction]
 
-    // currently, these are for comments and abort messages
-    var strings: [String]
+    // MARK: writeable, resettable
+
+    var isDirty = false
 
     // currently, useful for range-based quantification
     var ints: [Int]
 
-    // unused
-    var floats: [Double] = []
-
-    // Currently, used for `movePosition` and `matchSlice`
-    var positions: [Position] = []
-
     var values: [Any]
 
-    // unused
-    var instructionAddresses: [InstructionAddress] = []
+    var positions: [Input.Index]
 
-    // unused, any application?
-    var classStackAddresses: [CallStackAddress] = []
-
-    // unused, any application?
-    var positionStackAddresses: [PositionStackAddress] = []
-
-    // unused, any application?
-    var savePointAddresses: [SavePointStackAddress] = []
-
-    subscript(_ i: StringRegister) -> String {
-      strings[i.rawValue]
-    }
-    subscript(_ i: SequenceRegister) -> [Element] {
-      sequences[i.rawValue]
-    }
-    subscript(_ i: IntRegister) -> Int {
-      get { ints[i.rawValue] }
-      set { ints[i.rawValue] = newValue }
-    }
-    subscript(_ i: BoolRegister) -> Bool {
-      get { bools[i.rawValue] }
-      set { bools[i.rawValue] = newValue }
-    }
-    subscript(_ i: PositionRegister) -> Position {
-      get { positions[i.rawValue] }
-      set { positions[i.rawValue] = newValue }
-    }
-    subscript(_ i: ValueRegister) -> Any {
-      get { values[i.rawValue] }
-      set {
-        values[i.rawValue] = newValue
-      }
-    }
-    subscript(_ i: ElementRegister) -> Element {
-      elements[i.rawValue]
-    }
-    subscript(_ i: ConsumeFunctionRegister) -> MEProgram<Input>.ConsumeFunction {
-      consumeFunctions[i.rawValue]
-    }
-    subscript(_ i: AssertionFunctionRegister) -> MEProgram<Input>.AssertionFunction {
-      assertionFunctions[i.rawValue]
-    }
-    subscript(_ i: TransformRegister) -> MEProgram<Input>.TransformFunction {
-      transformFunctions[i.rawValue]
-    }
-    subscript(_ i: MatcherRegister) -> MEProgram<Input>.MatcherFunction {
-      matcherFunctions[i.rawValue]
+    init(
+      elements: [Element],
+      utf8Contents: [[UInt8]],
+      bitsets: [DSLTree.CustomCharacterClass.AsciiBitset],
+      consumeFunctions: [MEProgram.ConsumeFunction],
+      transformFunctions: [MEProgram.TransformFunction],
+      matcherFunctions: [MEProgram.MatcherFunction],
+      isDirty: Bool = false,
+      numInts: Int,
+      numValues: Int,
+      numPositions: Int
+    ) {
+      self.elements = elements
+      self.utf8Contents = utf8Contents
+      self.bitsets = bitsets
+      self.consumeFunctions = consumeFunctions
+      self.transformFunctions = transformFunctions
+      self.matcherFunctions = matcherFunctions
+      self.isDirty = isDirty
+      self.ints = Array(repeating: 0, count: numInts)
+      self.values = Array(repeating: SentinelValue(), count: numValues)
+      self.positions = Array(
+        repeating: Self.sentinelIndex, count: numPositions)
     }
   }
 }
 
 extension Processor.Registers {
-  init(
-    _ program: MEProgram<Input>,
-    _ sentinel: Input.Index
-  ) {
-    let info = program.registerInfo
+  typealias Input = String
 
-    self.elements = program.staticElements
-    assert(elements.count == info.elements)
-
-    self.sequences = program.staticSequences
-    assert(sequences.count == info.sequences)
-
-    self.consumeFunctions = program.staticConsumeFunctions
-    assert(consumeFunctions.count == info.consumeFunctions)
-
-    self.assertionFunctions = program.staticAssertionFunctions
-    assert(assertionFunctions.count == info.assertionFunctions)
-
-    self.transformFunctions = program.staticTransformFunctions
-    assert(transformFunctions.count == info.transformFunctions)
-
-    self.matcherFunctions = program.staticMatcherFunctions
-    assert(matcherFunctions.count == info.matcherFunctions)
-
-    self.strings = program.staticStrings
-    assert(strings.count == info.strings)
-
-    self.bools = Array(repeating: false, count: info.bools)
-
-    self.ints = Array(repeating: 0, count: info.ints)
-
-    self.floats = Array(repeating: 0, count: info.floats)
-
-    self.positions = Array(repeating: sentinel, count: info.positions)
-
-    self.values = Array(
-      repeating: SentinelValue(), count: info.values)
-
-    self.instructionAddresses = Array(repeating: 0, count: info.instructionAddresses)
-
-    self.classStackAddresses = Array(repeating: 0, count: info.classStackAddresses)
-
-    self.positionStackAddresses = Array(repeating: 0, count: info.positionStackAddresses)
-
-    self.savePointAddresses = Array(repeating: 0, count: info.savePointAddresses)
+  subscript(_ i: IntRegister) -> Int {
+    get { ints[i.rawValue] }
+    set {
+      isDirty = true
+      ints[i.rawValue] = newValue
+    }
+  }
+  subscript(_ i: ValueRegister) -> Any {
+    get { values[i.rawValue] }
+    set {
+      isDirty = true
+      values[i.rawValue] = newValue
+    }
+  }
+  subscript(_ i: PositionRegister) -> Input.Index {
+    get { positions[i.rawValue] }
+    set {
+      isDirty = true
+      positions[i.rawValue] = newValue
+    }
+  }
+  subscript(_ i: ElementRegister) -> Input.Element {
+    elements[i.rawValue]
+  }
+  subscript(_ i: UTF8Register) -> [UInt8] {
+    utf8Contents[i.rawValue]
+  }
+  subscript(
+    _ i: AsciiBitsetRegister
+  ) -> DSLTree.CustomCharacterClass.AsciiBitset {
+    bitsets[i.rawValue]
+  }
+  subscript(_ i: ConsumeFunctionRegister) -> MEProgram.ConsumeFunction {
+    consumeFunctions[i.rawValue]
+  }
+  subscript(_ i: TransformRegister) -> MEProgram.TransformFunction {
+    transformFunctions[i.rawValue]
+  }
+  subscript(_ i: MatcherRegister) -> MEProgram.MatcherFunction {
+    matcherFunctions[i.rawValue]
   }
 }
 
-extension MEProgram {
-  struct RegisterInfo {
-    var elements = 0
-    var sequences = 0
-    var bools = 0
-    var strings = 0
-    var consumeFunctions = 0
-    var assertionFunctions = 0
-    var transformFunctions = 0
-    var matcherFunctions = 0
-    var ints = 0
-    var floats = 0
-    var positions = 0
-    var values = 0
-    var instructionAddresses = 0
-    var classStackAddresses = 0
-    var positionStackAddresses = 0
-    var savePointAddresses = 0
-    var captures = 0
+extension Processor.Registers {
+  static var sentinelIndex: String.Index {
+    "".startIndex
+  }
 
+  mutating func reset() {
+    guard isDirty else {
+      return
+    }
+    self.ints._setAll(to: 0)
+    self.values._setAll(to: SentinelValue())
+    self.positions._setAll(to: Processor.Registers.sentinelIndex)
+  }
+}
+
+// TODO: Productize into general algorithm
+extension MutableCollection {
+  mutating func _setAll(to e: Element) {
+    for idx in self.indices {
+      self[idx] = e
+    }
   }
 }
 
@@ -194,15 +158,7 @@ extension Processor.Registers: CustomStringConvertible {
 
     return """
       \(formatRegisters("elements", elements))\
-      \(formatRegisters("bools", bools))\
-      \(formatRegisters("strings", strings))\
       \(formatRegisters("ints", ints))\
-      \(formatRegisters("floats", floats))\
-      \(formatRegisters("positions", positions))\
-      \(formatRegisters("instructionAddresses", instructionAddresses))\
-      \(formatRegisters("classStackAddresses", classStackAddresses))\
-      \(formatRegisters("positionStackAddresses", positionStackAddresses))\
-      \(formatRegisters("savePointAddresses", savePointAddresses))\
 
       """    
   }

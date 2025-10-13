@@ -13,12 +13,11 @@
 // TODO: Place shared formatting and trace infrastructure here
 
 protocol Traced {
-  var isTracingEnabled: Bool { get set }
+  var isTracingEnabled: Bool { get }
 }
 
 protocol TracedProcessor: ProcessorProtocol, Traced {
   // Empty defaulted
-  func formatCallStack() -> String // empty default
   func formatSavePoints() -> String // empty default
   func formatRegisters() -> String // empty default
 
@@ -52,14 +51,6 @@ extension TracedProcessor {
     if isTracingEnabled { printTrace() }
   }
 
-  // Helpers for the conformers
-  func formatCallStack() -> String {
-    if !callStack.isEmpty {
-      return "call stack: \(callStack)\n"
-    }
-    return ""
-  }
-
   func formatSavePoints() -> String {
     if !savePoints.isEmpty {
       var result = "save points:\n"
@@ -80,6 +71,21 @@ extension TracedProcessor {
   }
 
   func formatInput() -> String {
+    let distanceFromStart = input.distance(
+      from: input.startIndex,
+      to: currentPosition)
+
+    // Cut a reasonably sized substring from the input to print
+    let start = input.index(
+      currentPosition,
+      offsetBy: -30,
+      limitedBy: input.startIndex) ?? input.startIndex
+    let end = input.index(
+      currentPosition,
+      offsetBy: 30,
+      limitedBy: input.endIndex) ?? input.endIndex
+    let input = input[start..<end]
+    
     // String override for printing sub-character information.
     if !input.indices.contains(currentPosition) {
       // Format unicode scalars as:
@@ -100,6 +106,7 @@ extension TracedProcessor {
                     .joined())
                  \(String(repeating: ".", count: matchedHighlightWidth))\
           ^\(String(repeating: "~", count: nextHighlightWidth - 1))
+          position: \(distanceFromStart)
           """
       }
       if let string = input as? String {
@@ -108,10 +115,11 @@ extension TracedProcessor {
         return _format(substring)
       }
     }
-    let dist = input.distance(from: input.startIndex, to: currentPosition)
+    let dist = input.distance(from: start, to: currentPosition)
     return """
       input: \(input)
              \(String(repeating: "~", count: dist))^
+      position: \(distanceFromStart)
       """
   }
 
@@ -141,7 +149,6 @@ extension TracedProcessor {
 
   func formatTrace() -> String {
     var result = "\n--- cycle \(cycleCount) ---\n"
-    result += formatCallStack()
     result += formatSavePoints()
     result += formatRegisters()
     result += formatInput()

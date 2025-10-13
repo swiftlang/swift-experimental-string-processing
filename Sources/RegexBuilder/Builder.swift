@@ -11,26 +11,29 @@
 
 @_spi(RegexBuilder) import _StringProcessing
 
+/// A custom parameter attribute that constructs regular expressions from
+/// closures.
+///
+/// You typically see `RegexComponentBuilder` as a parameter attribute for
+/// `Regex`- or `RegexComponent`-producing closure parameters, allowing those
+/// closures to combine multiple regular expression components. Type
+/// initializers and string algorithm methods in the RegexBuilder framework
+/// include a builder closure parameter, so that you can use regular expression
+/// components together.
 @available(SwiftStdlib 5.7, *)
 @resultBuilder
 public enum RegexComponentBuilder {
   public static func buildBlock() -> Regex<Substring> {
-    .init(node: .empty)
+    _RegexFactory().empty()
   }
 
-  public static func buildPartialBlock<R: RegexComponent>(first: R ) -> R {
-    first
+  public static func buildPartialBlock<R: RegexComponent>(
+    first component: R
+  ) -> Regex<R.RegexOutput> {
+    component.regex
   }
 
   public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
     regex
-  }
-
-  public static func buildEither<R: RegexComponent>(first component: R) -> R {
-    component
-  }
-
-  public static func buildEither<R: RegexComponent>(second component: R) -> R {
-    component
   }
 }

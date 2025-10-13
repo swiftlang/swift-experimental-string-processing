@@ -19,6 +19,34 @@ extension Substring {
   var string: String { String(self) }
 }
 
+extension Character {
+  /// Whether this character is made up of exactly one Unicode scalar value.
+  public var hasExactlyOneScalar: Bool {
+    let scalars = unicodeScalars
+    return scalars.index(after: scalars.startIndex) == scalars.endIndex
+  }
+
+  /// Whether the given character is in NFC form.
+  internal var isNFC: Bool {
+    if isASCII { return true }
+    let str = String(self)
+    return str._nfcCodeUnits.elementsEqual(str.utf8)
+  }
+  
+  /// Whether this character could be confusable with a metacharacter in a
+  /// regex literal.
+  ///
+  /// A "confusable" character is one that starts with a non-alphanumeric ASCII
+  /// character and includes other combining Unicode scalars. For example,
+  /// `"[́"` (aka `"[\u{301}"`) is confusable, since it looks just like the
+  /// `"["` metacharacter, but doesn't parse as one.
+  public var isConfusable: Bool {
+    let scalars = self.unicodeScalars
+    return scalars.count > 1 && scalars.first!.isASCII && self != "\r\n" &&
+      !self.isLetter && !self.isNumber
+  }
+}
+
 extension CustomStringConvertible {
   @_alwaysEmitIntoClient
   public var halfWidthCornerQuoted: String {

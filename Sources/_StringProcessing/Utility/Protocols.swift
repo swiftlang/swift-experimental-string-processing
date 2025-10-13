@@ -34,9 +34,6 @@ protocol ProcessorProtocol {
   var isAcceptState: Bool { get }
   var isFailState: Bool { get }
 
-  // Provide to get call stack formatting, default empty
-  var callStack: Array<InstructionAddress> { get }
-
   // Provide to get save point formatting, default empty
   var savePoints: Array<SavePoint> { get }
 
@@ -44,13 +41,3 @@ protocol ProcessorProtocol {
   var registers: Registers { get }
 }
 
-extension ProcessorProtocol {
-  func fetch() -> Instruction {
-    instructions[currentPC]
-  }
-
-  var callStack: Array<InstructionAddress> { [] }
-//  var savePoints: Array<SavePoint> { [] }
-  var registers: Array<Registers> { [] }
-
-}

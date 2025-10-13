@@ -9,46 +9,42 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 // TODO: Where should this live? Inside TypeConstruction?
 func constructExistentialOutputComponent(
-  from input: Substring,
-  in range: Range<String.Index>?,
-  value: Any?,
+  from input: String,
+  component: (range: Range<String.Index>, value: Any?)?,
   optionalCount: Int
 ) -> Any {
-  let someCount: Int
-  var underlying: Any
-  if let v = value {
-    underlying = v
-    someCount = optionalCount
-  } else if let r = range {
-    underlying = input[r]
-    someCount = optionalCount
-  } else {
-    // Ok since we Any-box every step up the ladder
-    underlying = Optional<Any>(nil) as Any
-    someCount = optionalCount - 1
-  }
-  for _ in 0..<someCount {
-    func wrap<T>(_ x: T) {
-      underlying = Optional(x) as Any
+  if let component = component {
+    var underlying = component.value ?? input[component.range]
+    for _ in 0 ..< optionalCount {
+      func wrap<T>(_ x: T) {
+        underlying = Optional(x) as Any
+      }
+      _openExistential(underlying, do: wrap)
     }
-    _openExistential(underlying, do: wrap)
+    return underlying
+  } else {
+    precondition(optionalCount > 0, "Must have optional type")
+    func makeNil<T>(_ x: T.Type) -> Any {
+      T?.none as Any
+    }
+    let underlyingTy = TypeConstruction.optionalType(
+      of: Substring.self, depth: optionalCount - 1)
+    return _openExistential(underlyingTy, do: makeNil)
   }
-  return underlying
 }
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput.Element {
   func existentialOutputComponent(
-    from input: Substring
+    from input: String
   ) -> Any {
     constructExistentialOutputComponent(
       from: input,
-      in: range,
-      value: value,
+      component: representation.content,
       optionalCount: representation.optionalDepth
     )
   }
@@ -64,15 +60,13 @@ extension Sequence where Element == AnyRegexOutput.Element {
   // FIXME: This is a stop gap where we still slice the input
   // and traffic through existentials
   @available(SwiftStdlib 5.7, *)
-  func existentialOutput(
-    from input: Substring
-  ) -> Any {
-    var caps = Array<Any>()
-    caps.append(input)
-    caps.append(contentsOf: self.map {
+  func existentialOutput(from input: String) -> Any {
+    let elements = filter(\.representation.visibleInTypedOutput).map {
       $0.existentialOutputComponent(from: input)
-    })
-    return TypeConstruction.tuple(of: caps)
+    }
+    return elements.count == 1
+      ? elements[0]
+      : TypeConstruction.tuple(of: elements)
   }
 
   func slices(from input: String) -> [Substring?] {

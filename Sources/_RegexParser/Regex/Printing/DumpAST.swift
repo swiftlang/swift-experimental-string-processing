@@ -153,9 +153,9 @@ extension AST.Atom {
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
       fatalError("TODO")
 
-    case .any:         return "."
-    case .startOfLine: return "^"
-    case .endOfLine:   return "$"
+    case .dot:          return "."
+    case .caretAnchor:  return "^"
+    case .dollarAnchor: return "$"
 
     case .backreference(let r), .subpattern(let r):
       return "\(r._dumpBase)"
@@ -167,9 +167,18 @@ extension AST.Atom {
     case .changeMatchingOptions(let opts):
       return "changeMatchingOptions<\(opts)>"
 
+    case .invalid:
+      return "<invalid>"
+
     case .char, .scalar:
       fatalError("Unreachable")
     }
+  }
+}
+
+extension AST.Atom.Number: _ASTPrintable {
+  public var _dumpBase: String {
+    value.map { "\($0)" } ?? "<invalid>"
   }
 }
 
@@ -227,7 +236,7 @@ extension AST.Reference: _ASTPrintable {
   public var _dumpBase: String {
     var result = "\(kind)"
     if let recursionLevel = recursionLevel {
-      result += "\(recursionLevel.value)"
+      result += "\(recursionLevel)"
     }
     return result
   }
@@ -270,11 +279,11 @@ extension AST.Quantification.Amount: _ASTPrintable {
     case .zeroOrMore:      return "zeroOrMore"
     case .oneOrMore:       return "oneOrMore"
     case .zeroOrOne:       return "zeroOrOne"
-    case let .exactly(n):  return "exactly<\(n.value)>"
-    case let .nOrMore(n):  return "nOrMore<\(n.value)>"
-    case let .upToN(n):    return "uptoN<\(n.value)>"
+    case let .exactly(n):  return "exactly<\(n)>"
+    case let .nOrMore(n):  return "nOrMore<\(n)>"
+    case let .upToN(n):    return "uptoN<\(n)>"
     case let .range(lower, upper):
-      return ".range<\(lower.value)...\(upper.value)>"
+      return ".range<\(lower)...\(upper)>"
     }
   }
 }

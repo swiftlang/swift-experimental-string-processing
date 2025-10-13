@@ -11,56 +11,57 @@
 
 // MARK: `CollectionSearcher` algorithms
 
-extension RangeReplaceableCollection {
-  func _replacing<Searcher: CollectionSearcher, Replacement: Collection>(
-    _ searcher: Searcher,
-    with replacement: Replacement,
-    subrange: Range<Index>,
+extension Substring {
+  func _replacingSubstring(
+    _ other: Substring,
+    with replacement: Substring,
     maxReplacements: Int = .max
-  ) -> Self where Searcher.Searched == SubSequence,
-                  Replacement.Element == Element
-  {
+  ) -> String {
     precondition(maxReplacements >= 0)
     
-    var index = subrange.lowerBound
-    var result = Self()
-    result.append(contentsOf: self[..<index])
+    var result = String()
+    var index = startIndex
     
-    for range in self[subrange]._ranges(of: searcher).prefix(maxReplacements) {
+    var rangeIterator = SubstringSearcher(text: self, pattern: other)
+    var replacementCount = 0
+    while replacementCount < maxReplacements, let range = rangeIterator.next() {
       result.append(contentsOf: self[index..<range.lowerBound])
       result.append(contentsOf: replacement)
       index = range.upperBound
+      
+      replacementCount += 1
     }
     
     result.append(contentsOf: self[index...])
     return result
   }
-  
-  func _replacing<Searcher: CollectionSearcher, Replacement: Collection>(
-    _ searcher: Searcher,
+}
+
+extension RangeReplaceableCollection {
+  func _replacing<Ranges: Sequence, Replacement: Collection>(
+    _ ranges: Ranges,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) -> Self where Searcher.Searched == SubSequence,
+  ) -> Self where Ranges.Element == Range<Index>,
                   Replacement.Element == Element
   {
-    _replacing(
-      searcher,
-      with: replacement,
-      subrange: startIndex..<endIndex,
-      maxReplacements: maxReplacements)
-  }
-  
-  mutating func _replace<
-    Searcher: CollectionSearcher, Replacement: Collection
-  >(
-    _ searcher: Searcher,
-    with replacement: Replacement,
-    maxReplacements: Int = .max
-  ) where Searcher.Searched == SubSequence, Replacement.Element == Element {
-    self = _replacing(
-      searcher,
-      with: replacement,
-      maxReplacements: maxReplacements)
+    precondition(maxReplacements >= 0)
+    
+    var result = Self()
+    var index = startIndex
+    var replacements = 0
+
+    for range in ranges {
+      if replacements == maxReplacements { break }
+
+      result.append(contentsOf: self[index..<range.lowerBound])
+      result.append(contentsOf: replacement)
+      index = range.upperBound
+      replacements += 1
+    }
+    
+    result.append(contentsOf: self[index...])
+    return result
   }
 }
 
@@ -84,11 +85,40 @@ extension RangeReplaceableCollection where Element: Equatable {
     subrange: Range<Index>,
     maxReplacements: Int = .max
   ) -> Self where C.Element == Element, Replacement.Element == Element {
-    _replacing(
-      ZSearcher(pattern: Array(other), by: ==),
-      with: replacement,
-      subrange: subrange,
-      maxReplacements: maxReplacements)
+    switch (self, other, replacement) {
+    case (let str as String, let other as String, let repl as String):
+      return str[...]._replacingSubstring(other[...], with: repl[...],
+                                maxReplacements: maxReplacements) as! Self
+    case (let str as Substring, let other as Substring, let repl as Substring):
+      return str._replacingSubstring(other, with: repl,
+                                maxReplacements: maxReplacements)[...] as! Self
+
+    case (let str as Substring, let other as String, let repl as String):
+      return str[...]._replacingSubstring(other[...], with: repl[...],
+                                maxReplacements: maxReplacements)[...] as! Self
+    case (let str as String, let other as Substring, let repl as String):
+      return str[...]._replacingSubstring(other[...], with: repl[...],
+                                maxReplacements: maxReplacements) as! Self
+    case (let str as String, let other as String, let repl as Substring):
+      return str[...]._replacingSubstring(other[...], with: repl[...],
+                                maxReplacements: maxReplacements) as! Self
+
+    case (let str as String, let other as Substring, let repl as Substring):
+      return str[...]._replacingSubstring(other[...], with: repl[...],
+                                maxReplacements: maxReplacements) as! Self
+    case (let str as Substring, let other as String, let repl as Substring):
+      return str[...]._replacingSubstring(other[...], with: repl[...],
+                                maxReplacements: maxReplacements)[...] as! Self
+    case (let str as Substring, let other as Substring, let repl as String):
+      return str[...]._replacingSubstring(other[...], with: repl[...],
+                                maxReplacements: maxReplacements)[...] as! Self
+
+    default:
+      return _replacing(
+        self[subrange]._ranges(of: other),
+        with: replacement,
+        maxReplacements: maxReplacements)
+    }
   }
 
   /// Returns a new collection in which all occurrences of a target sequence
@@ -143,9 +173,8 @@ extension RangeReplaceableCollection
     maxReplacements: Int = .max
   ) -> Self where C.Element == Element, Replacement.Element == Element {
     _replacing(
-      PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))),
+      self[subrange]._ranges(of: other),
       with: replacement,
-      subrange: subrange,
       maxReplacements: maxReplacements)
   }
       
@@ -195,9 +224,11 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     maxReplacements: Int = .max
   ) -> Self where Replacement.Element == Element {
     _replacing(
-      RegexConsumer(regex),
+      self._ranges(
+        of: regex,
+        subjectBounds: startIndex..<endIndex,
+        searchBounds: subrange),
       with: replacement,
-      subrange: subrange,
       maxReplacements: maxReplacements)
   }
 

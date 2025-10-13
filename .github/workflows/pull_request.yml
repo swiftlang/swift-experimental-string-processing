@@ -1,0 +1,79 @@
+name: Pull request
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  tests:
+    name: Test
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@main
+    with:
+      linux_exclude_swift_versions: '[{"swift_version": "5.9"}, {"swift_version": "5.10"}]'
+      enable_windows_checks: false
+      enable_macos_checks: false
+  soundness:
+    name: Soundness
+    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@main
+    with:
+      license_header_check_project_name: "Swift.org"
+      unacceptable_language_check_enabled: false
+      format_check_enabled: false
+  bench:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    env:
+      BUILD_CMD: swift build -c release
+      BENCH_CMD: .build/release/RegexBenchmark
+      BASELINE_FILE: benchmark-baseline
+      COMPARE_FILE: benchmark-pr
+      COMPARE_OUT_FILE: benchmark-results.txt
+    steps:
+      - name: Check out baseline branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          fetch-depth: 0
+      - name: Build baseline branch
+        working-directory: base
+        run: |
+          set -euo pipefail
+          eval "$BUILD_CMD"
+      - name: Run baseline benchmark
+        working-directory: base
+        run: |
+          set -euo pipefail
+          eval "$BENCH_CMD --save $RUNNER_TEMP/$BASELINE_FILE"
+          test -s "$RUNNER_TEMP/$BASELINE_FILE" || { echo "Baseline not created at $BASELINE_FILE"; exit 1; }
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          fetch-depth: 0
+      - name: Build PR branch
+        working-directory: pr
+        run: |
+          set -euo pipefail
+          eval "$BUILD_CMD"
+      - name: Run PR benchmark
+        working-directory: pr
+        run: |
+          set -euo pipefail
+          eval "$BENCH_CMD --save $RUNNER_TEMP/$COMPARE_FILE"
+          test -s "$RUNNER_TEMP/$COMPARE_FILE" || { echo "Comparison not created at $COMPARE_FILE"; exit 1; }
+          eval "$BENCH_CMD --compare $RUNNER_TEMP/$BASELINE_FILE" | tee "$RUNNER_TEMP/$COMPARE_OUT_FILE"
+      - name: 📊 Compare benchmarks
+        working-directory: pr
+        run: |
+          set -euo pipefail
+          eval "$BENCH_CMD --load $RUNNER_TEMP/$COMPARE_FILE --compare $RUNNER_TEMP/$BASELINE_FILE --compare-compile-time $RUNNER_TEMP/$BASELINE_FILE" | tee "$RUNNER_TEMP/$COMPARE_OUT_FILE"
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            ${{ runner.temp }}/${{ env.BASELINE_FILE }}
+            ${{ runner.temp }}/${{ env.COMPARE_FILE }}
+            ${{ runner.temp }}/${{ env.COMPARE_OUT_FILE }}

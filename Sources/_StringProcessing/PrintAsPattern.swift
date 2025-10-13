@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 // TODO: Add an expansion level, both from top to bottom.
 //       After `printAsCanonical` is fleshed out, these two
@@ -56,7 +56,7 @@ extension PrettyPrinter {
   mutating func printBackoff(_ node: DSLTree.Node) {
     precondition(node.astNode != nil, "unconverted node")
     printAsCanonical(
-      .init(node.astNode!, globalOptions: nil),
+      .init(node.astNode!, globalOptions: nil, diags: Diagnostics()),
       delimiters: true)
   }
 
@@ -70,9 +70,54 @@ extension PrettyPrinter {
     for namedCapture in namedCaptures {
       print("let \(namedCapture) = Reference(Substring.self)")
     }
-    
+
     printBlock("Regex") { printer in
-      printer.printAsPattern(convertedFromAST: node)
+      printer.printAsPattern(convertedFromAST: node, isTopLevel: true)
+    }
+
+    printInlineMatchingOptions()
+  }
+
+  mutating func printInlineMatchingOptions() {
+    while !inlineMatchingOptions.isEmpty {
+      let (options, condition) = popMatchingOptions()
+
+      printIndented { printer in
+        for option in options {
+          switch option.kind {
+          case .asciiOnlyDigit:
+            printer.print(".asciiOnlyDigits(\(condition))")
+
+          case .asciiOnlyPOSIXProps:
+            printer.print(".asciiOnlyCharacterClasses(\(condition))")
+
+          case .asciiOnlySpace:
+            printer.print(".asciiOnlyWhitespace(\(condition))")
+
+          case .asciiOnlyWord:
+            printer.print(".asciiOnlyWordCharacters(\(condition))")
+
+          case .caseInsensitive:
+            printer.print(".ignoresCase(\(condition))")
+
+          case .multiline:
+            printer.print(".anchorsMatchLineEndings(\(condition))")
+
+          case .reluctantByDefault:
+            // This is handled by altering every OneOrMore, etc by changing each
+            // individual repetition behavior instead of creating a nested regex.
+            continue
+
+          case .singleLine:
+            printer.print(".dotMatchesNewlines(\(condition))")
+
+          default:
+            break
+          }
+        }
+      }
+
+      print("}")
     }
   }
 
@@ -82,7 +127,7 @@ extension PrettyPrinter {
   // to have a non-backing-off pretty-printer that this
   // can defer to.
   private mutating func printAsPattern(
-    convertedFromAST node: DSLTree.Node
+    convertedFromAST node: DSLTree.Node, isTopLevel: Bool = false
   ) {
     if patternBackoff(DSLTree._Tree(node)) {
       printBackoff(node)
@@ -99,9 +144,7 @@ extension PrettyPrinter {
       }
 
     case let .concatenation(c):
-      c.forEach {
-        printAsPattern(convertedFromAST: $0)
-      }
+      printConcatenationAsPattern(c, isTopLevel: isTopLevel)
 
     case let .nonCapturingGroup(kind, child):
       switch kind.ast {
@@ -110,11 +153,21 @@ extension PrettyPrinter {
           printer.printAsPattern(convertedFromAST: child)
         }
         
+      case .lookahead:
+        printBlock("Lookahead") { printer in
+          printer.printAsPattern(convertedFromAST: child)
+        }
+        
+      case .negativeLookahead:
+        printBlock("NegativeLookahead") { printer in
+          printer.printAsPattern(convertedFromAST: child)
+        }
+        
       default:
         printAsPattern(convertedFromAST: child)
       }
 
-    case let .capture(name, _, child):
+    case let .capture(name, _, child, _):
       var cap = "Capture"
       if let n = name {
         cap += "(as: \(n))"
@@ -123,11 +176,14 @@ extension PrettyPrinter {
         printer.printAsPattern(convertedFromAST: child)
       }
 
+    case let .ignoreCapturesInTypedOutput(child):
+      printAsPattern(convertedFromAST: child, isTopLevel: isTopLevel)
+      
     case .conditional:
       print("/* TODO: conditional */")
 
     case let .quantification(amount, kind, child):
-      let amount = amount.ast._patternBase
+      let amountStr = amount.ast._patternBase
       var kind = kind.ast?._patternBase ?? ""
       
       // If we've updated our quantification behavior, then use that. This
@@ -137,10 +193,10 @@ extension PrettyPrinter {
         kind = quantificationBehavior._patternBase
       }
       
-      var blockName = "\(amount)(\(kind))"
+      var blockName = "\(amountStr)(\(kind))"
       
       if kind == ".eager" {
-        blockName = "\(amount)"
+        blockName = "\(amountStr)"
       }
       
       // Special case single child character classes for repetition nodes.
@@ -152,6 +208,20 @@ extension PrettyPrinter {
       //       One(.digit)
       //     }
       //
+      func printAtom(_ pattern: String) {
+        indent()
+        
+        if kind != ".eager" {
+          blockName.removeLast()
+          output("\(blockName), ")
+        } else {
+          output("\(blockName)(")
+        }
+        
+        output("\(pattern))")
+        terminateLine()
+      }
+      
       func printSimpleCCC(
         _ ccc: DSLTree.CustomCharacterClass
       ) {
@@ -169,23 +239,42 @@ extension PrettyPrinter {
         terminateLine()
       }
       
-      switch child {
-      case let .customCharacterClass(ccc):
-        if ccc.isSimplePrint {
-          printSimpleCCC(ccc)
-          return
+      // We can only do this for Optionally, ZeroOrMore, and OneOrMore. Cannot
+      // do it right now for Repeat.
+      if amount.ast.supportsInlineComponent {
+        switch child {
+        case let .atom(a):
+          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
+            printAtom(pattern.0)
+            return
+          }
+          
+          break
+        case let .customCharacterClass(ccc):
+          if ccc.isSimplePrint {
+            printSimpleCCC(ccc)
+            return
+          }
+          
+          break
+          
+        case let .convertedRegexLiteral(.atom(a), _):
+          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
+            printAtom(pattern.0)
+            return
+          }
+          
+          break
+        case let .convertedRegexLiteral(.customCharacterClass(ccc), _):
+          if ccc.isSimplePrint {
+            printSimpleCCC(ccc)
+            return
+          }
+          
+          break
+        default:
+          break
         }
-        
-        break
-      case let .convertedRegexLiteral(.customCharacterClass(ccc), _):
-        if ccc.isSimplePrint {
-          printSimpleCCC(ccc)
-          return
-        }
-        
-        break
-      default:
-        break
       }
       
       printBlock(blockName) { printer in
@@ -199,7 +288,11 @@ extension PrettyPrinter {
       }
       
       if let pattern = a._patternBase(&self) {
-        print(pattern)
+        if pattern.canBeWrapped {
+          print("One(\(pattern.0))")
+        } else {
+          print(pattern.0)
+        }
       }
 
     case .trivia:
@@ -212,21 +305,16 @@ extension PrettyPrinter {
     case let .quotedLiteral(v):
       print(v._quoted)
 
-    case .regexLiteral:
-      printBackoff(node)
-
     case let .convertedRegexLiteral(n, _):
       // FIXME: This recursion coordinates with back-off
       // check above, so it should work out. Need a
       // cleaner way to do this. This means the argument
       // label is a lie.
-      printAsPattern(convertedFromAST: n)
+      printAsPattern(convertedFromAST: n, isTopLevel: isTopLevel)
 
     case let .customCharacterClass(ccc):
       printAsPattern(ccc)
 
-    case .transform:
-      print("/* TODO: transforms */")
     case .consumer:
       print("/* TODO: consumers */")
     case .matcher:
@@ -236,6 +324,64 @@ extension PrettyPrinter {
 
     case .absentFunction:
       print("/* TODO: absent function */")
+    }
+  }
+
+  enum NodeToPrint {
+    case dslNode(DSLTree.Node)
+    case stringLiteral(String)
+  }
+
+  mutating func printAsPattern(_ node: NodeToPrint) {
+    switch node {
+    case .dslNode(let n):
+      printAsPattern(convertedFromAST: n)
+    case .stringLiteral(let str):
+      print(str)
+    }
+  }
+
+  mutating func printConcatenationAsPattern(
+    _ nodes: [DSLTree.Node], isTopLevel: Bool
+  ) {
+    // We need to coalesce any adjacent character and scalar elements into a
+    // string literal, preserving scalar syntax.
+    let nodes = nodes
+      .map { NodeToPrint.dslNode($0.lookingThroughConvertedLiteral) }
+      .coalescing(
+        with: StringLiteralBuilder(), into: { .stringLiteral($0.result) }
+      ) { literal, node in
+        guard case .dslNode(let node) = node else { return false }
+        switch node {
+        case let .atom(.char(c)):
+          literal.append(c)
+          return true
+        case let .atom(.scalar(s)):
+          literal.append(unescaped: s._dslBase)
+          return true
+        case .quotedLiteral(let q):
+          literal.append(q)
+          return true
+        case .trivia:
+          // Trivia can be completely ignored if we've already coalesced
+          // something.
+          return !literal.isEmpty
+        default:
+          return false
+        }
+      }
+    if isTopLevel || nodes.count == 1 {
+      // If we're at the top level, or we coalesced everything into a single
+      // element, we don't need to print a surrounding Regex { ... }.
+      for n in nodes {
+        printAsPattern(n)
+      }
+      return
+    }
+    printBlock("Regex") { printer in
+      for n in nodes {
+        printer.printAsPattern(n)
+      }
     }
   }
   
@@ -274,8 +420,7 @@ extension PrettyPrinter {
       return
     }
     
-    var charMembers = ""
-    
+    var charMembers = StringLiteralBuilder()
 
     // This iterates through all of the character class members collecting all
     // of the members who can be stuffed into a singular '.anyOf(...)' vs.
@@ -299,14 +444,9 @@ extension PrettyPrinter {
         switch a {
         case let .char(c):
           charMembers.append(c)
-          
-          if c == "\\" {
-            charMembers.append(c)
-          }
-          
           return false
         case let .scalar(s):
-          charMembers += "\\u{\(String(s.value, radix: 16, uppercase: true))}"
+          charMembers.append(unescaped: s._dslBase)
           return false
         case .unconverted(_):
           return true
@@ -315,7 +455,7 @@ extension PrettyPrinter {
         }
         
       case let .quotedLiteral(s):
-        charMembers += s
+        charMembers.append(s)
         return false
         
       case .trivia(_):
@@ -329,7 +469,7 @@ extension PrettyPrinter {
     // Also in the same vein, if we have a few atom members but no
     // nonAtomMembers, then we can emit a single .anyOf(...) for them.
     if !charMembers.isEmpty, nonCharMembers.isEmpty {
-      let anyOf = ".anyOf(\(charMembers._quoted))"
+      let anyOf = "CharacterClass.anyOf(\(charMembers))"
       
       indent()
       
@@ -352,7 +492,7 @@ extension PrettyPrinter {
       printer.indent()
       
       if !charMembers.isEmpty {
-        printer.output(".anyOf(\(charMembers._quoted))")
+        printer.output(".anyOf(\(charMembers))")
         
         if nonCharMembers.count > 0 {
           printer.output(",")
@@ -393,9 +533,9 @@ extension PrettyPrinter {
       if let lhs = lhs._patternBase(&self), let rhs = rhs._patternBase(&self) {
         indent()
         output("(")
-        output(lhs)
+        output(lhs.0)
         output("...")
-        output(rhs)
+        output(rhs.0)
         output(")")
       }
       
@@ -407,15 +547,15 @@ extension PrettyPrinter {
         if wrap {
           output("One(.anyOf(\(String(c)._quoted)))")
         } else {
-          output(".anyOf(\(String(c)._quoted))")
+          output("CharacterClass.anyOf(\(String(c)._quoted))")
         }
         
       case let .scalar(s):
         
         if wrap {
-          output("One(.anyOf(\"\\u{\(String(s.value, radix: 16, uppercase: true))}\"))")
+          output("One(.anyOf(\(s._dslBase._bareQuoted)))")
         } else {
-          output(".anyOf(\"\\u{\(String(s.value, radix: 16, uppercase: true))}\")")
+          output("CharacterClass.anyOf(\(s._dslBase._bareQuoted))")
         }
         
       case let .unconverted(a):
@@ -426,6 +566,14 @@ extension PrettyPrinter {
         } else {
           output(base.0)
         }
+
+      case let .characterClass(cc):
+        if wrap {
+          output("One(\(cc._patternBase))")
+        } else {
+          output(cc._patternBase)
+        }
+
       default:
         print(" // TODO: Atom \(a)")
       }
@@ -435,7 +583,7 @@ extension PrettyPrinter {
       if wrap {
         output("One(.anyOf(\(s._quoted)))")
       } else {
-        output(".anyOf(\(s._quoted))")
+        output("CharacterClass.anyOf(\(s._quoted))")
       }
       
     case .trivia(_):
@@ -576,13 +724,46 @@ extension PrettyPrinter {
 }
 
 extension String {
-  // TODO: Escaping?
+  fileprivate var _escaped: String {
+    _replacing(#"\"#, with: #"\\"#)._replacing(#"""#, with: #"\""#)
+  }
+
   fileprivate var _quoted: String {
-    "\"\(self._replacing(#"\"#, with: #"\\"#)._replacing(#"""#, with: #"\""#))\""
+    _escaped._bareQuoted
+  }
+
+  fileprivate var _bareQuoted: String {
+    #""\#(self)""#
   }
 }
 
-extension AST.Atom.AssertionKind {
+extension UnicodeScalar {
+  var _dslBase: String { "\\u{\(String(value, radix: 16, uppercase: true))}" }
+}
+
+/// A helper for building string literals, which handles escaping the contents
+/// appended.
+fileprivate struct StringLiteralBuilder {
+  private var contents = ""
+
+  var result: String { contents._bareQuoted }
+  var isEmpty: Bool { contents.isEmpty }
+
+  mutating func append(_ str: String) {
+    contents += str._escaped
+  }
+  mutating func append(_ c: Character) {
+    contents += String(c)._escaped
+  }
+  mutating func append(unescaped str: String) {
+    contents += str
+  }
+}
+extension StringLiteralBuilder: CustomStringConvertible {
+  var description: String { result }
+}
+
+extension DSLTree.Atom.Assertion {
   // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     switch self {
@@ -590,6 +771,12 @@ extension AST.Atom.AssertionKind {
       return "Anchor.startOfLine"
     case .endOfLine:
       return "Anchor.endOfLine"
+    case .caretAnchor:
+      // The DSL doesn't have an equivalent to this, so print as regex.
+      return "/^/"
+    case .dollarAnchor:
+      // The DSL doesn't have an equivalent to this, so print as regex.
+      return "/$/"
     case .wordBoundary:
       return "Anchor.wordBoundary"
     case .notWordBoundary:
@@ -609,6 +796,41 @@ extension AST.Atom.AssertionKind {
       
     case .resetStartOfMatch:
       return "TODO: Assertion resetStartOfMatch"
+    }
+  }
+}
+
+extension DSLTree.Atom.CharacterClass {
+  var _patternBase: String {
+    switch self {
+    case .anyGrapheme:
+      return ".anyGraphemeCluster"
+    case .digit:
+      return ".digit"
+    case .notDigit:
+      return ".digit.inverted"
+    case .word:
+      return ".word"
+    case .notWord:
+      return ".word.inverted"
+    case .horizontalWhitespace:
+      return ".horizontalWhitespace"
+    case .notHorizontalWhitespace:
+      return ".horizontalWhitespace.inverted"
+    case .newlineSequence:
+      return ".newlineSequence"
+    case .notNewline:
+      return ".newlineSequence.inverted"
+    case .verticalWhitespace:
+      return ".verticalWhitespace"
+    case .notVerticalWhitespace:
+      return ".verticalWhitespace.inverted"
+    case .whitespace:
+      return ".whitespace"
+    case .notWhitespace:
+      return ".whitespace.inverted"
+    case .anyUnicodeScalar:
+      fatalError("Unsupported")
     }
   }
 }
@@ -670,7 +892,7 @@ extension AST.Atom.CharacterProperty {
   // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     if isUnprintableProperty {
-      return _regexBase
+      return _regexBase ?? " // TODO: Property \(self)"
     }
     
     return _dslBase
@@ -709,25 +931,19 @@ extension AST.Atom.CharacterProperty {
     }
   }
   
-  var _regexBase: String {
+  var _regexBase: String? {
+    let prefix = isInverted ? "\\P" : "\\p"
     switch kind {
     case .ascii:
       return "[:\(isInverted ? "^" : "")ascii:]"
       
-    case .binary(let b, value: _):
-      if isInverted {
-        return "[^\\p{\(b.rawValue)}]"
-      } else {
-        return "\\p{\(b.rawValue)}"
-      }
+    case .binary(let b, value: let value):
+      let suffix = value ? "" : "=false"
+      return "\(prefix){\(b.rawValue)\(suffix)}"
       
     case .generalCategory(let gc):
-      if isInverted {
-        return "[^\\p{\(gc.rawValue)}]"
-      } else {
-        return "\\p{\(gc.rawValue)}"
-      }
-      
+      return "\(prefix){\(gc.rawValue)}"
+
     case .posix(let p):
       return "[:\(isInverted ? "^" : "")\(p.rawValue):]"
       
@@ -737,8 +953,16 @@ extension AST.Atom.CharacterProperty {
     case .scriptExtension(let s):
       return "[:\(isInverted ? "^" : "")scx=\(s.rawValue):]"
       
+    case .any:
+      return "\(prefix){Any}"
+    case .assigned:
+      return "\(prefix){Assigned}"
+
+    case .named(let name):
+      return "\\N{\(name)}"
+
     default:
-      return " // TODO: Property \(self)"
+      return nil
     }
   }
 }
@@ -768,7 +992,7 @@ extension AST.Atom {
   ///
   /// TODO: Some way to integrate this with conversion...
   var _patternBase: (String, canBeWrapped: Bool) {
-    if let anchor = self.assertionKind {
+    if let anchor = self.dslAssertionKind {
       return (anchor._patternBase, false)
     }
 
@@ -780,19 +1004,15 @@ extension AST.Atom {
   }
   
   var _dslBase: (String, canBeWrapped: Bool) {
-    func scalarLiteral(_ s: UnicodeScalar) -> String {
-      let hex = String(s.value, radix: 16, uppercase: true)
-      return "\\u{\(hex)}"
-    }
     switch kind {
     case let .char(c):
       return (String(c), false)
 
     case let .scalar(s):
-      return (scalarLiteral(s.value), false)
+      return (s.value._dslBase, false)
 
     case let .scalarSequence(seq):
-      return (seq.scalarValues.map(scalarLiteral).joined(), false)
+      return (seq.scalarValues.map(\._dslBase).joined(), false)
 
     case let .property(p):
       return (p._dslBase, true)
@@ -854,10 +1074,11 @@ extension AST.Atom {
     case .namedCharacter:
       return (" /* TODO: named character */", false)
 
-    case .any:
-      return (".any", true)
+    case .dot:
+      // The DSL does not have an equivalent to '.', print as a regex.
+      return ("/./", false)
 
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       fatalError("unreachable")
 
     case .backreference:
@@ -887,8 +1108,12 @@ extension AST.Atom {
     case .char, .scalar, .scalarSequence:
       return literalStringValue!
 
+    case .invalid:
+      // TODO: Can we recover the original regex text from the source range?
+      return "<#value#>"
+
     case let .property(p):
-      return p._regexBase
+      return p._regexBase ?? " // TODO: Property \(p)"
       
     case let .escaped(e):
       return "\\\(e.character)"
@@ -905,10 +1130,10 @@ extension AST.Atom {
     case .namedCharacter(let n):
       return "\\N{\(n)}"
       
-    case .any:
+    case .dot:
       return "."
       
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       fatalError("unreachable")
       
     case .backreference:
@@ -925,7 +1150,18 @@ extension AST.Atom {
       
     case .changeMatchingOptions:
       return "/* TODO: change matching options */"
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
+  }
+}
+
+extension AST.Atom.Number {
+  var _patternBase: String {
+    value.map { "\($0)" } ?? "<#number#>"
   }
 }
 
@@ -935,10 +1171,22 @@ extension AST.Quantification.Amount {
     case .zeroOrMore: return "ZeroOrMore"
     case .oneOrMore:  return "OneOrMore"
     case .zeroOrOne:  return "Optionally"
-    case let .exactly(n):  return "Repeat(count: \(n.value))"
-    case let .nOrMore(n):  return "Repeat(\(n.value)...)"
-    case let .upToN(n):    return "Repeat(...\(n.value))"
-    case let .range(n, m): return "Repeat(\(n.value)...\(m.value))"
+    case let .exactly(n):  return "Repeat(count: \(n._patternBase))"
+    case let .nOrMore(n):  return "Repeat(\(n._patternBase)...)"
+    case let .upToN(n):    return "Repeat(...\(n._patternBase))"
+    case let .range(n, m): return "Repeat(\(n._patternBase)...\(m._patternBase))"
+    #if RESILIENT_LIBRARIES
+    @unknown default: fatalError()
+    #endif
+    }
+  }
+  
+  var supportsInlineComponent: Bool {
+    switch self {
+    case .zeroOrMore: return true
+    case .oneOrMore: return true
+    case .zeroOrOne: return true
+    default: return false
     }
   }
 }
@@ -949,6 +1197,9 @@ extension AST.Quantification.Kind {
     case .eager: return ".eager"
     case .reluctant: return ".reluctant"
     case .possessive: return ".possessive"
+    #if RESILIENT_LIBRARIES
+    @unknown default: fatalError()
+    #endif
     }
   }
 }
@@ -1035,43 +1286,87 @@ extension DSLTree.CustomCharacterClass {
 }
 
 extension DSLTree.Atom {
-  func _patternBase(_ printer: inout PrettyPrinter) -> String? {
+  func _patternBase(
+    _ printer: inout PrettyPrinter
+  ) -> (String, canBeWrapped: Bool)? {
     switch self {
     case .any:
-      return ".any"
+      return (".any", true)
+
+    case .anyNonNewline:
+      return (".anyNonNewline", true)
+
+    case .dot:
+      // The DSL does not have an equivalent to '.', print as a regex.
+      return ("/./", false)
       
     case let .char(c):
-      return String(c)._quoted
+      return (String(c)._quoted, false)
       
     case let .scalar(s):
       let hex = String(s.value, radix: 16, uppercase: true)
-      return "\\u{\(hex)}"._quoted
-      
+      return ("\\u{\(hex)}"._bareQuoted, false)
+
     case let .unconverted(a):
       if a.ast.isUnprintableAtom {
-        return "#/\(a.ast._regexBase)/#"
+        return ("#/\(a.ast._regexBase)/#", false)
       } else {
-        return a.ast._dslBase.0
+        return a.ast._dslBase
       }
       
     case .assertion(let a):
-      return a.ast._patternBase
+      return (a._patternBase, false)
+    case .characterClass(let cc):
+      return (cc._patternBase, true)
       
     case .backreference(_):
-      return "/* TOOD: backreferences */"
+      return ("/* TODO: backreferences */", false)
       
     case .symbolicReference:
-      return "/* TOOD: symbolic references */"
+      return ("/* TODO: symbolic references */", false)
       
     case .changeMatchingOptions(let matchingOptions):
-      for add in matchingOptions.ast.adding {
-        switch add.kind {
+      let options: [AST.MatchingOption]
+      let isAdd: Bool
+
+      if matchingOptions.ast.removing.isEmpty {
+        options = matchingOptions.ast.adding
+        isAdd = true
+      } else {
+        options = matchingOptions.ast.removing
+        isAdd = false
+      }
+
+      for option in options {
+        switch option.kind {
+        case .extended:
+          // We don't currently support (?x) in the DSL, so if we see it, just
+          // do nothing.
+          if options.count == 1 {
+            return nil
+          }
+
         case .reluctantByDefault:
-          printer.quantificationBehavior = .reluctant
+          if isAdd {
+            printer.quantificationBehavior = .reluctant
+          } else {
+            printer.quantificationBehavior = .eager
+          }
+
+
+          // Don't create a nested Regex for (?U), we handle this by altering
+          // every individual repetitionBehavior for things like OneOrMore.
+          if options.count == 1 {
+            return nil
+          }
+
         default:
           break
         }
       }
+
+      printer.print("Regex {")
+      printer.pushMatchingOptions(options, isAdded: isAdd)
     }
     
     return nil
@@ -1080,6 +1375,12 @@ extension DSLTree.Atom {
   var _regexBase: String {
     switch self {
     case .any:
+      return "(?s:.)"
+
+    case .anyNonNewline:
+      return "(?-s:.)"
+
+    case .dot:
       return "."
       
     case let .char(c):
@@ -1087,17 +1388,19 @@ extension DSLTree.Atom {
       
     case let .scalar(s):
       let hex = String(s.value, radix: 16, uppercase: true)
-      return "\\u{\(hex)}"._quoted
+      return "\\u{\(hex)}"._bareQuoted
       
     case let .unconverted(a):
       return a.ast._regexBase
       
     case .assertion:
       return "/* TODO: assertions */"
+    case .characterClass:
+      return "/* TODO: character classes */"
     case .backreference:
-      return "/* TOOD: backreferences */"
+      return "/* TODO: backreferences */"
     case .symbolicReference:
-      return "/* TOOD: symbolic references */"
+      return "/* TODO: symbolic references */"
     case .changeMatchingOptions(let matchingOptions):
       var result = ""
       
@@ -1120,11 +1423,9 @@ extension DSLTree.Node {
     var result: [String] = []
     
     switch self {
-    case .capture(let name, _, _):
-      if let name = name {
-        result.append(name)
-      }
-      
+    case .capture(let name?, _, _, _):
+      result.append(name)
+
     case .concatenation(let nodes):
       for node in nodes {
         result += node.getNamedCaptures()

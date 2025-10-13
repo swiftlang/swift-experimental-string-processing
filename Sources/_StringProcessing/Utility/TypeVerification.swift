@@ -9,16 +9,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  internal func _verifyType() -> Bool {
-    var tupleElements: [Any.Type] = [Substring.self]
-    var labels = " "
+  internal func _verifyType() -> (Bool, Any.Type) {
+    guard Output.self != AnyRegexOutput.self else {
+      return (true, Output.self)
+    }
     
-    for capture in program.tree.root._captureList.captures {
-      var captureType: Any.Type = capture.type ?? Substring.self
+    var tupleElements: [Any.Type] = []
+    var labels = ""
+    
+    for capture in program.tree.captureList.captures {
+      var captureType = capture.type
       var i = capture.optionalDepth
       
       while i != 0 {
@@ -37,7 +41,8 @@ extension Regex {
     
     // If we have no captures, then our Regex must be Regex<Substring>.
     if tupleElements.count == 1 {
-      return Output.self == Substring.self
+      let wholeMatchType = program.tree.root.wholeMatchType
+      return (Output.self == wholeMatchType, wholeMatchType)
     }
     
     let createdType = TypeConstruction.tupleType(
@@ -48,6 +53,6 @@ extension Regex {
       labels: labels.all { $0 == " " } ? nil : labels
     )
     
-    return Output.self == createdType
+    return (Output.self == createdType, createdType)
   }
 }

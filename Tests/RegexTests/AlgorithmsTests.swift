@@ -64,7 +64,15 @@ class AlgorithmTests: XCTestCase {
     XCTAssertTrue("abcde".contains("bcde"))
     XCTAssertTrue("abcde".contains("bcd"))
     XCTAssertTrue("ababacabababa".contains("abababa"))
+    XCTAssertTrue("bbababacabababa".contains("abababa"))
+    XCTAssertFalse("bbababacbbababa".contains("abababa"))
     
+    let str = "abcde"
+    let pattern = "bcde"
+    XCTAssertTrue(str[...].contains(pattern))
+    XCTAssertTrue(str.contains(pattern[...]))
+    XCTAssertTrue(str[...].contains(pattern[...]))
+
     XCTAssertFalse("".contains("abcd"))
     
     for start in 0..<9 {
@@ -98,10 +106,13 @@ class AlgorithmTests: XCTestCase {
     // `String.contains` get selected instead, which has inconsistent behavior.
     
     // Test that original `contains` functions are still accessible
-    let containsRef = "abcd".contains
-    XCTAssert(type(of: containsRef) == ((Character) -> Bool).self)
-    let containsParamsRef = "abcd".contains(_:)
-    XCTAssert(type(of: containsParamsRef) == ((Character) -> Bool).self)
+
+    // rdar://105502403
+    // Error: constructing SILType with type that should have been eliminated by SIL lowering
+    // let containsRef = "abcd".contains
+    // XCTAssert(type(of: containsRef) == ((Character) -> Bool).self)
+    // let containsParamsRef = "abcd".contains(_:)
+    // XCTAssert(type(of: containsParamsRef) == ((Character) -> Bool).self)
   }
   
   func testRegexRanges() {
@@ -158,12 +169,30 @@ class AlgorithmTests: XCTestCase {
       let actualSeq: [Range<Int>] = input.ranges(of: pattern).map(input.offsets(of:))
       XCTAssertEqual(actualSeq, expected, file: file, line: line)
 
+      let a1: [Range<Int>] = input[...].ranges(of: pattern).map(input.offsets(of:))
+      let a2: [Range<Int>] = input.ranges(of: pattern[...]).map(input.offsets(of:))
+      let a3: [Range<Int>] = input[...].ranges(of: pattern[...]).map(input.offsets(of:))
+      XCTAssertEqual(a1, expected, file: file, line: line)
+      XCTAssertEqual(a2, expected, file: file, line: line)
+      XCTAssertEqual(a3, expected, file: file, line: line)
+
       // `IndexingIterator` tests the collection conformance
       let actualCol: [Range<Int>] = input.ranges(of: pattern)[...].map(input.offsets(of:))
       XCTAssertEqual(actualCol, expected, file: file, line: line)
       
-      let firstRange = input.firstRange(of: pattern).map(input.offsets(of:))
-      XCTAssertEqual(firstRange, expected.first, file: file, line: line)
+      let firstRange = input.firstRange(of: pattern)
+      XCTAssertEqual(firstRange.map(input.offsets(of:)), expected.first, file: file, line: line)
+      if let upperBound = firstRange?.upperBound, !pattern.isEmpty {
+        let secondRange = input[upperBound...].firstRange(of: pattern).map(input.offsets(of:))
+        XCTAssertEqual(secondRange, expected.dropFirst().first, file: file, line: line)
+      }
+      
+      let r1 = input[...].firstRange(of: pattern)
+      let r2 = input.firstRange(of: pattern[...])
+      let r3 = input[...].firstRange(of: pattern[...])
+      XCTAssertEqual(r1.map(input.offsets(of:)), expected.first, file: file, line: line)
+      XCTAssertEqual(r2.map(input.offsets(of:)), expected.first, file: file, line: line)
+      XCTAssertEqual(r3.map(input.offsets(of:)), expected.first, file: file, line: line)
     }
 
     expectRanges("", "", [0..<0])
@@ -173,6 +202,19 @@ class AlgorithmTests: XCTestCase {
     expectRanges("abcde", "bcd", [1..<4])
     expectRanges("ababacabababa", "abababa", [6..<13])
     expectRanges("ababacabababa", "aba", [0..<3, 6..<9, 10..<13])
+    
+    // Test for rdar://92794248
+    expectRanges("ADACBADADACBADACB", "ADACB", [0..<5, 7..<12, 12..<17])
+  }
+  
+  // rdar://105154010
+  func testFirstRangeMissingCrash() {
+    let str = "%2$@ %#@AROUND_TIME@"
+    let target = "%@"
+    XCTAssertNil(str.firstRange(of: target))
+    XCTAssertNil(str.dropFirst().dropLast().firstRange(of: target))
+    XCTAssertNil(str.dropFirst().dropLast().firstRange(of: target[...]))
+    XCTAssertNil(str.firstRange(of: target[...]))
   }
 
   func testRegexSplit() {
@@ -205,6 +247,13 @@ class AlgorithmTests: XCTestCase {
     ) {
       let actual = Array(string.split(separator: separator, omittingEmptySubsequences: false))
       XCTAssertEqual(actual, expected, file: file, line: line)
+      
+      let a1 = Array(string[...].split(separator: separator, omittingEmptySubsequences: false))
+      let a2 = Array(string.split(separator: separator[...], omittingEmptySubsequences: false))
+      let a3 = Array(string[...].split(separator: separator[...], omittingEmptySubsequences: false))
+      XCTAssertEqual(a1, expected, file: file, line: line)
+      XCTAssertEqual(a2, expected, file: file, line: line)
+      XCTAssertEqual(a3, expected, file: file, line: line)
     }
 
     expectSplit("", "", [""])
@@ -237,10 +286,13 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual(CountedOptionSet.arrayLiteralCreationCount, 3)
 
     // Test that original `split` functions are still accessible
-    let splitRef = "abcd".split
-    XCTAssert(type(of: splitRef) == ((Character, Int, Bool) -> [Substring]).self)
-    let splitParamsRef = "abcd".split(separator:maxSplits:omittingEmptySubsequences:)
-    XCTAssert(type(of: splitParamsRef) == ((Character, Int, Bool) -> [Substring]).self)
+    
+    // rdar://105502403
+    // Error: constructing SILType with type that should have been eliminated by SIL lowering
+    // let splitRef = "abcd".split
+    // XCTAssert(type(of: splitRef) == ((Character, Int, Bool) -> [Substring]).self)
+    // let splitParamsRef = "abcd".split(separator:maxSplits:omittingEmptySubsequences:)
+    // XCTAssert(type(of: splitParamsRef) == ((Character, Int, Bool) -> [Substring]).self)
   }
 
   func testSplitPermutations() throws {
@@ -317,7 +369,7 @@ class AlgorithmTests: XCTestCase {
       XCTAssertEqual(stringActual, expected, """
         Mismatch in string split of '\(str)', maxSplits: \(maxSplits), omitEmpty: \(omitEmpty)
           expected: \(expected.map(String.init))
-          actual:   \(regexActual.map(String.init))
+          actual:   \(stringActual.map(String.init))
         """)
     }
   }
@@ -455,7 +507,22 @@ class AlgorithmTests: XCTestCase {
     expectReplace("a", "a", "X", "X")
     expectReplace("aab", "a", "X", "XXb")
     
-    // FIXME: Test maxReplacements
+    let str = "aabaaabaab"
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 1000),
+        "ZaZZ")
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 3),
+        "ZaZZ")
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 2),
+        "ZaZaab")
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 1),
+        "Zaaabaab")
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 0),
+        str)
   }
   
   func testSubstring() throws {
@@ -482,6 +549,15 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual(s1.replacing(regex, with: ""), " | ")
     XCTAssertEqual(s2.replacing(regex, with: ""), "")
 
+    XCTAssertEqual(s.replacing("aa", with: "Z"), "Za | ZZZ | ZZZZZ")
+    XCTAssertEqual(s.replacing("aa" as Substring, with: "Z"), "Za | ZZZ | ZZZZZ")
+    XCTAssertEqual(s.replacing("aa", with: "Z" as Substring), "Za | ZZZ | ZZZZZ")
+    XCTAssertEqual(s.replacing("aa" as Substring, with: "Z" as Substring), "Za | ZZZ | ZZZZZ")
+    XCTAssertEqual(s1.replacing("aa", with: "Z"), "ZZZ | ZZZZZ")
+    XCTAssertEqual(s1.replacing("aa", with: "Z" as Substring), "ZZZ | ZZZZZ")
+    XCTAssertEqual(s1.replacing("aa" as Substring, with: "Z"), "ZZZ | ZZZZZ")
+    XCTAssertEqual(s1.replacing("aa" as Substring, with: "Z" as Substring), "ZZZ | ZZZZZ")
+
     XCTAssertEqual(
       s.matches(of: regex).map(\.0),
       ["aaa", "aaaaaa", "aaaaaaaaaa"])
@@ -496,20 +572,62 @@ class AlgorithmTests: XCTestCase {
       s2.matches(of: try Regex("a*?")).map { s2.offsets(of: $0.range) }, [0..<0, 1..<1, 2..<2])
     XCTAssertEqual(
       s2.ranges(of: try Regex("a*?")).map(s2.offsets(of:)), [0..<0, 1..<1, 2..<2])
+    
+    func checkContains(
+      _ expected: Bool,
+      _ a: some StringProtocol,
+      _ b: some StringProtocol,
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let result = a.firstRange(of: b) != nil
+      XCTAssertEqual(expected, result, file: file, line: line)
+    }
+    
+    // Make sure that searching doesn't match over a substring boundary, even
+    // when the boundary is in the middle of a character.
+    let cafe = "c\u{302}afe\u{301}"
+    let cafeStringDropLastScalar = "c\u{302}afe"
+    let cafeStringDropFirstScalar = "\u{302}afe\u{301}"
+    let cafeSubDropLastScalar =
+      cafe[..<(cafe.unicodeScalars.index(before: cafe.endIndex))]
+    let cafeSubDropFirstScalar = 
+      cafe[cafe.unicodeScalars.index(after: cafe.startIndex)...]
+    
+    checkContains(false, cafe, cafeStringDropLastScalar)
+    checkContains(false, cafe, cafeStringDropFirstScalar)
+    checkContains(false, cafe, cafeSubDropLastScalar)
+    checkContains(false, cafe, cafeSubDropFirstScalar)
+    checkContains(false, cafe, "afe")
+    checkContains(true, cafe, "afé")
+    checkContains(true, cafe, "ĉaf")
+
+    checkContains(false, cafeSubDropLastScalar, "afe\u{301}")
+    checkContains(false, cafeSubDropLastScalar, "afé")
+    checkContains(true, cafeSubDropLastScalar, "afe")
+    checkContains(true, cafeSubDropLastScalar, cafeStringDropLastScalar)
+
+    checkContains(false, cafeSubDropFirstScalar, "c\u{302}af")
+    checkContains(false, cafeSubDropFirstScalar, "ĉaf")
+    checkContains(true, cafeSubDropFirstScalar, "\u{302}af")
+    checkContains(true, cafeSubDropFirstScalar, cafeStringDropFirstScalar)
   }
 
-  func testSwitches() {
-    switch "abcde" {
-    case try! Regex("a.*f"):
-      XCTFail()
-    case try! Regex("abc"):
-      XCTFail()
+  func testUnicodeScalarSemantics() throws {
+    let regex = try Regex(#"."#, as: Substring.self).matchingSemantics(.unicodeScalar)
+    let emptyRegex = try Regex(#"z?"#, as: Substring.self).matchingSemantics(.unicodeScalar)
+    
+    XCTAssertEqual("".matches(of: regex).map(\.output), [])
+    XCTAssertEqual("Café".matches(of: regex).map(\.output), ["C", "a", "f", "é"])
+    XCTAssertEqual("Cafe\u{301}".matches(of: regex).map(\.output), ["C", "a", "f", "e", "\u{301}"])
+    XCTAssertEqual("Cafe\u{301}".matches(of: emptyRegex).count, 6)
 
-    case try! Regex("a.*e"):
-      break // success
-
-    default:
-      XCTFail()
-    }
+    XCTAssertEqual("Café".ranges(of: regex).count, 4)
+    XCTAssertEqual("Cafe\u{301}".ranges(of: regex).count, 5)
+    XCTAssertEqual("Cafe\u{301}".ranges(of: emptyRegex).count, 6)
+    
+    XCTAssertEqual("Café".replacing(regex, with: "-"), "----")
+    XCTAssertEqual("Cafe\u{301}".replacing(regex, with: "-"), "-----")
+    XCTAssertEqual("Café".replacing(emptyRegex, with: "-"), "-C-a-f-é-")
+    XCTAssertEqual("Cafe\u{301}".replacing(emptyRegex, with: "-"), "-C-a-f-e-\u{301}-")
   }
 }

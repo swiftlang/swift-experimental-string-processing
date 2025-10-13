@@ -16,30 +16,15 @@ import XCTest
 
 extension CaptureList.Capture {
   static var cap: Self {
-    return Self(optionalDepth: 0, .fake)
+    return Self(optionalDepth: 0, visibleInTypedOutput: true, .fake)
   }
 
   static var opt: Self {
-    return Self(optionalDepth: 1, .fake)
-  }
-  static var opt_opt: Self {
-    return Self(optionalDepth: 2, .fake)
-  }
-  static var opt_opt_opt: Self {
-    return Self(optionalDepth: 3, .fake)
-  }
-  static var opt_opt_opt_opt: Self {
-    return Self(optionalDepth: 4, .fake)
-  }
-  static var opt_opt_opt_opt_opt: Self {
-    return Self(optionalDepth: 5, .fake)
-  }
-  static var opt_opt_opt_opt_opt_opt: Self {
-    return Self(optionalDepth: 6, .fake)
+    return Self(optionalDepth: 1, visibleInTypedOutput: true, .fake)
   }
 
   static func named(_ name: String, opt: Int = 0) -> Self {
-    return Self(name: name, optionalDepth: opt, .fake)
+    return Self(name: name, optionalDepth: opt, visibleInTypedOutput: true, .fake)
   }
 }
 extension CaptureList {
@@ -143,11 +128,8 @@ extension StringCapture {
 
 // TODO: Move `flatCaptureTest`s over here too...
 
-func compile(_ ast: AST) -> Executor {
-  let tree = ast.dslTree
-  let prog = try! Compiler(tree: tree).emit()
-  let executor = Executor(program: prog)
-  return executor
+func compile(_ ast: AST) -> MEProgram {
+  try! Compiler(tree: ast.dslTree).emit()
 }
 
 func captureTest(
@@ -158,8 +140,10 @@ func captureTest(
   file: StaticString = #file,
   line: UInt = #line
 ) {
-  let ast = try! parse(regex, .semantic, .traditional)
-  let capList = ast.root._captureList.withoutLocs
+  let ast = try! parse(regex, .traditional)
+  var capList = ast.captureList.withoutLocs
+  // Peel off the whole match element.
+  capList.captures.removeFirst()
   guard capList == expected else {
     XCTFail("""
       Expected:
@@ -173,7 +157,9 @@ func captureTest(
   }
 
   // Ensure DSLTree preserves literal captures
-  let dslCapList = ast.dslTree.root._captureList
+  var dslCapList = ast.dslTree.captureList
+  // Peel off the whole match element.
+  dslCapList.captures.removeFirst()
   guard dslCapList == capList else {
     XCTFail("""
       DSLTree did not preserve structure:
@@ -195,22 +181,27 @@ func captureTest(
   for (input, output) in tests {
     let inputRange = input.startIndex..<input.endIndex
 
-    guard let result = try! executor.dynamicMatch(
-      input, in: inputRange, .wholeString
+    guard let result = try! Executor<AnyRegexOutput>.wholeMatch(
+      compile(ast),
+      input,
+      subjectBounds: inputRange,
+      searchBounds: inputRange
     ) else {
-      XCTFail("No match")
+      XCTFail("No match", file: file, line: line)
       return
     }
 
-    let caps = result.anyRegexOutput
+    var caps = result.anyRegexOutput
+    // Peel off the whole match element.
+    caps._elements.removeFirst()
     guard caps.count == output.count else {
       XCTFail("""
-      Mismatch capture count:
+      Mismatched capture count:
       Expected:
       \(output)
       Seen:
       \(caps.formatStringCaptures(input: input))
-      """)
+      """, file: file, line: line)
       continue
     }
     
@@ -218,12 +209,12 @@ func captureTest(
       $0.isEqual(to: $1, in: input)
     }) else {
       XCTFail("""
-      Mismatch capture count:
+      Mismatched captures:
       Expected:
       \(output)
       Seen:
       \(caps.formatStringCaptures(input: input))
-      """)
+      """, file: file, line: line)
       continue
     }
   }
@@ -293,37 +284,38 @@ extension RegexTests {
 
     captureTest(
       "((a)|(b))?",
-      [.opt, .opt_opt, .opt_opt],
-      ("a", [.some("a"), .some(.some("a")), .some(.none)]),
-      ("b", [.some("b"), .some(.none), .some(.some("b"))]))
+      [.opt, .opt, .opt],
+      ("a", [.some("a"), .some("a"), .none]),
+      ("b", [.some("b"), .none, .some("b")]))
 
-    // FIXME
     captureTest(
       "((a)|(b))*",
-      [.opt, .opt_opt, .opt_opt],
-      ("a", [.some("a"), .some(.some("a")), .some(.none)]),
-      skipEngine: true)
+      [.opt, .opt, .opt],
+      ("a", [.some("a"), .some("a"), .none]))
 
-    // FIXME
     captureTest(
       "((a)|(b))+",
       [.cap, .opt, .opt],
-      // TODO: test cases
-      skipEngine: true)
+      ("a", ["a", .some("a"), .none]),
+      ("aaa", ["a", .some("a"), .none]),
+      ("b", ["b", .none, .some("b")]),
+      ("bbaba", ["a", .some("a"), .some("b")]))
 
-    // FIXME
     captureTest(
       "(((a)|(b))*)",
-      [.cap, .opt, .opt_opt, .opt_opt],
-      // TODO: test cases
-      skipEngine: true)
+      [.cap, .opt, .opt, .opt],
+      ("a", ["a", .some("a"), .some("a"), .none]),
+      ("aaa", ["aaa", .some("a"), .some("a"), .none]),
+      ("b", ["b", .some("b"), .none, .some("b")]),
+      ("bbaba", ["bbaba", .some("a"), .some("a"), .some("b")]),
+      ("", ["", .none, .none, .none]))
 
-    // FIXME
     captureTest(
       "(((a)|(b))?)",
-      [.cap, .opt, .opt_opt, .opt_opt],
-      // TODO: test cases
-      skipEngine: true)
+      [.cap, .opt, .opt, .opt],
+      ("a", ["a", .some("a"), .some("a"), .none]),
+      ("b", ["b", .some("b"), .none, .some("b")]),
+      ("", ["", .none, .none, .none]))
 
     captureTest(
       "(a)",
@@ -340,11 +332,13 @@ extension RegexTests {
       [.cap, .cap, .cap],
       ("a", ["a", "a", "a"]))
 
-    // FIXME
     captureTest(
       "((((a)*)?)*)?",
-      [.opt, .opt_opt, .opt_opt_opt, .opt_opt_opt_opt],
-      // TODO: test cases
+      [.opt, .opt, .opt, .opt],
+      ("a", [.some("a"), .some("a"), .some("a"), .some("a")]),
+      ("aaa", [.some("aaa"), .some("aaa"), .some("aaa"), .some("a")]),
+      ("", [.some(""), .none, .none, .none]),
+      // FIXME: This spins the matching engine forever.
       skipEngine: true)
 
     captureTest(
@@ -355,33 +349,27 @@ extension RegexTests {
       ("b", [.some("b")]),
       ("bbb", [.some("bbb")]))
 
-    // FIXME
     captureTest(
       "a|(b)*",
-      [.opt_opt],
+      [.opt],
       ("a", [.none]),
-      ("", [.some("")]),
+      ("", [.none]),
       ("b", [.some("b")]),
-      ("bbb", [.some("b")]),
-      skipEngine: true)
+      ("bbb", [.some("b")]))
 
-    // FIXME
     captureTest(
       "a|(b)+",
       [.opt],
       ("a", [.none]),
       ("b", [.some("b")]),
-      ("bbb", [.some("b")]),
-      skipEngine: true)
+      ("bbb", [.some("b")]))
 
-    // FIXME
     captureTest(
       "a|(b)?",
-      [.opt_opt],
+      [.opt],
       ("a", [.none]),
       ("", [.none]),
-      ("b", [.some(.some("b"))]),
-      skipEngine: true)
+      ("b", [.some("b")]))
 
     captureTest(
       "a|(b|c)",
@@ -397,25 +385,21 @@ extension RegexTests {
       ("b", [.some("b")]),
       ("c", [.some("c")]))
 
-    // FIXME
     captureTest(
       "a|(b|c)*",
-      [.opt_opt],
-      ("a", [.none]),
-      ("", [.some("")]),
-      ("b", [.some("b")]),
-      ("bbb", [.some("b")]),
-      skipEngine: true)
-
-    // FIXME
-    captureTest(
-      "a|(b|c)?",
-      [.opt_opt],
+      [.opt],
       ("a", [.none]),
       ("", [.none]),
-      ("b", [.some(.some("b"))]),
-      ("c", [.some(.some("c"))]),
-      skipEngine: true)
+      ("b", [.some("b")]),
+      ("bbb", [.some("b")]))
+
+    captureTest(
+      "a|(b|c)?",
+      [.opt],
+      ("a", [.none]),
+      ("", [.none]),
+      ("b", [.some("b")]),
+      ("c", [.some("c")]))
 
     captureTest(
       "a(b(c))",
@@ -455,9 +439,31 @@ extension RegexTests {
       ("a", [.none, .none]),
       ("abc", [.some("bc"), .some("c")]))
 
-    //    TODO: "((a|b)*|c)*"
-    //    TODO: "((a|b)|c)*"
+    captureTest(
+      "((a|b)*|c)*",
+      [.opt, .opt],
+      ("a", [.some("a"), .some("a")]),
+      ("b", [.some("b"), .some("b")]),
+      ("c", [.some("c"), .none]),
+      ("ababc", [.some("c"), .some("b")]),
+      ("acab", [.some("b"), .some("b")]),
+      ("cbba", [.some("a"), .some("a")]),
+      ("cbbaaa", [.some("aaa"), .some("a")]),
+      ("", [.none, .none]),
+      // FIXME: This spins the matching engine forever.
+      skipEngine: true)
 
+    captureTest(
+      "((a|b)|c)*",
+      [.opt, .opt],
+      ("a", [.some("a"), .some("a")]),
+      ("b", [.some("b"), .some("b")]),
+      ("c", [.some("c"), .none]),
+      ("ababc", [.some("c"), .some("b")]),
+      ("acab", [.some("b"), .some("b")]),
+      ("cbba", [.some("a"), .some("a")]),
+      ("cbbaaa", [.some("a"), .some("a")]),
+      ("", [.none, .none]))
   }
   
   func testTypeVerification() throws {
@@ -482,9 +488,9 @@ extension RegexTests {
     XCTAssertNil(Regex<(Substring, Substring?)>(opaque4))
     
     let opaque5 = try Regex("((a)?bc)?")
-    _ = try XCTUnwrap(Regex<(Substring, Substring?, Substring??)>(opaque5))
+    _ = try XCTUnwrap(Regex<(Substring, Substring?, Substring?)>(opaque5))
+    XCTAssertNil(Regex<(Substring, Substring?, Substring??)>(opaque5))
     XCTAssertNil(Regex<(Substring, somethingHere: Substring?, here: Substring??)>(opaque5))
-    XCTAssertNil(Regex<(Substring, Substring?, Substring?)>(opaque5))
   }
 }
 

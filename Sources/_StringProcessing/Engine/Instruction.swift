@@ -27,25 +27,6 @@ extension Instruction {
 
     // MARK: - General Purpose
 
-    /// Do nothing
-    ///
-    ///     nop(comment: String?)
-    ///
-    /// Operand: Optional string register containing a comment or reason
-    ///
-    case nop
-
-    /// Decrement the value stored in a register.
-    /// Returns whether the value was set to zero
-    ///
-    ///     decrement(_ i: IntReg) -> Bool
-    ///
-    /// Operands:
-    ///   - Int register to decrease
-    ///   - Condition register set if now zero
-    ///
-    case decrement
-
     /// Move an immediate value into a register
     ///
     ///     moveImmediate(_ i: Int, into: IntReg)
@@ -56,6 +37,22 @@ extension Instruction {
     ///
     case moveImmediate
 
+    /// Move the current position into a register
+    ///
+    ///     moveCurrentPosition(into: PositionRegister)
+    ///
+    /// Operands:
+    ///   - Position register to move into
+    case moveCurrentPosition
+    
+    /// Set the current position to the value stored in the register
+    ///
+    ///     restorePosition(from: PositionRegister)
+    ///
+    /// Operands:
+    ///  - Position register to read from
+    case restorePosition
+
     // MARK: General Purpose: Control flow
 
     /// Branch to a new instruction
@@ -64,15 +61,6 @@ extension Instruction {
     ///
     /// Operand: instruction address to branch to
     case branch
-
-    /// Conditionally branch
-    ///
-    ///     condBranch(to: InstAddr, if: BoolReg)
-    ///
-    /// Operands:
-    ///   - Address to branch to
-    ///   - Condition register to check
-    case condBranch
 
     /// Conditionally branch if zero, otherwise decrement
     ///
@@ -85,39 +73,17 @@ extension Instruction {
     ///
     case condBranchZeroElseDecrement
 
-    // MARK: General Purpose: Function calls
-
-    /// Push an instruction address to the stack
+    /// Conditionally branch if the current position is the same as the register
     ///
-    /// Operand: the instruction address
+    ///     condBranch(
+    ///       to: InstAddr, ifSamePositionAs: PositionRegister)
     ///
-    /// UNIMPLEMENTED
-    case push
-
-    /// Pop return address from call stack
-    ///
-    /// UNIMPLEMENTED
-    case pop
-
-    /// Composite push-next-branch instruction
-    ///
-    /// Operand: the function's start address
-    case call
-
-    /// Composite pop-branch instruction
-    ///
-    /// Operand: the instruction address
-    ///
-    /// NOTE: Currently, empty stack -> ACCEPT
-    case ret
-
-    // MARK: General Purpose: Debugging instructions
-
-    /// Print a string to the output
-    ///
-    /// Operand: String register
-    case print
-
+    /// Operands:
+    ///   - Instruction address to branch to, if the position in the register is the same as currentPosition
+    ///   - Position register to check against
+    case condBranchSamePosition
+  
+    // TODO: Function calls
 
     // MARK: - Matching
 
@@ -132,40 +98,53 @@ extension Instruction {
 
     /// Composite assert-advance else restore.
     ///
-    ///     match(_: EltReg)
-    ///
-    /// Operand: Element register to compare against.
-    case match
-
-    /// Match against a sequence of elements
-    ///
-    ///     matchSequence(_: SeqReg)
-    ///
-    /// Operand: Sequence register to compare against.
-    case matchSequence
-
-    /// Match against a slice of the input
-    ///
-    ///     matchSlice(
-    ///       lowerBound: PositionReg, upperBound: PositionReg)
+    ///     match(_: EltReg, isCaseInsensitive: Bool)
     ///
     /// Operands:
-    ///   - Lowerbound position in the input
-    ///   - Upperbound position in the input
-    case matchSlice
+    ///  - Element register to compare against.
+    ///  - Boolean for if we should match in a case insensitive way
+    case match
 
-    /// Save the current position in the input in a register
+    /// Match against a scalar and possibly perform a boundary check or match in a case insensitive way
     ///
-    ///     movePosition(into: PositionReg)
+    ///     matchScalar(_: Unicode.Scalar, isCaseInsensitive: Bool, boundaryCheck: Bool)
     ///
-    /// Operand: The position register to move into
-    case movePosition
+    /// Operands: Scalar value to match against and booleans
+    case matchScalar
 
-    /// Match against a provided element.
+    /// Match directly (binary semantics) against a series of UTF-8 bytes
     ///
-    /// Operand: Packed condition register to write to and element register to
-    /// compare against.
-    case assertion
+    /// NOTE: Compiler should ensure to only emit this instruction when normalization
+    /// is not required. E.g., scalar-semantic mode or when the matched portion is entirely ASCII
+    /// (which is invariant under NFC). Similary, this is case-sensitive.
+    ///
+    /// TODO: should we add case-insensitive?
+    ///
+    ///     matchUTF8(_: UTF8Register, boundaryCheck: Bool)
+    case matchUTF8
+
+    /// Match a character or a scalar against a set of valid ascii values stored in a bitset
+    ///
+    ///     matchBitset(_: AsciiBitsetRegister, isScalar: Bool)
+    ///
+    /// Operand:
+    ///  - Ascii bitset register containing the bitset
+    ///  - Boolean for if we should match by scalar value
+    case matchBitset
+
+    /// Match against a built-in character class
+    ///
+    ///     matchBuiltin(_: CharacterClassPayload)
+    ///
+    /// Operand: the payload contains
+    /// - The character class
+    /// - If it is inverted
+    /// - If it strictly matches only ascii values
+    case matchBuiltin
+    
+    /// Matches any non newline character
+    /// Operand: If we are in scalar mode or not
+    case matchAnyNonNewline
 
     // MARK: Extension points
 
@@ -175,16 +154,12 @@ extension Instruction {
     /// Operand: Consume function register to call.
     case consumeBy
 
-    /// Custom lookaround assertion operation.
-    /// Triggers a failure if customFunction returns false.
+    /// Lookaround assertion operation. Performs a zero width assertion based on
+    /// the assertion type and options stored in the payload
     ///
-    ///     assert(_ customFunction: (
-    ///       input: Input,
-    ///       currentPos: Position,
-    ///       bounds: Range<Position>
-    ///     ) -> Bool)
+    ///     assert(_:AssertionPayload)
     ///
-    /// Operands: destination bool register, assert hook register
+    /// Operands: AssertionPayload containing assertion type and options
     case assertBy
 
     /// Custom value-creating consume operation.
@@ -228,13 +203,12 @@ extension Instruction {
     /// Precondition: There is a save point to remove
     case clear
 
-    /// View the most recently saved point
+    /// Remove save points up to and including the operand
     ///
-    /// UNIMPLEMENTED
-    case peek
-
-    /// Composite peek-branch-clear else FAIL
-    case restore
+    /// Operand: instruction address to look for
+    ///
+    /// Precondition: The operand is in the save point list
+    case clearThrough
 
     /// Fused save-and-branch. 
     ///
@@ -242,6 +216,13 @@ extension Instruction {
     ///
     case splitSaving
 
+    /// Fused quantify, execute, save instruction
+    /// Quantifies the stored instruction in an inner loop instead of looping through instructions in processor
+    /// Only quantifies specific nodes
+    ///
+    ///     quantify(_:QuantifyPayload)
+    ///
+    case quantify
     /// Begin the given capture
     ///
     ///     beginCapture(_:CapReg)
@@ -283,16 +264,8 @@ extension Instruction {
     /// Signal failure (currently same as `restore`)
     case fail
 
-    /// Halt, fail, and signal failure
-    ///
-    /// Operand: optional string register specifying the reason
-    ///
-    /// TODO: Could have an Error existential area instead
-    case abort
-
     // TODO: Fused assertions. It seems like we often want to
     // branch based on assertion fail or success.
-
 
   }
 }
@@ -378,32 +351,17 @@ extension Instruction {
 
 // TODO: replace with instruction formatters...
 extension Instruction {
-  var stringRegister: StringRegister? {
-    switch opcode {
-    case .nop, .abort:
-      return payload.optionalString
-    case .print:
-      return payload.string
-    default: return nil
-    }
-  }
   var instructionAddress: InstructionAddress? {
     switch opcode {
-    case .branch, .save, .saveAddress, .call:
+    case .branch, .save, .saveAddress:
       return payload.addr
-
-    case .condBranch:
-      return payload.pairedAddrBool.0
-
     default: return nil
     }
   }
   var elementRegister: ElementRegister? {
     switch opcode {
     case .match:
-      return payload.element
-    case .assertion:
-      return payload.pairedElementBool.0
+      return payload.elementPayload.1
     default: return nil
     }
   }

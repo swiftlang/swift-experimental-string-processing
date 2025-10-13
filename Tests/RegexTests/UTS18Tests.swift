@@ -21,6 +21,7 @@
 import XCTest
 @testable // for internal `matches(of:)`
 import _StringProcessing
+import TestSupport
 
 extension UnicodeScalar {
   var value4Digits: String {
@@ -61,7 +62,7 @@ fileprivate func expectFirstMatch<Output: Equatable>(
   XCTAssertEqual(input.firstMatch(of: r)?.output, output, file: file, line: line)
 }
 
-#if os(Linux)
+#if os(Linux) || os(Android)
 func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
 #endif
 
@@ -228,7 +229,7 @@ extension UTS18Tests {
   // - Nonspacing marks are never divided from their base characters, and
   //   otherwise ignored in locating boundaries.
   func testSimpleWordBoundaries() {
-    let simpleWordRegex = regex(#".+?\b"#).wordBoundaryKind(.unicodeLevel1)
+    let simpleWordRegex = regex(#".+?\b"#).wordBoundaryKind(.simple)
     expectFirstMatch(input, simpleWordRegex, input[pos: ..<11])
     expectFirstMatch("don't", simpleWordRegex, "don")
     expectFirstMatch("Cafe\u{301}", simpleWordRegex, "Café")
@@ -291,6 +292,9 @@ extension UTS18Tests {
     // Test \v - vertical space
     lines = lineInput.matches(of: regex(#"\d{2}\v^"#).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 11)
+    // Test \s - whitespace
+    lines = lineInput.matches(of: regex(#"\d{2}\s^"#).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 11)
     // Test anchors as line boundaries
     lines = lineInput.matches(of: regex(#"^\d{2}$"#).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 12)
@@ -305,6 +309,10 @@ extension UTS18Tests {
     // Unicode scalar semantics - \v matches all except for \r\n sequence
     lines = lineInput.matches(
       of: regex(#"\d{2}\v(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 10)
+    // Unicode scalar semantics - \s matches all except for \r\n sequence
+    lines = lineInput.matches(
+      of: regex(#"\d{2}\s(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 10)
 
     // Does not contain an empty line
@@ -322,6 +330,9 @@ extension UTS18Tests {
   // surrogate followed by a trailing surrogate shall be handled as a single
   // code point in matching.
   func testSupplementaryCodePoints() {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     XCTAssertTrue("👍".contains(regex(#"\u{1F44D}"#)))
     XCTAssertTrue("👍".contains(regex(#"[\u{1F440}-\u{1F44F}]"#)))
     XCTAssertTrue("👍👎".contains(regex(#"^[\u{1F440}-\u{1F44F}]+$"#)))
@@ -394,11 +405,16 @@ extension UTS18Tests {
   }
   
   func testCharacterClassesWithStrings() {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     let regex = regex(#"[a-z🧐🇧🇪🇧🇫🇧🇬]"#)
-    XCTAssertTrue("🧐".contains(regex))
-    XCTAssertTrue("🇧🇫".contains(regex))
-    XCTAssertTrue("🧐".contains(regex.matchingSemantics(.unicodeScalar)))
-    XCTAssertTrue("🇧🇫".contains(regex.matchingSemantics(.unicodeScalar)))
+    XCTAssertEqual("🧐", "🧐".wholeMatch(of: regex)?.0)
+    XCTAssertEqual("🇧🇫", "🇧🇫".wholeMatch(of: regex)?.0)
+    XCTAssertEqual("🧐", "🧐".wholeMatch(of: regex.matchingSemantics(.unicodeScalar))?.0)
+    XCTAssertEqual(nil, "🇧🇫".wholeMatch(of: regex.matchingSemantics(.unicodeScalar))?.0)
+    XCTAssertEqual("🧐", "🧐".firstMatch(of: regex.matchingSemantics(.unicodeScalar))?.0)
+    XCTAssertEqual("\u{1f1e7}", "🇧🇫".firstMatch(of: regex.matchingSemantics(.unicodeScalar))?.0)
   }
   
   // RL2.3 Default Word Boundaries
@@ -472,7 +488,12 @@ extension UTS18Tests {
 
     // Matching semantic level
     XCTAssertFalse("👩‍👩‍👧‍👦".contains(regex(#".\N{ZERO WIDTH JOINER}"#)))
-    XCTAssertTrue("👩‍👩‍👧‍👦".contains(regex(#"(?u).\N{ZERO WIDTH JOINER}"#)))
+    
+    // FIXME: Figure out (?X) and (?u) semantics
+    XCTExpectFailure("Figure out (?X) and (?u) semantics") {
+      XCTFail(#"(?u).\N{ZERO WIDTH JOINER}"#)
+      //XCTAssertTrue("👩‍👩‍👧‍👦".contains(regex(#"(?u).\N{ZERO WIDTH JOINER}"#)))
+    }
   }
 
   func testIndividuallyNamedCharacters_XFail() {

@@ -9,10 +9,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 @_spi(RegexBuilder)
-public struct DSLTree: Sendable {
+public struct DSLTree {
   var root: Node
 
   init(_ r: Node) {
@@ -21,8 +21,7 @@ public struct DSLTree: Sendable {
 }
 
 extension DSLTree {
-  @_spi(RegexBuilder)
-  public indirect enum Node: Sendable {
+  indirect enum Node {
     /// Matches each node in order.
     ///
     ///     ... | ... | ...
@@ -37,11 +36,15 @@ extension DSLTree {
     ///
     ///     (...), (?<name>...)
     case capture(
-      name: String? = nil, reference: ReferenceID? = nil, Node)
+      name: String? = nil, reference: ReferenceID? = nil, Node,
+      CaptureTransform? = nil)
 
     /// Matches a noncapturing subpattern.
     case nonCapturingGroup(_AST.GroupKind, Node)
 
+    /// Marks all captures in a subpattern as ignored in strongly-typed output.
+    case ignoreCapturesInTypedOutput(Node)
+    
     // TODO: Consider splitting off grouped conditions, or have
     // our own kind
 
@@ -71,9 +74,6 @@ extension DSLTree {
 
     case quotedLiteral(String)
 
-    /// An embedded literal.
-    case regexLiteral(_AST.ASTNode)
-
     // TODO: What should we do here?
     ///
     /// TODO: Consider splitting off expression functions, or have our own kind
@@ -88,9 +88,6 @@ extension DSLTree {
 
     // MARK: - Extensibility points
 
-    /// Transform a range into a value, most often used inside captures
-    case transform(CaptureTransform, Node)
-
     case consumer(_ConsumerInterface)
 
     case matcher(Any.Type, _MatcherInterface)
@@ -101,8 +98,7 @@ extension DSLTree {
 }
 
 extension DSLTree {
-  @_spi(RegexBuilder)
-  public enum QuantificationKind: Sendable {
+  enum QuantificationKind {
     /// The default quantification kind, as set by options.
     case `default`
     /// An explicitly chosen kind, overriding any options.
@@ -120,19 +116,36 @@ extension DSLTree {
   }
   
   @_spi(RegexBuilder)
-  public struct CustomCharacterClass: Sendable {
+  public struct CustomCharacterClass {
     var members: [Member]
     var isInverted: Bool
     
-    var containsAny: Bool {
+    var containsDot: Bool {
       members.contains { member in
         switch member {
-        case .atom(.any): return true
-        case .custom(let ccc): return ccc.containsAny
+        case .atom(.dot): return true
+        case .custom(let ccc): return ccc.containsDot
         default:
           return false
         }
       }
+    }
+    
+    func coalescingASCIIMembers(_ opts: MatchingOptions) -> CustomCharacterClass {
+      var ascii: [Member] = []
+      var nonAscii: [Member] = []
+      for member in members {
+        if member.asAsciiBitset(opts, false) != nil {
+          ascii.append(member)
+        } else {
+          nonAscii.append(member)
+        }
+      }
+      if ascii.isEmpty || nonAscii.isEmpty { return self }
+      return CustomCharacterClass(members: [
+        .custom(CustomCharacterClass(members: ascii)),
+        .custom(CustomCharacterClass(members: nonAscii))
+      ], isInverted: isInverted)
     }
     
     public init(members: [DSLTree.CustomCharacterClass.Member], isInverted: Bool = false) {
@@ -153,7 +166,7 @@ extension DSLTree {
     }
 
     @_spi(RegexBuilder)
-    public enum Member: Sendable {
+    public enum Member {
       case atom(Atom)
       case range(Atom, Atom)
       case custom(CustomCharacterClass)
@@ -165,22 +178,131 @@ extension DSLTree {
       indirect case intersection(CustomCharacterClass, CustomCharacterClass)
       indirect case subtraction(CustomCharacterClass, CustomCharacterClass)
       indirect case symmetricDifference(CustomCharacterClass, CustomCharacterClass)
+      
+      var isOnlyTrivia: Bool {
+        switch self {
+        case .custom(let ccc):
+          return ccc.members.all(\.isOnlyTrivia)
+        case .trivia:
+          return true
+        default:
+          return false
+        }
+      }
     }
   }
 
   @_spi(RegexBuilder)
-  public enum Atom: Sendable {
+  public enum Atom {
     case char(Character)
     case scalar(Unicode.Scalar)
+
+    /// Any character, including newlines.
     case any
 
-    case assertion(_AST.AssertionKind)
+    /// Any character, excluding newlines. This differs from '.', as it is not
+    /// affected by single line mode.
+    case anyNonNewline
+
+    /// The DSL representation of '.' in a regex literal. This does not match
+    /// newlines unless single line mode is enabled.
+    case dot
+
+    case characterClass(CharacterClass)
+    case assertion(Assertion)
     case backreference(_AST.Reference)
     case symbolicReference(ReferenceID)
 
     case changeMatchingOptions(_AST.MatchingOptionSequence)
 
     case unconverted(_AST.Atom)
+  }
+}
+
+extension DSLTree.Atom {
+  @_spi(RegexBuilder)
+  public enum Assertion: UInt64, Hashable {
+    /// \A
+    case startOfSubject = 0
+
+    /// \Z
+    case endOfSubjectBeforeNewline
+
+    /// \z
+    case endOfSubject
+
+    /// \K
+    case resetStartOfMatch
+
+    /// \G
+    case firstMatchingPositionInSubject
+
+    /// \y
+    case textSegment
+
+    /// \Y
+    case notTextSegment
+
+    /// The DSL's Anchor.startOfLine, which matches the start of a line
+    /// even if `anchorsMatchNewlines` is false.
+    case startOfLine
+
+    /// The DSL's Anchor.endOfLine, which matches the end of a line
+    /// even if `anchorsMatchNewlines` is false.
+    case endOfLine
+
+    /// ^
+    case caretAnchor
+
+    /// $
+    case dollarAnchor
+
+    /// \b (from outside a custom character class)
+    case wordBoundary
+
+    /// \B
+    case notWordBoundary
+  }
+  
+  @_spi(RegexBuilder)
+  public enum CharacterClass: Hashable {
+    case digit
+    case notDigit
+    case horizontalWhitespace
+    case notHorizontalWhitespace
+    case newlineSequence
+    case notNewline
+    case whitespace
+    case notWhitespace
+    case verticalWhitespace
+    case notVerticalWhitespace
+    case word
+    case notWord
+    case anyGrapheme
+    case anyUnicodeScalar
+  }
+}
+
+extension DSLTree.Atom.CharacterClass {
+  @_spi(RegexBuilder)
+  public var inverted: DSLTree.Atom.CharacterClass? {
+    switch self {
+    case .anyGrapheme: return nil
+    case .digit: return .notDigit
+    case .notDigit: return .digit
+    case .word: return .notWord
+    case .notWord: return .word
+    case .horizontalWhitespace: return .notHorizontalWhitespace
+    case .notHorizontalWhitespace: return .horizontalWhitespace
+    case .newlineSequence: return .notNewline
+    case .notNewline: return .newlineSequence
+    case .verticalWhitespace: return .notVerticalWhitespace
+    case .notVerticalWhitespace: return .verticalWhitespace
+    case .whitespace: return .notWhitespace
+    case .notWhitespace: return .whitespace
+    case .anyUnicodeScalar:
+      fatalError("Unsupported")
+    }
   }
 }
 
@@ -223,22 +345,19 @@ extension Unicode.GeneralCategory {
 }
 
 // CollectionConsumer
-@_spi(RegexBuilder)
-public typealias _ConsumerInterface = @Sendable (
+typealias _ConsumerInterface = (
   String, Range<String.Index>
 ) throws -> String.Index?
 
 // Type producing consume
 // TODO: better name
-@_spi(RegexBuilder)
-public typealias _MatcherInterface = @Sendable (
+typealias _MatcherInterface = (
   String, String.Index, Range<String.Index>
 ) throws -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)
-@_spi(RegexBuilder)
-public typealias _CharacterPredicateInterface = (
-  @Sendable (Character) -> Bool
+typealias _CharacterPredicateInterface = (
+  (Character) -> Bool
 )
 
 /*
@@ -253,8 +372,29 @@ public typealias _CharacterPredicateInterface = (
  */
 
 extension DSLTree.Node {
+  /// Indicates whether this node has at least one child node (among other
+  /// associated values).
+  var hasChildNodes: Bool {
+    switch self {
+    case .trivia, .empty, .quotedLiteral,
+        .consumer, .matcher, .characterPredicate,
+        .customCharacterClass, .atom:
+      return false
+      
+    case .orderedChoice(let c), .concatenation(let c):
+      return !c.isEmpty
+      
+    case .convertedRegexLiteral, .capture, .nonCapturingGroup,
+        .quantification, .ignoreCapturesInTypedOutput, .conditional:
+      return true
+      
+    case .absentFunction(let abs):
+      return !abs.ast.children.isEmpty
+    }
+  }
+  
   @_spi(RegexBuilder)
-  public var children: [DSLTree.Node]? {
+  public var children: [DSLTree.Node] {
     switch self {
       
     case let .orderedChoice(v):   return v
@@ -264,14 +404,14 @@ extension DSLTree.Node {
       // Treat this transparently
       return n.children
 
-    case let .capture(_, _, n):           return [n]
+    case let .capture(_, _, n, _):        return [n]
     case let .nonCapturingGroup(_, n):    return [n]
-    case let .transform(_, n):            return [n]
     case let .quantification(_, _, n):    return [n]
+    case let .ignoreCapturesInTypedOutput(n):        return [n]
 
     case let .conditional(_, t, f): return [t,f]
 
-    case .trivia, .empty, .quotedLiteral, .regexLiteral,
+    case .trivia, .empty, .quotedLiteral,
         .consumer, .matcher, .characterPredicate,
         .customCharacterClass, .atom:
       return []
@@ -285,9 +425,16 @@ extension DSLTree.Node {
 extension DSLTree.Node {
   var astNode: AST.Node? {
     switch self {
-    case let .regexLiteral(literal):             return literal.ast
     case let .convertedRegexLiteral(_, literal): return literal.ast
     default: return nil
+    }
+  }
+
+  /// If this node is for a converted literal, look through it.
+  var lookingThroughConvertedLiteral: Self {
+    switch self {
+    case let .convertedRegexLiteral(n, _): return n
+    default: return self
     }
   }
 }
@@ -310,61 +457,36 @@ extension DSLTree {
 }
 
 extension DSLTree {
-  var ast: AST? {
-    guard let root = root.astNode else {
-      return nil
-    }
-    // TODO: Options mapping
-    return AST(root, globalOptions: nil)
-  }
-}
-
-extension DSLTree {
+  /// Indicates whether this DSLTree contains any capture groups.
   var hasCapture: Bool {
     root.hasCapture
   }
 }
 extension DSLTree.Node {
+  /// Indicates whether this DSLTree node contains any capture groups.
   var hasCapture: Bool {
     switch self {
     case .capture:
       return true
-    case let .regexLiteral(re):
-      return re.ast.hasCapture
     case let .convertedRegexLiteral(n, re):
       assert(n.hasCapture == re.ast.hasCapture)
       return n.hasCapture
 
     default:
-      return self.children?.any(\.hasCapture) ?? false
+      return self.children.any(\.hasCapture)
     }
   }
 }
 
 extension DSLTree.Node {
-  /// For typed capture-producing nodes, the type produced.
-  var valueCaptureType: AnyType? {
-    switch self {
-    case let .matcher(t, _):
-      return AnyType(t)
-    case let .transform(t, _):
-      return AnyType(t.resultType)
-    default: return nil
-    }
-  }
-}
-
-extension DSLTree.Node {
-  @_spi(RegexBuilder)
-  public func appending(_ newNode: DSLTree.Node) -> DSLTree.Node {
+  func appending(_ newNode: DSLTree.Node) -> DSLTree.Node {
     if case .concatenation(let components) = self {
       return .concatenation(components + [newNode])
     }
     return .concatenation([self, newNode])
   }
 
-  @_spi(RegexBuilder)
-  public func appendingAlternationCase(
+  func appendingAlternationCase(
     _ newNode: DSLTree.Node
   ) -> DSLTree.Node {
     if case .orderedChoice(let components) = self {
@@ -375,52 +497,99 @@ extension DSLTree.Node {
 }
 
 @_spi(RegexBuilder)
-public struct ReferenceID: Hashable, Sendable {
+public struct ReferenceID: Hashable {
   private static var counter: Int = 0
   var base: Int
 
+  public var _raw: Int {
+    base
+  }
+  
   public init() {
     base = Self.counter
     Self.counter += 1
   }
+  
+  init(_ base: Int) {
+    self.base = base
+  }
 }
 
-@_spi(RegexBuilder)
-public struct CaptureTransform: Hashable, CustomStringConvertible, Sendable {
-  public enum Closure: Sendable {
-    case failable(@Sendable (Substring) throws -> Any?)
-    case nonfailable(@Sendable (Substring) throws -> Any)
+struct CaptureTransform: Hashable, CustomStringConvertible {
+  enum Closure {
+    /// A failable transform.
+    case failable((Any) throws -> Any?)
+    /// Specialized case of `failable` for performance.
+    case substringFailable((Substring) throws -> Any?)
+    /// A non-failable transform.
+    case nonfailable((Any) throws -> Any)
+    /// Specialized case of `failable` for performance.
+    case substringNonfailable((Substring) throws -> Any?)
   }
-  public let resultType: Any.Type
-  public let closure: Closure
+  let argumentType: Any.Type
+  let resultType: Any.Type
+  let closure: Closure
 
-  public init(resultType: Any.Type, closure: Closure) {
+  init(argumentType: Any.Type, resultType: Any.Type, closure: Closure) {
+    self.argumentType = argumentType
     self.resultType = resultType
     self.closure = closure
   }
 
-  public init(
-    resultType: Any.Type,
-    _ closure: @Sendable @escaping (Substring) throws -> Any
+  init<Argument, Result>(
+    _ userSpecifiedTransform: @escaping (Argument) throws -> Result
   ) {
-    self.init(resultType: resultType, closure: .nonfailable(closure))
+    let closure: Closure
+    if let substringTransform = userSpecifiedTransform
+      as? (Substring) throws -> Result {
+      closure = .substringNonfailable(substringTransform)
+    } else {
+      closure = .nonfailable {
+        try userSpecifiedTransform($0 as! Argument) as Any
+      }
+    }
+    self.init(
+      argumentType: Argument.self,
+      resultType: Result.self,
+      closure: closure)
   }
 
-  public init(
-    resultType: Any.Type,
-    _ closure: @Sendable @escaping (Substring) throws -> Any?
+  init<Argument, Result>(
+    _ userSpecifiedTransform: @escaping (Argument) throws -> Result?
   ) {
-    self.init(resultType: resultType, closure: .failable(closure))
+    let closure: Closure
+    if let substringTransform = userSpecifiedTransform
+      as? (Substring) throws -> Result? {
+      closure = .substringFailable(substringTransform)
+    } else {
+      closure = .failable {
+        try userSpecifiedTransform($0 as! Argument) as Any?
+      }
+    }
+    self.init(
+      argumentType: Argument.self,
+      resultType: Result.self,
+      closure: closure)
   }
 
-  public func callAsFunction(_ input: Substring) throws -> Any? {
+  func callAsFunction(_ input: Any) throws -> Any? {
     switch closure {
-    case .nonfailable(let closure):
-      let result = try closure(input)
+    case .nonfailable(let transform):
+      let result = try transform(input)
       assert(type(of: result) == resultType)
       return result
-    case .failable(let closure):
-      guard let result = try closure(input) else {
+    case .substringNonfailable(let transform):
+      let result = try transform(input as! Substring)
+      assert(type(of: result) == resultType)
+      return result
+    case .failable(let transform):
+      guard let result = try transform(input) else {
+        return nil
+      }
+      assert(type(of: result) == resultType)
+      return result
+    case .substringFailable(let transform):
+      guard let result = try transform(input as! Substring) else {
         return nil
       }
       assert(type(of: result) == resultType)
@@ -428,19 +597,252 @@ public struct CaptureTransform: Hashable, CustomStringConvertible, Sendable {
     }
   }
 
-  public static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
+  func callAsFunction(_ input: Substring) throws -> Any? {
+    switch closure {
+    case .substringFailable(let transform):
+      return try transform(input)
+    case .substringNonfailable(let transform):
+      return try transform(input)
+    case .failable(let transform):
+      return try transform(input)
+    case .nonfailable(let transform):
+      return try transform(input)
+    }
+  }
+
+  static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
     unsafeBitCast(lhs.closure, to: (Int, Int).self) ==
       unsafeBitCast(rhs.closure, to: (Int, Int).self)
   }
 
-  public func hash(into hasher: inout Hasher) {
+  func hash(into hasher: inout Hasher) {
     let (fn, ctx) = unsafeBitCast(closure, to: (Int, Int).self)
     hasher.combine(fn)
     hasher.combine(ctx)
   }
 
-  public var description: String {
-    "<transform result_type=\(resultType)>"
+  var description: String {
+    "<transform argument_type=\(argumentType) result_type=\(resultType)>"
+  }
+}
+
+extension CaptureList.Builder {
+  mutating func addCaptures(
+    of node: DSLTree.Node, optionalNesting nesting: OptionalNesting, visibleInTypedOutput: Bool
+  ) {
+    switch node {
+    case let .orderedChoice(children):
+      for child in children {
+        addCaptures(of: child, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
+      }
+
+    case let .concatenation(children):
+      for child in children {
+        addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      }
+
+    case let .capture(name, _, child, transform):
+      captures.append(.init(
+        name: name,
+        type: transform?.resultType ?? child.wholeMatchType,
+        optionalDepth: nesting.depth, visibleInTypedOutput: visibleInTypedOutput, .fake))
+      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+
+    case let .nonCapturingGroup(kind, child):
+      assert(!kind.ast.isCapturing)
+      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      
+    case let .ignoreCapturesInTypedOutput(child):
+      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: false)
+
+    case let .conditional(cond, trueBranch, falseBranch):
+      switch cond.ast {
+      case .group(let g):
+        addCaptures(of: .group(g), optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      default:
+        break
+      }
+
+      addCaptures(of: trueBranch, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
+      addCaptures(of: falseBranch, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
+
+    case let .quantification(amount, _, child):
+      var optNesting = nesting
+      if amount.ast.bounds.atLeast == 0 {
+        optNesting = optNesting.addingOptional
+      }
+      addCaptures(of: child, optionalNesting: optNesting, visibleInTypedOutput: visibleInTypedOutput)
+
+    case let .absentFunction(abs):
+      switch abs.ast.kind {
+      case .expression(_, _, let child):
+        addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      case .clearer, .repeater, .stopper:
+        break
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
+      }
+
+    case let .convertedRegexLiteral(n, _):
+      // We disable nesting for converted AST trees, as literals do not nest
+      // captures. This includes literals nested in a DSL.
+      return addCaptures(of: n, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
+
+    case .matcher:
+      break
+
+    case .customCharacterClass, .atom, .trivia, .empty,
+        .quotedLiteral, .consumer, .characterPredicate:
+      break
+    }
+  }
+
+  static func build(_ dsl: DSLTree) -> CaptureList {
+    var builder = Self()
+    builder.captures.append(
+      .init(type: dsl.root.wholeMatchType, optionalDepth: 0, visibleInTypedOutput: true, .fake))
+    builder.addCaptures(of: dsl.root, optionalNesting: .init(canNest: true), visibleInTypedOutput: true)
+    return builder.captures
+  }
+}
+
+extension DSLTree.Node {
+  /// Returns true if the node is output-forwarding, i.e. not defining its own
+  /// output but forwarding its only child's output.
+  var isOutputForwarding: Bool {
+    switch self {
+    case .nonCapturingGroup, .ignoreCapturesInTypedOutput:
+      return true
+    case .orderedChoice, .concatenation, .capture,
+         .conditional, .quantification, .customCharacterClass, .atom,
+         .trivia, .empty, .quotedLiteral, .absentFunction,
+         .convertedRegexLiteral, .consumer,
+         .characterPredicate, .matcher:
+      return false
+    }
+  }
+
+  /// Returns the output-defining node, peering through any output-forwarding
+  /// nodes.
+  var outputDefiningNode: Self {
+    if isOutputForwarding {
+      assert(children.count == 1)
+      return children[0].outputDefiningNode
+    }
+    return self
+  }
+
+  /// Returns the type of the whole match, i.e. `.0` element type of the output.
+  var wholeMatchType: Any.Type {
+    if case .matcher(let type, _) = outputDefiningNode {
+      return type
+    }
+    return Substring.self
+  }
+}
+
+extension DSLTree.Node {
+  /// Implementation for `canOnlyMatchAtStart`, which maintains the option
+  /// state.
+  ///
+  /// For a given specific node, this method can return one of three values:
+  ///
+  /// - `true`: This node is guaranteed to match only at the start of a subject.
+  /// - `false`: This node can match anywhere in the subject.
+  /// - `nil`: This node is inconclusive about where it can match.
+  ///
+  /// In particular, non-required groups and option-setting groups are
+  /// inconclusive about where they can match.
+  private func _canOnlyMatchAtStartImpl(_ options: inout MatchingOptions) -> Bool? {
+    switch self {
+    // Defining cases
+    case .atom(.assertion(.startOfSubject)):
+      return true
+    case .atom(.assertion(.caretAnchor)):
+      return !options.anchorsMatchNewlines
+      
+    // Changing options doesn't determine `true`/`false`.
+    case .atom(.changeMatchingOptions(let sequence)):
+      options.apply(sequence.ast)
+      return nil
+      
+    // Any other atom or consuming node returns `false`.
+    case .atom, .customCharacterClass, .quotedLiteral:
+      return false
+      
+    // Trivia/empty have no effect.
+    case .trivia, .empty:
+      return nil
+      
+    // In an alternation, all of its children must match only at start.
+    case .orderedChoice(let children):
+      return children.allSatisfy { $0._canOnlyMatchAtStartImpl(&options) == true }
+      
+    // In a concatenation, the first definitive child provides the answer.
+    case .concatenation(let children):
+      for child in children {
+        if let result = child._canOnlyMatchAtStartImpl(&options) {
+          return result
+        }
+      }
+      return false
+
+    // Groups (and other parent nodes) defer to the child.
+    case .nonCapturingGroup(let kind, let child):
+      // Don't let a negative lookahead affect this - need to continue to next sibling
+      if kind.isNegativeLookahead {
+        return nil
+      }
+      options.beginScope()
+      defer { options.endScope() }
+      if case .changeMatchingOptions(let sequence) = kind.ast {
+        options.apply(sequence)
+      }
+      return child._canOnlyMatchAtStartImpl(&options)
+    case .capture(_, _, let child, _):
+      options.beginScope()
+      defer { options.endScope() }
+      return child._canOnlyMatchAtStartImpl(&options)
+    case .ignoreCapturesInTypedOutput(let child),
+        .convertedRegexLiteral(let child, _):
+      return child._canOnlyMatchAtStartImpl(&options)
+
+    // A quantification that doesn't require its child to exist can still
+    // allow a start-only match. (e.g. `/(foo)?^bar/`)
+    case .quantification(let amount, _, let child):
+      return amount.requiresAtLeastOne
+        ? child._canOnlyMatchAtStartImpl(&options)
+        : nil
+
+    // For conditional nodes, both sides must require matching at start.
+    case .conditional(_, let child1, let child2):
+      return child1._canOnlyMatchAtStartImpl(&options) == true
+        && child2._canOnlyMatchAtStartImpl(&options) == true
+
+    // Extended behavior isn't known, so we return `false` for safety.
+    case .consumer, .matcher, .characterPredicate, .absentFunction:
+      return false
+    }
+  }
+  
+  /// Returns a Boolean value indicating whether the regex with this node as
+  /// the root can _only_ match at the start of a subject.
+  ///
+  /// For example, these regexes can only match at the start of a subject:
+  ///
+  /// - `/^foo/`
+  /// - `/(^foo|^bar)/` (both sides of the alternation start with `^`)
+  ///
+  /// These can match other places in a subject:
+  ///
+  /// - `/(^foo)?bar/` (`^` is in an optional group)
+  /// - `/(^foo|bar)/` (only one side of the alternation starts with `^`)
+  /// - `/(?m)^foo/` (`^` means "the start of a line" due to `(?m)`)
+  internal func canOnlyMatchAtStart() -> Bool {
+    var options = MatchingOptions()
+    return _canOnlyMatchAtStartImpl(&options) ?? false
   }
 }
 
@@ -449,87 +851,9 @@ public struct CaptureTransform: Hashable, CustomStringConvertible, Sendable {
 // These wrapper types are required because even @_spi-marked public APIs can't
 // include symbols from implementation-only dependencies.
 
-extension DSLTree.Node {
-  func _addCaptures(
-    to list: inout CaptureList,
-    optionalNesting nesting: Int
-  ) {
-    let addOptional = nesting+1
-    switch self {
-    case let .orderedChoice(children):
-      for child in children {
-        child._addCaptures(to: &list, optionalNesting: addOptional)
-      }
-
-    case let .concatenation(children):
-      for child in children {
-        child._addCaptures(to: &list, optionalNesting: nesting)
-      }
-
-    case let .capture(name, _, child):
-      list.append(.init(
-        name: name,
-        type: child.valueCaptureType?.base,
-        optionalDepth: nesting, .fake))
-      child._addCaptures(to: &list, optionalNesting: nesting)
-
-    case let .nonCapturingGroup(kind, child):
-      assert(!kind.ast.isCapturing)
-      child._addCaptures(to: &list, optionalNesting: nesting)
-
-    case let .conditional(cond, trueBranch, falseBranch):
-      switch cond.ast {
-      case .group(let g):
-        AST.Node.group(g)._addCaptures(to: &list, optionalNesting: nesting)
-      default:
-        break
-      }
-
-      trueBranch._addCaptures(to: &list, optionalNesting: addOptional)
-      falseBranch._addCaptures(to: &list, optionalNesting: addOptional)
-
-
-    case let .quantification(amount, _, child):
-      var optNesting = nesting
-      if amount.ast.bounds.atLeast == 0 {
-        optNesting += 1
-      }
-      child._addCaptures(to: &list, optionalNesting: optNesting)
-
-    case let .regexLiteral(re):
-      return re.ast._addCaptures(to: &list, optionalNesting: nesting)
-
-    case let .absentFunction(abs):
-      switch abs.ast.kind {
-      case .expression(_, _, let child):
-        child._addCaptures(to: &list, optionalNesting: nesting)
-      case .clearer, .repeater, .stopper:
-        break
-      }
-
-    case let .convertedRegexLiteral(n, _):
-      return n._addCaptures(to: &list, optionalNesting: nesting)
-
-    case .matcher:
-      break
-
-    case .transform(_, let child):
-      child._addCaptures(to: &list, optionalNesting: nesting)
-
-    case .customCharacterClass, .atom, .trivia, .empty,
-        .quotedLiteral, .consumer, .characterPredicate:
-      break
-    }
-  }
-
-  var _captureList: CaptureList {
-    var list = CaptureList()
-    self._addCaptures(to: &list, optionalNesting: 0)
-    return list
-  }
-}
-
 extension DSLTree {
+  var captureList: CaptureList { .Builder.build(self) }
+
   /// Presents a wrapped version of `DSLTree.Node` that can provide an internal
   /// `_TreeNode` conformance.
   struct _Tree: _TreeNode {
@@ -549,14 +873,14 @@ extension DSLTree {
         // Treat this transparently
         return _Tree(n).children
 
-      case let .capture(_, _, n):           return [_Tree(n)]
+      case let .capture(_, _, n, _):        return [_Tree(n)]
       case let .nonCapturingGroup(_, n):    return [_Tree(n)]
-      case let .transform(_, n):            return [_Tree(n)]
       case let .quantification(_, _, n):    return [_Tree(n)]
+      case let .ignoreCapturesInTypedOutput(n):        return [_Tree(n)]
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
 
-      case .trivia, .empty, .quotedLiteral, .regexLiteral,
+      case .trivia, .empty, .quotedLiteral,
           .consumer, .matcher, .characterPredicate,
           .customCharacterClass, .atom:
         return []
@@ -570,7 +894,7 @@ extension DSLTree {
   @_spi(RegexBuilder)
   public enum _AST {
     @_spi(RegexBuilder)
-    public struct GroupKind: Sendable {
+    public struct GroupKind {
       internal var ast: AST.Group.Kind
       
       public static var atomicNonCapturing: Self {
@@ -582,15 +906,19 @@ extension DSLTree {
       public static var negativeLookahead: Self {
         .init(ast: .negativeLookahead)
       }
+      
+      internal var isNegativeLookahead: Bool {
+        self.ast == .negativeLookahead
+      }
     }
 
     @_spi(RegexBuilder)
-    public struct ConditionKind: Sendable {
+    public struct ConditionKind {
       internal var ast: AST.Conditional.Condition.Kind
     }
     
     @_spi(RegexBuilder)
-    public struct QuantificationKind: Sendable {
+    public struct QuantificationKind {
       internal var ast: AST.Quantification.Kind
       
       public static var eager: Self {
@@ -605,7 +933,7 @@ extension DSLTree {
     }
     
     @_spi(RegexBuilder)
-    public struct QuantificationAmount: Sendable {
+    public struct QuantificationAmount {
       internal var ast: AST.Quantification.Amount
       
       public static var zeroOrMore: Self {
@@ -618,76 +946,117 @@ extension DSLTree {
         .init(ast: .zeroOrOne)
       }
       public static func exactly(_ n: Int) -> Self {
-        .init(ast: .exactly(.init(faking: n)))
+        .init(ast: .exactly(.init(n, at: .fake)))
       }
       public static func nOrMore(_ n: Int) -> Self {
-        .init(ast: .nOrMore(.init(faking: n)))
+        .init(ast: .nOrMore(.init(n, at: .fake)))
       }
       public static func upToN(_ n: Int) -> Self {
-        .init(ast: .upToN(.init(faking: n)))
+        .init(ast: .upToN(.init(n, at: .fake)))
       }
       public static func range(_ lower: Int, _ upper: Int) -> Self {
-        .init(ast: .range(.init(faking: lower), .init(faking: upper)))
+        .init(ast: .range(.init(lower, at: .fake), .init(upper, at: .fake)))
+      }
+      
+      internal var requiresAtLeastOne: Bool {
+        switch ast {
+        case .zeroOrOne, .zeroOrMore, .upToN:
+          return false
+        case .oneOrMore:
+          return true
+        case .exactly(let num), .nOrMore(let num), .range(let num, _):
+          return num.value.map { $0 > 0 } ?? false
+        #if RESILIENT_LIBRARIES
+        @unknown default:
+          fatalError()
+        #endif
+        }
       }
     }
     
     @_spi(RegexBuilder)
-    public struct ASTNode: Sendable {
+    public struct ASTNode {
       internal var ast: AST.Node
     }
     
     @_spi(RegexBuilder)
-    public struct AbsentFunction: Sendable {
+    public struct AbsentFunction {
       internal var ast: AST.AbsentFunction
     }
     
     @_spi(RegexBuilder)
-    public struct AssertionKind: Sendable {
-      internal var ast: AST.Atom.AssertionKind
-      
-      public static func startOfSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .startOfSubject)
-      }
-      public static func endOfSubjectBeforeNewline(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfSubjectBeforeNewline)
-      }
-      public static func endOfSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfSubject)
-      }
-      public static func firstMatchingPositionInSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .firstMatchingPositionInSubject)
-      }
-      public static func textSegmentBoundary(_ inverted: Bool = false) -> Self {
-        inverted
-          ? .init(ast: .notTextSegment)
-          : .init(ast: .textSegment)
-      }
-      public static func startOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .startOfLine)
-      }
-      public static func endOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfLine)
-      }
-      public static func wordBoundary(_ inverted: Bool = false) -> Self {
-        inverted
-          ? .init(ast: .notWordBoundary)
-          : .init(ast: .wordBoundary)
-      }
-    }
-    
-    @_spi(RegexBuilder)
-    public struct Reference: Sendable {
+    public struct Reference {
       internal var ast: AST.Reference
     }
     
     @_spi(RegexBuilder)
-    public struct MatchingOptionSequence: Sendable {
+    public struct MatchingOptionSequence {
       internal var ast: AST.MatchingOptionSequence
     }
     
-    @_spi(RegexBuilder)
-    public struct Atom: Sendable {
+    public struct Atom {
       internal var ast: AST.Atom
+    }
+  }
+}
+
+extension DSLTree.Atom {
+  /// Returns a Boolean indicating whether the atom represents a pattern that's
+  /// matchable, e.g. a character or a scalar, not representing a change of
+  /// matching options or an assertion.
+  var isMatchable: Bool {
+    switch self {
+    case .changeMatchingOptions, .assertion:
+      return false
+    case .char, .scalar, .any, .anyNonNewline, .dot, .backreference,
+        .symbolicReference, .unconverted, .characterClass:
+      return true
+    }
+  }
+}
+
+extension DSLTree.Node {
+  // Individual public API functions are in the generated Variadics.swift file.
+  /// Generates a DSL tree node for a repeated range of the given node.
+  @available(SwiftStdlib 5.7, *)
+  static func repeating(
+    _ range: Range<Int>,
+    _ behavior: RegexRepetitionBehavior?,
+    _ node: DSLTree.Node
+  ) -> DSLTree.Node {
+    // TODO: Throw these as errors
+    precondition(range.lowerBound >= 0, "Cannot specify a negative lower bound")
+    precondition(!range.isEmpty, "Cannot specify an empty range")
+
+    let kind: DSLTree.QuantificationKind = behavior
+      .map { .explicit($0.dslTreeKind) } ?? .default
+
+    // The upper bound needs adjusting down as
+    // `.quantification` expects a closed range.
+    let lower = range.lowerBound
+    let upperInclusive = range.upperBound - 1
+
+    // Unbounded cases
+    if range.upperBound == Int.max {
+      switch lower {
+      case 0: // 0...
+        return .quantification(.zeroOrMore, kind, node)
+      case 1: // 1...
+        return .quantification(.oneOrMore, kind, node)
+      default: // n...
+        return .quantification(.nOrMore(lower), kind, node)
+      }
+    }
+    if range.count == 1 {
+      // ..<1 or ...0 or any range with count == 1
+      // Note: `behavior` is ignored in this case
+      return .quantification(.exactly(lower), .default, node)
+    }
+    switch lower {
+    case 0: // 0..<n or 0...n or ..<n or ...n
+      return .quantification(.upToN(upperInclusive), kind, node)
+    default:
+      return .quantification(.range(lower, upperInclusive), kind, node)
     }
   }
 }

@@ -9,56 +9,49 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
-struct MEProgram<Input: Collection> where Input.Element: Equatable {
+struct MEProgram {
+  typealias Input = String
+
   typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
-  typealias AssertionFunction =
-    (Input, Input.Index, Range<Input.Index>) throws -> Bool
   typealias TransformFunction =
-    (Input, Range<Input.Index>) throws -> Any?
+    (Input, Processor._StoredCapture) throws -> Any?
   typealias MatcherFunction =
     (Input, Input.Index, Range<Input.Index>) throws -> (Input.Index, Any)?
 
   var instructions: InstructionList<Instruction>
+  var wholeMatchValueRegister: ValueRegister?
 
-  var staticElements: [Input.Element]
-  var staticSequences: [[Input.Element]]
-  var staticStrings: [String]
-  var staticConsumeFunctions: [ConsumeFunction]
-  var staticAssertionFunctions: [AssertionFunction]
-  var staticTransformFunctions: [TransformFunction]
-  var staticMatcherFunctions: [MatcherFunction]
-
-  var registerInfo: RegisterInfo
-
-  var enableTracing: Bool = false
-
+  var enableTracing: Bool
+  var enableMetrics: Bool
+  
   let captureList: CaptureList
   let referencedCaptureOffsets: [ReferenceID: Int]
   
   var initialOptions: MatchingOptions
+  var canOnlyMatchAtStart: Bool
+
+  // We store the initial register state in the program, so that
+  // processors can be spun up quicker (useful for running same regex
+  // over many, many smaller inputs).
+  var registers: Processor.Registers
+  var storedCaptures: [Processor._StoredCapture]
+
 }
 
 extension MEProgram: CustomStringConvertible {
   var description: String {
+    // TODO: Re-instate better pretty-printing functionality
+
     var result = """
-    Elements: \(staticElements)
-    Strings: \(staticStrings)
 
     """
-    if !staticConsumeFunctions.isEmpty {
-      result += "Consume functions: \(staticConsumeFunctions)"
-    }
-
     // TODO: Extract into formatting code
 
     for idx in instructions.indices {
       let inst = instructions[idx]
       result += "[\(idx.rawValue)] \(inst)"
-      if let sp = inst.stringRegister {
-        result += " // \(staticStrings[sp.rawValue])"
-      }
       if let ia = inst.instructionAddress {
         result += " // \(instructions[ia])"
       }
