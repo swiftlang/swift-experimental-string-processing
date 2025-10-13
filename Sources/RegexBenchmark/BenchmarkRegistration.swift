@@ -32,6 +32,10 @@ extension BenchmarkRunner {
 
     self.addURLWithWordBoundaries()
     self.addFSPathsRegex()
+
+    // Register community benchmarks
+    self.addCommunityBenchmark_sspringerURL()
+
     // -- end of registrations --
   }
 }
