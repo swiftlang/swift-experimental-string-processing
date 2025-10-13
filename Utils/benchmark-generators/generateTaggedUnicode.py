@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 ##===----------------------------------------------------------------------===##
 ##
 ## This source file is part of the Swift.org open source project
@@ -11,7 +9,6 @@
 ##
 ##===----------------------------------------------------------------------===##
 
->>>>>>> main
 # Generates lines of junk unicode wrapped in html tags
 import random
 
@@ -30,12 +27,6 @@ end = " </data>"
 minLine = 10
 maxLine = 100
 
-<<<<<<< HEAD
-def get_random(i):
-   return "".join([chr(random.randint(low, high)) for _ in range(i)])
-   
-lines = [start + get_random(random.randint(minLine, maxLine)) + end for _ in range(numLines)]
-=======
 
 def get_random(i):
     return "".join([chr(random.randint(low, high)) for _ in range(i)])
@@ -45,6 +36,5 @@ lines = [
     start + get_random(random.randint(minLine, maxLine)) + end
     for _ in range(numLines)
 ]
->>>>>>> main
 
 print("\n".join(lines))

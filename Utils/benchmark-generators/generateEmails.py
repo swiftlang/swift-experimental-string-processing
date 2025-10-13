@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-# python3 generateEmails.py > output.txt
-
-import string
-import random
-=======
 ##===----------------------------------------------------------------------===##
 ##
 ## This source file is part of the Swift.org open source project
@@ -21,7 +15,6 @@ import random
 import string
 
 random.seed(0)
->>>>>>> main
 
 domain_charset = string.ascii_letters + string.digits + ".-"
 locale_charset = domain_charset + "_%+"
@@ -31,19 +24,6 @@ n = 1000
 # for the most part this will generate mostly valid emails
 # there are some edge cases with double hyphens and double periods that cause
 # issues but otherwise this should work
-<<<<<<< HEAD
-
-for _ in range(n):
-  domain_len = random.randint(2,64)
-  locale_len = random.randint(2,64)
-  tld_len = random.randint(2,10)
-  
-  domain = "".join(random.sample(domain_charset, domain_len))
-  locale = "".join(random.sample(locale_charset, locale_len))
-  tld = "".join(random.sample(string.ascii_lowercase, tld_len))
-  email = locale + "@" + domain + "." + tld
-  print(email.lower())
-=======
 emails = []
 for _ in range(n):
     domain_len = random.randint(2, 64)
@@ -69,4 +49,3 @@ extension Inputs {{
 email_text = "\n    ".join(emails)
 email_list_formatted = "[" + ",\n    ".join(["\"" + x + "\"" for x in emails]) + "]"
 print(res.format(email_text, email_list_formatted))
->>>>>>> main

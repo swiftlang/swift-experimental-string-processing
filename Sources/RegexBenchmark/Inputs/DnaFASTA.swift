@@ -1,3 +1,18 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2025 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
+// Generated using one of the "fasta" programs in
+// the Computer Language Benchmarks Game:
+// https://benchmarksgame-team.pages.debian.net/benchmarksgame/description/fasta.html#fasta
+
 extension Inputs {
   static let dnaFASTA = """
 >ONE Homo sapiens alu
