@@ -1,0 +1,25 @@
+.gitignore
+**/.gitignore
+.licenseignore
+.gitattributes
+.git-blame-ignore-revs
+.mailfilter
+.mailmap
+.spi.yml
+.swift-format
+.editorconfig
+.github/*
+.build
+*.py
+*.yml
+*.yaml
+*.cmake
+*.cmake.in
+Package.swift
+**/Package.swift
+Package@*.swift
+**/Package@*.swift
+Package.resolved
+**/Package.resolved
+.unacceptablelanguageignore
+ -a*/Snapshots/*

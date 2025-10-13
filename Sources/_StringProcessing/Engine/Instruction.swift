@@ -37,6 +37,22 @@ extension Instruction {
     ///
     case moveImmediate
 
+    /// Move the current position into a register
+    ///
+    ///     moveCurrentPosition(into: PositionRegister)
+    ///
+    /// Operands:
+    ///   - Position register to move into
+    case moveCurrentPosition
+    
+    /// Set the current position to the value stored in the register
+    ///
+    ///     restorePosition(from: PositionRegister)
+    ///
+    /// Operands:
+    ///  - Position register to read from
+    case restorePosition
+
     // MARK: General Purpose: Control flow
 
     /// Branch to a new instruction
@@ -57,6 +73,16 @@ extension Instruction {
     ///
     case condBranchZeroElseDecrement
 
+    /// Conditionally branch if the current position is the same as the register
+    ///
+    ///     condBranch(
+    ///       to: InstAddr, ifSamePositionAs: PositionRegister)
+    ///
+    /// Operands:
+    ///   - Instruction address to branch to, if the position in the register is the same as currentPosition
+    ///   - Position register to check against
+    case condBranchSamePosition
+  
     // TODO: Function calls
 
     // MARK: - Matching
@@ -72,23 +98,53 @@ extension Instruction {
 
     /// Composite assert-advance else restore.
     ///
-    ///     match(_: EltReg)
+    ///     match(_: EltReg, isCaseInsensitive: Bool)
     ///
-    /// Operand: Element register to compare against.
+    /// Operands:
+    ///  - Element register to compare against.
+    ///  - Boolean for if we should match in a case insensitive way
     case match
 
-    /// Match against a sequence of elements
+    /// Match against a scalar and possibly perform a boundary check or match in a case insensitive way
     ///
-    ///     matchSequence(_: SeqReg)
+    ///     matchScalar(_: Unicode.Scalar, isCaseInsensitive: Bool, boundaryCheck: Bool)
     ///
-    /// Operand: Sequence register to compare against.
-    case matchSequence
+    /// Operands: Scalar value to match against and booleans
+    case matchScalar
 
-    /// TODO: builtin assertions and anchors
-    case builtinAssertion
+    /// Match directly (binary semantics) against a series of UTF-8 bytes
+    ///
+    /// NOTE: Compiler should ensure to only emit this instruction when normalization
+    /// is not required. E.g., scalar-semantic mode or when the matched portion is entirely ASCII
+    /// (which is invariant under NFC). Similary, this is case-sensitive.
+    ///
+    /// TODO: should we add case-insensitive?
+    ///
+    ///     matchUTF8(_: UTF8Register, boundaryCheck: Bool)
+    case matchUTF8
 
-    /// TODO: builtin character classes
-    case builtinCharacterClass
+    /// Match a character or a scalar against a set of valid ascii values stored in a bitset
+    ///
+    ///     matchBitset(_: AsciiBitsetRegister, isScalar: Bool)
+    ///
+    /// Operand:
+    ///  - Ascii bitset register containing the bitset
+    ///  - Boolean for if we should match by scalar value
+    case matchBitset
+
+    /// Match against a built-in character class
+    ///
+    ///     matchBuiltin(_: CharacterClassPayload)
+    ///
+    /// Operand: the payload contains
+    /// - The character class
+    /// - If it is inverted
+    /// - If it strictly matches only ascii values
+    case matchBuiltin
+    
+    /// Matches any non newline character
+    /// Operand: If we are in scalar mode or not
+    case matchAnyNonNewline
 
     // MARK: Extension points
 
@@ -98,16 +154,12 @@ extension Instruction {
     /// Operand: Consume function register to call.
     case consumeBy
 
-    /// Custom lookaround assertion operation.
-    /// Triggers a failure if customFunction returns false.
+    /// Lookaround assertion operation. Performs a zero width assertion based on
+    /// the assertion type and options stored in the payload
     ///
-    ///     assert(_ customFunction: (
-    ///       input: Input,
-    ///       currentPos: Position,
-    ///       bounds: Range<Position>
-    ///     ) -> Bool)
+    ///     assert(_:AssertionPayload)
     ///
-    /// Operands: destination bool register, assert hook register
+    /// Operands: AssertionPayload containing assertion type and options
     case assertBy
 
     /// Custom value-creating consume operation.
@@ -164,6 +216,13 @@ extension Instruction {
     ///
     case splitSaving
 
+    /// Fused quantify, execute, save instruction
+    /// Quantifies the stored instruction in an inner loop instead of looping through instructions in processor
+    /// Only quantifies specific nodes
+    ///
+    ///     quantify(_:QuantifyPayload)
+    ///
+    case quantify
     /// Begin the given capture
     ///
     ///     beginCapture(_:CapReg)
@@ -302,7 +361,7 @@ extension Instruction {
   var elementRegister: ElementRegister? {
     switch opcode {
     case .match:
-      return payload.element
+      return payload.elementPayload.1
     default: return nil
     }
   }

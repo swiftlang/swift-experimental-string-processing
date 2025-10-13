@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 import _StringProcessing
 
 extension BenchmarkRunner {
@@ -12,46 +23,55 @@ extension BenchmarkRunner {
     
     let input = Inputs.graphemeBreakData
     
-    register(Benchmark(
-      name: "BasicCCC",
-      regex: try! Regex(basic),
-      type: .allMatches,
-      target: input))
+    // TODO: Which of these can be cross-benchmarks?
+
+    register(
+      nameBase: "BasicCCC",
+      input: input,
+      pattern: basic,
+      try! Regex(basic),
+      .allMatches)
     
-    register(Benchmark(
-      name: "BasicRangeCCC",
-      regex: try! Regex(basicRange),
-      type: .allMatches,
-      target: input))
+    register(
+      nameBase: "BasicRangeCCC",
+      input: input,
+      pattern: basicRange,
+      try! Regex(basicRange),
+      .allMatches)
     
-    register(Benchmark(
-      name: "CaseInsensitiveCCC",
-      regex: try! Regex(caseInsensitive),
-      type: .allMatches,
-      target: input))
+    register(
+      nameBase: "CaseInsensitiveCCC",
+      input: input,
+      pattern: caseInsensitive,
+      try! Regex(caseInsensitive),
+      .allMatches)
     
-    register(Benchmark(
-      name: "InvertedCCC",
-      regex: try! Regex(inverted),
-      type: .allMatches,
-      target: input))
+    register(
+      nameBase: "InvertedCCC",
+      input: input,
+      pattern: inverted,
+      try! Regex(inverted),
+      .allMatches)
     
-    register(Benchmark(
-      name: "SubtractionCCC",
-      regex: try! Regex(subtraction),
-      type: .allMatches,
-      target: input))
+    register(
+      nameBase: "SubtractionCCC",
+      input: input,
+      pattern: subtraction,
+      try! Regex(subtraction),
+      .allMatches)
     
-    register(Benchmark(
-      name: "IntersectionCCC",
-      regex: try! Regex(intersection),
-      type: .allMatches,
-      target: input))
+    register(
+      nameBase: "IntersectionCCC",
+      input: input,
+      pattern: intersection,
+      try! Regex(intersection),
+      .allMatches)
     
-    register(Benchmark(
-      name: "symDiffCCC",
-      regex: try! Regex(symmetricDifference),
-      type: .allMatches,
-      target: input))
+    register(
+      nameBase: "symDiffCCC",
+      input: input,
+      pattern: symmetricDifference,
+      try! Regex(symmetricDifference),
+      .allMatches)
   }
 }

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 /// A type that represents the current state of regex matching options, with
 /// stack-based scoping.
@@ -110,6 +110,11 @@ extension MatchingOptions {
     !stack.last!.contains(.unicodeWordBoundaries)
   }
   
+  var usesExtendedWhitespace: Bool {
+    stack.last!.contains(.extended)
+      || stack.last!.contains(.extraExtended)
+  }
+  
   enum SemanticLevel {
     case graphemeCluster
     case unicodeScalar
@@ -120,17 +125,17 @@ extension MatchingOptions {
       ? .graphemeCluster
       : .unicodeScalar
   }
-}
 
-// Deprecated CharacterClass.MatchLevel API
-extension MatchingOptions {
-  var matchLevel: _CharacterClassModel.MatchLevel {
-    switch semanticLevel {
-    case .graphemeCluster:
-      return .graphemeCluster
-    case .unicodeScalar:
-      return .unicodeScalar
-    }
+  /// Whether matching needs to honor canonical equivalence.
+  ///
+  /// Currently, this is synonymous with grapheme-cluster semantics, but could
+  /// become its own option in the future
+  var usesCanonicalEquivalence: Bool {
+    semanticLevel == .graphemeCluster
+  }
+
+  var usesNSRECompatibleDot: Bool {
+    stack.last!.contains(.nsreCompatibleDot)
   }
 }
 
@@ -153,6 +158,7 @@ extension MatchingOptions {
     // Not available via regex literal flags
     case transparentBounds
     case withoutAnchoringBounds
+    case nsreCompatibleDot
 
     // Oniguruma options
     case asciiOnlyDigit
@@ -172,6 +178,10 @@ extension MatchingOptions {
     
     // Swift-only default possessive quantifier
     case possessiveByDefault
+    
+    // Whitespace options
+    case extended
+    case extraExtended
 
     init?(_ astKind: AST.MatchingOption.Kind) {
       switch astKind {
@@ -209,10 +219,16 @@ extension MatchingOptions {
         self = .byteSemantics
       case .possessiveByDefault:
         self = .possessiveByDefault
-        
-      // Whitespace options are only relevant during parsing, not compilation.
-      case .extended, .extraExtended:
-        return nil
+      case .nsreCompatibleDot:
+        self = .nsreCompatibleDot
+      case .extended:
+        self = .extended
+      case .extraExtended:
+        self = .extraExtended
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     }
     
@@ -311,9 +327,12 @@ extension MatchingOptions.Representation {
     [.reluctantByDefault, .possessiveByDefault]
   }
   
+  // Uses level 2 Unicode word boundaries
+  static var unicodeWordBoundaries: Self { .init(.unicodeWordBoundaries) }
+  
   /// The default set of options.
   static var `default`: Self {
-    [.graphemeClusterSemantics, .textSegmentGraphemeMode]
+    [.graphemeClusterSemantics, .textSegmentGraphemeMode, .unicodeWordBoundaries]
   }
 }
 

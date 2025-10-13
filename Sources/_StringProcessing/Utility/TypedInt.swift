@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
 
 // Just a phantom-typed Int wrapper.
 struct TypedInt<👻>: RawRepresentable, Hashable {
@@ -98,10 +99,6 @@ enum _Distance {}
 typealias InstructionAddress = TypedInt<_InstructionAddress>
 enum _InstructionAddress {}
 
-/// A position in the call stack, i.e. for save point restores
-typealias CallStackAddress = TypedInt<_CallStackAddress>
-enum _CallStackAddress {}
-
 /// A position in a position stack, i.e. for NFA simulation
 typealias PositionStackAddress = TypedInt<_PositionStackAddress>
 enum _PositionStackAddress {}
@@ -109,7 +106,6 @@ enum _PositionStackAddress {}
 /// A position in the save point stack, i.e. for backtracking
 typealias SavePointStackAddress = TypedInt<_SavePointAddress>
 enum _SavePointAddress {}
-
 
 // MARK: - Registers
 
@@ -121,8 +117,9 @@ enum _SavePointAddress {}
 typealias ElementRegister = TypedInt<_ElementRegister>
 enum _ElementRegister {}
 
-typealias SequenceRegister = TypedInt<_SequenceRegister>
-enum _SequenceRegister {}
+/// The register number for a sequence of UTF-8 bytes
+typealias UTF8Register = TypedInt<_UTF8Register>
+enum _UTF8Register {}
 
 /// The register number for a stored boolean value
 ///
@@ -134,13 +131,13 @@ enum _BoolRegister {}
 typealias StringRegister = TypedInt<_StringRegister>
 enum _StringRegister {}
 
+/// Used for matching sets of ascii values via bitsets
+typealias AsciiBitsetRegister = TypedInt<_AsciiBitsetRegister>
+enum _AsciiBitsetRegister {}
+
 /// Used for consume functions, e.g. character classes
 typealias ConsumeFunctionRegister = TypedInt<_ConsumeFunctionRegister>
 enum _ConsumeFunctionRegister {}
-
-/// Used for assertion functions, e.g. anchors etc
-typealias AssertionFunctionRegister = TypedInt<_AssertionFunctionRegister>
-enum _AssertionFunctionRegister {}
 
 /// Used for capture transforms, etc
 typealias TransformRegister = TypedInt<_TransformRegister>

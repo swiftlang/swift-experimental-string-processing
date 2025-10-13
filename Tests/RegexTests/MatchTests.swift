@@ -11,24 +11,155 @@
 
 import XCTest
 @testable import _RegexParser
-@testable import _StringProcessing
+@testable @_spi(RegexBenchmark) @_spi(Foundation) import _StringProcessing
+import TestSupport
 
 struct MatchError: Error {
-    var message: String
-    init(_ message: String) {
-        self.message = message
-    }
+  var message: String
+  init(_ message: String) {
+    self.message = message
+  }
+}
+
+// This just piggy-backs on the existing match testing to validate that
+// literal patterns round trip correctly.
+@available(SwiftStdlib 6.0, *)
+func _roundTripLiteral(
+  _ regexStr: String,
+  syntax: SyntaxOptions
+) throws -> Regex<AnyRegexOutput>? {
+  guard let pattern = try Regex(regexStr, syntax: syntax)._literalPattern else {
+    return nil
+  }
+  
+  let remadeRegex = try Regex(pattern)
+  XCTAssertEqual(pattern, remadeRegex._literalPattern)
+  return remadeRegex
 }
 
 func _firstMatch(
   _ regexStr: String,
   input: String,
+  validateOptimizations: Bool,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   syntax: SyntaxOptions = .traditional
-) throws -> (String, [String?]) {
-  let regex = try Regex(regexStr, syntax: syntax)
-  guard let result = try regex.firstMatch(in: input) else {
-    throw MatchError("match not found for \(regexStr) in \(input)")
+) throws -> (String, [String?])? {
+  var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
+  let result = try regex.firstMatch(in: input)
+
+  func validateSubstring(_ substringInput: Substring) throws {
+    // Sometimes the characters we add to a substring merge with existing
+    // string members. This messes up cross-validation, so skip the test.
+    guard input == substringInput else { return }
+    
+    let substringResult = try regex.firstMatch(in: substringInput)
+    switch (result, substringResult) {
+    case (nil, nil):
+      break
+    case let (result?, substringResult?):
+      if substringResult.range.upperBound > substringInput.endIndex {
+        throw MatchError("Range exceeded substring upper bound for \(input) and \(regexStr)")
+      }
+      let stringMatch = input[result.range]
+      let substringMatch = substringInput[substringResult.range]
+      if stringMatch != substringMatch {
+        throw MatchError("""
+        Pattern: '\(regexStr)'
+        String match returned: '\(stringMatch)'
+        Substring match returned: '\(substringMatch)'
+        """)
+      }
+    case (.some(let result), nil):
+      throw MatchError("""
+        Pattern: '\(regexStr)'
+        Input: '\(input)'
+        Substring '\(substringInput)' ('\(substringInput.base)')
+        String match returned: '\(input[result.range])'
+        Substring match returned: nil
+        """)
+    case (nil, .some(let substringResult)):
+      throw MatchError("""
+        Pattern: '\(regexStr)'
+        Input: '\(input)'
+        Substring '\(substringInput)' ('\(substringInput.base)')
+        String match returned: nil
+        Substring match returned: '\(substringInput[substringResult.range])'
+        """)
+    }
   }
+
+  if #available(SwiftStdlib 6.0, *) {
+    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
+    let roundTripResult = try? roundTripRegex?
+      .matchingSemantics(semanticLevel)
+      .firstMatch(in: input)?[0]
+      .substring
+    switch (result?[0].substring, roundTripResult) {
+    case let (match?, rtMatch?):
+      XCTAssertEqual(match, rtMatch)
+    case (nil, nil):
+      break // okay
+    case let (match?, _):
+      XCTFail("""
+        Didn't match in round-tripped version of '\(regexStr)'
+        For input '\(input)'
+        Original: '\(regexStr)'
+        _literalPattern: '\(roundTripRegex?._literalPattern ?? "<no pattern>")'
+        """)
+    case let (_, rtMatch?):
+      XCTFail("""
+        Incorrectly matched as '\(rtMatch)'
+        For input '\(input)'
+        Original: '\(regexStr)'
+        _literalPattern: '\(roundTripRegex!._literalPattern!)'
+        """)
+    }
+  }
+
+  if !input.isEmpty {
+    try validateSubstring("\(input)\(input.last!)".dropLast())
+  }
+  try validateSubstring("\(input)\n".dropLast())
+  try validateSubstring("A\(input)Z".dropFirst().dropLast())
+  do {
+    // Test sub-character slicing
+    let str = input + "\n"
+    let prevIndex = str.unicodeScalars.index(str.endIndex, offsetBy: -1)
+    try validateSubstring(str[..<prevIndex])
+  }
+  do {
+    // Validate that we don't crash when sub-scalar slicing is used
+    // Actual matching behavior is untested here
+    let str = "\u{e9}\(input)e\u{e9}"
+    let upper = str.utf8.index(before: str.endIndex)
+    _ = try regex.firstMatch(in: str[..<upper])
+    let lower = str.utf8.index(after: str.startIndex)
+    _ = try regex.firstMatch(in: str[lower...])
+  }
+
+  if validateOptimizations {
+    precondition(regex._forceAction(.addOptions(.disableOptimizations)))
+    let unoptResult = try regex.firstMatch(in: input)
+    if result != nil && unoptResult == nil {
+      throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
+    }
+    if result == nil && unoptResult != nil {
+      throw MatchError("match not found in optimized \(regexStr) in \(input)")
+    }
+    if let result = result, let unoptResult = unoptResult {
+      let optMatch = String(input[result.range])
+      let unoptMatch = String(input[unoptResult.range])
+      if optMatch != unoptMatch {
+        throw MatchError("""
+
+        Unoptimized regex returned: '\(unoptMatch)'
+        Optimized regex returned: '\(optMatch)'
+        """)
+      }
+    }
+  }
+  
+  guard let result = result else { return nil }
   let caps = result.output.slices(from: input)
   return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
@@ -41,6 +172,8 @@ func flatCaptureTest(
   syntax: SyntaxOptions = .traditional,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -49,6 +182,8 @@ func flatCaptureTest(
       guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
+        validateOptimizations: validateOptimizations,
+        semanticLevel: semanticLevel,
         syntax: syntax
       ) else {
         if expect == nil {
@@ -98,6 +233,8 @@ func matchTest(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -110,12 +247,41 @@ func matchTest(
       enableTracing: enableTracing,
       dumpAST: dumpAST,
       xfail: xfail,
+      validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       file: file,
       line: line)
   }
 }
 
 // TODO: Adjust below to also check captures
+
+/// Test all matches in a string, using `matches(of:)`.
+func allMatchesTest(
+  _ regex: String,
+  input: String,
+  matches: [Substring],
+  xfail: Bool = false,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
+  file: StaticString = #filePath,
+  line: UInt = #line
+) {
+  do {
+    let regex = try Regex(regex).matchingSemantics(semanticLevel)
+    let allMatches = input.matches(of: regex).map(\.0)
+
+    if xfail {
+      XCTAssertNotEqual(allMatches, matches, file: file, line: line)
+    } else {
+      XCTAssertEqual(allMatches, matches, "Incorrect match", file: file, line: line)
+    }
+  } catch {
+    if !xfail {
+      XCTFail("\(error)", file: file, line: line)
+    }
+    return
+  }
+}
 
 /// Test the first match in a string, via `firstRange(of:)`
 func firstMatchTest(
@@ -126,24 +292,26 @@ func firstMatchTest(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
   do {
-    let (found, _) = try _firstMatch(
+    let found = try _firstMatch(
       regex,
       input: input,
-      syntax: syntax)
+      validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
+      syntax: syntax)?.0
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
     } else {
-      XCTAssertEqual(found, match, file: file, line: line)
+      XCTAssertEqual(found, match, "Incorrect match", file: file, line: line)
     }
   } catch {
-    // FIXME: This allows non-matches to succeed even when xfail'd
-    // When xfail == true, this should report failure for match == nil
-    if !xfail && match != nil {
+    if !xfail {
       XCTFail("\(error)", file: file, line: line)
     }
     return
@@ -157,6 +325,7 @@ func firstMatchTests(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -169,6 +338,7 @@ func firstMatchTests(
       enableTracing: enableTracing,
       dumpAST: dumpAST,
       xfail: xfail,
+      semanticLevel: semanticLevel,
       file: file,
       line: line)
   }
@@ -278,6 +448,55 @@ extension RegexTests {
       match: "\u{006f}\u{031b}\u{0323}"
     )
 
+    // e + combining accents
+    firstMatchTest(
+      #"e\u{301 302 303}"#,
+      input: "e\u{301}\u{302}\u{303}",
+      match: "e\u{301}\u{302}\u{303}"
+    )
+    firstMatchTest(
+      #"e\u{315 35C 301}"#,
+      input: "e\u{301}\u{315}\u{35C}",
+      match: "e\u{301}\u{315}\u{35C}"
+    )
+    firstMatchTest(
+      #"e\u{301}\u{302 303}"#,
+      input: "e\u{301}\u{302}\u{303}",
+      match: "e\u{301}\u{302}\u{303}"
+    )
+    firstMatchTest(
+      #"e\u{35C}\u{315 301}"#,
+      input: "e\u{301}\u{315}\u{35C}",
+      match: "e\u{301}\u{315}\u{35C}"
+    )
+    firstMatchTest(
+      #"e\u{35C}\u{315 301}"#,
+      input: "e\u{315}\u{301}\u{35C}",
+      match: "e\u{315}\u{301}\u{35C}"
+    )
+    firstMatchTest(
+      #"e\u{301}\de\u{302}"#,
+      input: "e\u{301}0e\u{302}",
+      match: "e\u{301}0e\u{302}"
+    )
+    firstMatchTest(
+      #"(?x) e \u{35C} \u{315}(?#hello)\u{301}"#,
+      input: "e\u{301}\u{315}\u{35C}",
+      match: "e\u{301}\u{315}\u{35C}"
+    )
+    firstMatchTest(
+      #"(?x) e \u{35C} \u{315 301}"#,
+      input: "e\u{301}\u{315}\u{35C}",
+      match: "e\u{301}\u{315}\u{35C}"
+    )
+
+    // We don't coalesce across groups.
+    firstMatchTests(
+      #"e\u{301}(?:\u{315}\u{35C})?"#,
+      ("e\u{301}", "e\u{301}"),
+      ("e\u{301}\u{315}\u{35C}", nil)
+    )
+
     // Escape sequences that represent scalar values.
     firstMatchTest(#"\a[\b]\e\f\n\r\t"#,
                    input: "\u{7}\u{8}\u{1B}\u{C}\n\r\t",
@@ -285,8 +504,6 @@ extension RegexTests {
     firstMatchTest(#"[\a][\b][\e][\f][\n][\r][\t]"#,
                    input: "\u{7}\u{8}\u{1B}\u{C}\n\r\t",
                    match: "\u{7}\u{8}\u{1B}\u{C}\n\r\t")
-
-    firstMatchTest(#"\r\n"#, input: "\r\n", match: "\r\n")
 
     // MARK: Quotes
 
@@ -403,8 +620,7 @@ extension RegexTests {
       "a++a",
       ("babc", nil),
       ("baaabc", nil),
-      ("bb", nil),
-      xfail: true)
+      ("bb", nil))
     firstMatchTests(
       "a+?a",
       ("babc", nil),
@@ -480,23 +696,19 @@ extension RegexTests {
       ("baabc", nil),
       ("bb", nil))
     
-    // XFAIL'd versions of the above
     firstMatchTests(
       "a{2,4}+a",
-      ("baaabc", nil),
-      xfail: true)
+      ("baaabc", nil))
     firstMatchTests(
       "a{,4}+a",
       ("babc", nil),
       ("baabc", nil),
-      ("baaabc", nil),
-      xfail: true)
+      ("baaabc", nil))
     firstMatchTests(
       "a{2,}+a",
       ("baaabc", nil),
       ("baaaaabc", nil),
-      ("baaaaaaaabc", nil),
-      xfail: true)
+      ("baaaaaaaabc", nil))
 
     // XFAIL'd possessive tests
     firstMatchTests(
@@ -539,10 +751,63 @@ extension RegexTests {
     firstMatchTest("(?U)a??", input: "a", match: "a")
     firstMatchTest("(?U)a??a", input: "aaa", match: "aa")
 
+    // Quantification syntax is somewhat dependent on the contents.
+    // In JS, PCRE2, Python, and some others, /x{-1}/ will be literally "x{-1}"
+    // Note that Java8 and Rust throw an (unhelpful) error
+    firstMatchTest("x{-1}", input: "x{-1}", match: "x{-1}")
+    firstMatchTest("x{-1}", input: "xax{-2}bx{-1}c", match: "x{-1}")
+
     // TODO: After captures, easier to test these
   }
 
+  func testQuantificationScalarSemantics() {
+    // TODO: We want more thorough testing here, including "a{n,m}", "a?", etc.
+
+    firstMatchTest("a*", input: "aaa\u{301}", match: "aa")
+    firstMatchTest("a*", input: "aaa\u{301}", match: "aaa", semanticLevel: .unicodeScalar)
+    firstMatchTest("a+", input: "aaa\u{301}", match: "aa")
+    firstMatchTest("a+", input: "aaa\u{301}", match: "aaa", semanticLevel: .unicodeScalar)
+    firstMatchTest("a?", input: "a\u{301}", match: "")
+    firstMatchTest("a?", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
+
+    firstMatchTest("[ab]*", input: "abab\u{301}", match: "aba")
+    firstMatchTest("[ab]*", input: "abab\u{301}", match: "abab", semanticLevel: .unicodeScalar)
+    firstMatchTest("[ab]+", input: "abab\u{301}", match: "aba")
+    firstMatchTest("[ab]+", input: "abab\u{301}", match: "abab", semanticLevel: .unicodeScalar)
+    firstMatchTest("[ab]?", input: "b\u{301}", match: "")
+    firstMatchTest("[ab]?", input: "b\u{301}", match: "b", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#"\s*"#, input: "  \u{301}", match: "  \u{301}")
+    firstMatchTest(#"\s*"#, input: "  \u{301}", match: "  ", semanticLevel: .unicodeScalar)
+    firstMatchTest(#"\s+"#, input: "  \u{301}", match: "  \u{301}")
+    firstMatchTest(#"\s+"#, input: "  \u{301}", match: "  ", semanticLevel: .unicodeScalar)
+    firstMatchTest(#"\s?"#, input: " \u{301}", match: " \u{301}")
+    firstMatchTest(#"\s?"#, input: " \u{301}", match: " ", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".*?a"#, input: "xxa\u{301}xaZ", match: "xxa\u{301}xa")
+    firstMatchTest(#".*?a"#, input: "xxa\u{301}xaZ", match: "xxa", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".+?a"#, input: "xxa\u{301}xaZ", match: "xxa\u{301}xa")
+    firstMatchTest(#".+?a"#, input: "xxa\u{301}xaZ", match: "xxa", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "e\u{301}a")
+    firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "\u{301}a", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".+\u{301}"#, input: "aa\u{301}Z", match: nil)
+    firstMatchTest(#".+\u{301}"#, input: "aa\u{301}Z", match: "aa\u{301}", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}")
+    firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".?\u{301}"#, input: "aa\u{302}\u{301}Z", match: nil)
+    firstMatchTest(#".?\u{301}.?Z"#, input: "aa\u{302}\u{301}Z", match: "\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?.?\u{301}.?Z"#, input: "aa\u{302}\u{301}Z", match: "a\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
+
+
+    // TODO: other test cases?
+  }
+
   func testMatchCharacterClasses() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     // MARK: Character classes
 
     firstMatchTest(#"abc\d"#, input: "xyzabc123", match: "abc1")
@@ -570,6 +835,417 @@ extension RegexTests {
 
     // Character class subtraction
     firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
+
+    // Inverted character class
+    matchTest(#"[^a]"#,
+              ("💿", true),
+              ("a\u{301}", true),
+              ("A", true),
+              ("a", false))
+
+    matchTest(#"(?i)[a]"#,
+              ("💿", false),
+              ("a\u{301}", false),
+              ("A", true),
+              ("a", true))
+
+    matchTest("[a]",
+      ("a\u{301}", false))
+
+    // CR-LF special case: \r\n is a single character with ascii value equal
+    // to \n, so make sure the ascii bitset optimization handles this correctly
+    matchTest("[\r\n]",
+      ("\r\n", true),
+      ("\n", false),
+      ("\r", false))
+    // check that in scalar mode this case is handled correctly
+    // in scalar semantics the character "\r\n" in the character class is
+    // interpreted as matching the scalars "\r" or "\n".
+    // It does not fully match the character "\r\n" because the character class
+    // in scalar mode will only match one scalar
+    matchTest(
+      "^[\r\n]$",
+      ("\r", true),
+      ("\n", true),
+      ("\r\n", false),
+      semanticLevel: .unicodeScalar)
+
+    matchTest("[^\r\n]",
+      ("\r\n", false),
+      ("\n", true),
+      ("\r", true))
+    matchTest("[\n\r]",
+      ("\n", true),
+      ("\r", true),
+      ("\r\n", false))
+
+    let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
+    let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
+
+    for level in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      firstMatchTest(
+        #"\R+"#,
+        input: "abc\(allNewlines)def", match: allNewlines,
+        semanticLevel: level
+      )
+      firstMatchTest(
+        #"\v+"#,
+        input: "abc\(allNewlines)def", match: allNewlines,
+        semanticLevel: level
+      )
+    }
+
+    // In scalar mode, \R can match \r\n, \v cannot.
+    firstMatchTest(
+      #"\R"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"\v\v"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"[^\v]"#, input: "\r\n", match: nil, semanticLevel: .unicodeScalar)
+
+    // ASCII-only spaces.
+    firstMatchTest(#"(?S)\R+"#, input: allNewlines, match: asciiNewlines)
+    firstMatchTest(#"(?S)\v+"#, input: allNewlines, match: asciiNewlines)
+    firstMatchTest(
+      #"(?S)\R"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"(?S)\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
+
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", false),
+      semanticLevel: .graphemeCluster)
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", true),
+      semanticLevel: .unicodeScalar)
+
+    // Scalar matching in quoted sequences.
+    firstMatchTests(
+      "[\\Qe\u{301}\\E]",
+      ("e", nil),
+      ("E", nil),
+      ("\u{301}", nil),
+      (eDecomposed, eDecomposed),
+      (eComposed, eComposed),
+      ("E\u{301}", nil),
+      ("\u{C9}", nil)
+    )
+    firstMatchTests(
+      "[\\Qe\u{301}\\E]",
+      ("e", "e"),
+      ("E", nil),
+      ("\u{301}", "\u{301}"),
+      (eDecomposed, "e"),
+      (eComposed, nil),
+      ("E\u{301}", "\u{301}"),
+      ("\u{C9}", nil),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      "(?i)[\\Qe\u{301}\\E]",
+      ("e", nil),
+      ("E", nil),
+      ("\u{301}", nil),
+      (eDecomposed, eDecomposed),
+      (eComposed, eComposed),
+      ("E\u{301}", "E\u{301}"),
+      ("\u{C9}", "\u{C9}")
+    )
+    firstMatchTests(
+      "(?i)[\\Qe\u{301}\\E]",
+      ("e", "e"),
+      ("E", "E"),
+      ("\u{301}", "\u{301}"),
+      (eDecomposed, "e"),
+      (eComposed, nil),
+      ("E\u{301}", "E"),
+      ("\u{C9}", nil),
+      semanticLevel: .unicodeScalar
+    )
+
+    // Scalar coalescing.
+    firstMatchTests(
+      #"[e\u{301}]"#,
+      (eDecomposed, eDecomposed),
+      (eComposed, eComposed),
+      ("e", nil),
+      ("\u{301}", nil)
+    )
+    firstMatchTests(
+      #"[e\u{301}]"#,
+      (eDecomposed, "e"),
+      (eComposed, nil),
+      ("e", "e"),
+      ("\u{301}", "\u{301}"),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      #"[[[e\u{301}]]]"#,
+      (eDecomposed, eDecomposed),
+      (eComposed, eComposed),
+      ("e", nil),
+      ("\u{301}", nil)
+    )
+    firstMatchTests(
+      #"[[[e\u{301}]]]"#,
+      (eDecomposed, "e"),
+      (eComposed, nil),
+      ("e", "e"),
+      ("\u{301}", "\u{301}"),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      #"[👨\u{200D}👩\u{200D}👧\u{200D}👦]"#,
+      ("👨", nil),
+      ("👩", nil),
+      ("👧", nil),
+      ("👦", nil),
+      ("\u{200D}", nil),
+      ("👨‍👩‍👧‍👦", "👨‍👩‍👧‍👦")
+    )
+    firstMatchTests(
+      #"[👨\u{200D}👩\u{200D}👧\u{200D}👦]"#,
+      ("👨", "👨"),
+      ("👩", "👩"),
+      ("👧", "👧"),
+      ("👦", "👦"),
+      ("\u{200D}", "\u{200D}"),
+      ("👨‍👩‍👧‍👦", "👨"),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      #"[e\u{315}\u{301}\u{35C}]"#,
+      ("e", nil),
+      ("e\u{315}", nil),
+      ("e\u{301}", nil),
+      ("e\u{315}\u{301}\u{35C}", "e\u{315}\u{301}\u{35C}"),
+      ("e\u{301}\u{315}\u{35C}", "e\u{301}\u{315}\u{35C}"),
+      ("e\u{35C}\u{301}\u{315}", "e\u{35C}\u{301}\u{315}")
+    )
+    firstMatchTests(
+      #"(?x) [ e \u{315} \u{301} \u{35C} ]"#,
+      ("e", nil),
+      ("e\u{315}", nil),
+      ("e\u{301}", nil),
+      ("e\u{315}\u{301}\u{35C}", "e\u{315}\u{301}\u{35C}"),
+      ("e\u{301}\u{315}\u{35C}", "e\u{301}\u{315}\u{35C}"),
+      ("e\u{35C}\u{301}\u{315}", "e\u{35C}\u{301}\u{315}")
+    )
+
+    // We don't coalesce across character classes.
+    firstMatchTests(
+      #"e[\u{315}\u{301}\u{35C}]"#,
+      ("e", nil),
+      ("e\u{315}", nil),
+      ("e\u{315}\u{301}", nil),
+      ("e\u{301}\u{315}\u{35C}", nil)
+    )
+    firstMatchTests(
+      #"[e[\u{301}]]"#,
+      ("e", "e"),
+      ("\u{301}", "\u{301}"),
+      ("e\u{301}", nil)
+    )
+
+    firstMatchTests(
+      #"[a-z1\u{E9}-\u{302}\u{E1}3-59]"#,
+      ("a", "a"),
+      ("a\u{301}", "a\u{301}"),
+      ("\u{E1}", "\u{E1}"),
+      ("\u{E2}", nil),
+      ("z", "z"),
+      ("e", "e"),
+      (eDecomposed, eDecomposed),
+      (eComposed, eComposed),
+      ("\u{302}", "\u{302}"),
+      ("1", "1"),
+      ("2", nil),
+      ("3", "3"),
+      ("4", "4"),
+      ("5", "5"),
+      ("6", nil),
+      ("7", nil),
+      ("8", nil),
+      ("9", "9")
+    )
+    firstMatchTests(
+      #"[ab-df-hik-lm]"#,
+      ("a", "a"),
+      ("b", "b"),
+      ("c", "c"),
+      ("d", "d"),
+      ("e", nil),
+      ("f", "f"),
+      ("g", "g"),
+      ("h", "h"),
+      ("i", "i"),
+      ("j", nil),
+      ("k", "k"),
+      ("l", "l"),
+      ("m", "m")
+    )
+    firstMatchTests(
+      #"[a-ce-fh-j]"#,
+      ("a", "a"),
+      ("b", "b"),
+      ("c", "c"),
+      ("d", nil),
+      ("e", "e"),
+      ("f", "f"),
+      ("g", nil),
+      ("h", "h"),
+      ("i", "i"),
+      ("j", "j")
+    )
+
+
+    // These can't compile in grapheme semantic mode, but make sure they work in
+    // scalar semantic mode.
+    firstMatchTests(
+      #"[a\u{315}\u{301}-\u{302}]"#,
+      ("a", "a"),
+      ("\u{315}", "\u{315}"),
+      ("\u{301}", "\u{301}"),
+      ("\u{302}", "\u{302}"),
+      ("\u{303}", nil),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      #"[\u{73}\u{323}\u{307}-\u{1E00}]"#,
+      ("\u{73}", "\u{73}"),
+      ("\u{323}", "\u{323}"),
+      ("\u{307}", "\u{307}"),
+      ("\u{400}", "\u{400}"),
+      ("\u{500}", "\u{500}"),
+      ("\u{1E00}", "\u{1E00}"),
+      ("\u{1E01}", nil),
+      ("\u{1E69}", nil),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      #"[a\u{302}-✅]"#,
+      ("a", "a"),
+      ("\u{302}", "\u{302}"),
+      ("A\u{302}", "\u{302}"),
+      ("E\u{301}", nil),
+      ("a\u{301}", "a"),
+      ("\u{E1}", nil),
+      ("a\u{302}", "a"),
+      ("\u{E2}", nil),
+      ("\u{E3}", nil),
+      ("\u{EF}", nil),
+      ("e\u{301}", nil),
+      ("e\u{302}", "\u{302}"),
+      ("\u{2705}", "\u{2705}"),
+      ("✅", "✅"),
+      ("\u{376}", "\u{376}"),
+      ("\u{850}", "\u{850}"),
+      ("a\u{302}\u{315}", "a"),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      #"(?i)[a\u{302}-✅]"#,
+      ("a", "a"),
+      ("\u{302}", "\u{302}"),
+      ("A\u{302}", "A"),
+      ("E\u{301}", nil),
+      ("a\u{301}", "a"),
+      ("\u{E1}", nil),
+      ("a\u{302}", "a"),
+      ("\u{E2}", nil),
+      ("\u{E3}", nil),
+      ("\u{EF}", nil),
+      ("e\u{301}", nil),
+      ("e\u{302}", "\u{302}"),
+      ("\u{2705}", "\u{2705}"),
+      ("✅", "✅"),
+      ("\u{376}", "\u{376}"),
+      ("\u{850}", "\u{850}"),
+      ("a\u{302}\u{315}", "a"),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      #"[e\u{301}-\u{302}]"#,
+      ("a", nil),
+      ("e", "e"),
+      ("\u{302}", "\u{302}"),
+      ("A\u{302}", "\u{302}"),
+      ("E\u{301}", "\u{301}"),
+      ("\u{C8}", nil),
+      ("\u{C9}", nil),
+      ("\u{CA}", nil),
+      ("\u{CB}", nil),
+      ("a\u{301}", "\u{301}"),
+      ("a\u{302}", "\u{302}"),
+      ("e\u{301}", "e"),
+      ("e\u{302}", "e"),
+      ("\u{E1}", nil),
+      ("\u{E2}", nil),
+      ("\u{E9}", nil),
+      ("\u{EA}", nil),
+      ("\u{EF}", nil),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      #"(?i)[e\u{301}-\u{302}]"#,
+      ("a", nil),
+      ("e", "e"),
+      ("\u{302}", "\u{302}"),
+      ("A\u{302}", "\u{302}"),
+      ("E\u{301}", "E"),
+      ("\u{C8}", nil),
+      ("\u{C9}", nil),
+      ("\u{CA}", nil),
+      ("\u{CB}", nil),
+      ("a\u{301}", "\u{301}"),
+      ("a\u{302}", "\u{302}"),
+      ("e\u{301}", "e"),
+      ("e\u{302}", "e"),
+      ("\u{E1}", nil),
+      ("\u{E2}", nil),
+      ("\u{E9}", nil),
+      ("\u{EA}", nil),
+      ("\u{EF}", nil),
+      semanticLevel: .unicodeScalar
+    )
+
+    // Set operation scalar coalescing.
+    firstMatchTests(
+      #"[e\u{301}&&e\u{301}e\u{302}]"#,
+      ("e", nil),
+      ("\u{301}", nil),
+      ("\u{302}", nil),
+      ("e\u{301}", "e\u{301}"),
+      ("e\u{302}", nil))
+    firstMatchTests(
+      #"[e\u{301}~~[[e\u{301}]e\u{302}]]"#,
+      ("e", nil),
+      ("\u{301}", nil),
+      ("\u{302}", nil),
+      ("e\u{301}", nil),
+      ("e\u{302}", "e\u{302}"))
+    firstMatchTests(
+      #"[e\u{301}[e\u{303}]--[[e\u{301}]e\u{302}]]"#,
+      ("e", nil),
+      ("\u{301}", nil),
+      ("\u{302}", nil),
+      ("\u{303}", nil),
+      ("e\u{301}", nil),
+      ("e\u{302}", nil),
+      ("e\u{303}", "e\u{303}"))
+
+    firstMatchTests(
+      #"(?x) [ e \u{301} [ e \u{303} ] -- [ [ e \u{301} ] e \u{302} ] ]"#,
+      ("e", nil),
+      ("\u{301}", nil),
+      ("\u{302}", nil),
+      ("\u{303}", nil),
+      ("e\u{301}", nil),
+      ("e\u{302}", nil),
+      ("e\u{303}", "e\u{303}"))
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
@@ -653,6 +1329,15 @@ extension RegexTests {
     }
     firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}")
 
+    firstMatchTest(#"[12]"#, input: "1️⃣", match: nil)
+    firstMatchTest(#"[1-2]"#, input: "1️⃣", match: nil)
+    firstMatchTest(#"[\d]"#, input: "1️⃣", match: "1️⃣")
+    firstMatchTest(#"(?P)[\d]"#, input: "1️⃣", match: nil)
+    firstMatchTest("[0-2&&1-3]", input: "1️⃣", match: nil)
+    firstMatchTest("[1-2e\u{301}]", input: "1️⃣", match: nil)
+
+    firstMatchTest(#"[\u{3A9}-\u{3A9}]"#, input: "\u{3A9}", match: "\u{3A9}")
+
     // Currently not supported in the matching engine.
     for c: UnicodeScalar in ["a", "b", "c"] {
       firstMatchTest(#"[\c!-\C-#]"#, input: "def\(c)", match: "\(c)",
@@ -706,6 +1391,35 @@ extension RegexTests {
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: "abc",
                    syntax: .experimental)
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: #""abc""#)
+
+    for semantics in [RegexSemanticLevel.unicodeScalar, .graphemeCluster] {
+      // Case sensitivity and ranges.
+      for ch in "abcD" {
+        firstMatchTest("[a-cD]", input: String(ch), match: String(ch))
+      }
+      for ch in "ABCd" {
+        firstMatchTest("[a-cD]", input: String(ch), match: nil)
+      }
+      for ch in "abcABCdD" {
+        let input = String(ch)
+        firstMatchTest(
+          "(?i)[a-cd]", input: input, match: input, semanticLevel: semantics)
+        firstMatchTest(
+          "(?i)[A-CD]", input: input, match: input, semanticLevel: semantics)
+      }
+      for ch in "XYZ[\\]^_`abcd" {
+        let input = String(ch)
+        firstMatchTest(
+          "[X-cd]", input: input, match: input, semanticLevel: semantics)
+      }
+      for ch in "XYZ[\\]^_`abcxyzABCdD" {
+        let input = String(ch)
+        firstMatchTest(
+          "(?i)[X-cd]", input: input, match: input, semanticLevel: semantics)
+        firstMatchTest(
+          "(?i)[X-cD]", input: input, match: input, semanticLevel: semantics)
+      }
+    }
   }
 
   func testCharacterProperties() {
@@ -915,9 +1629,20 @@ extension RegexTests {
     // engines generally enforce that lookbehinds are fixed width
     firstMatchTest(
       #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
+    
+    // Assertions inside negative lookahead
+    firstMatchTest(
+      #"(?!\b)(With)"#, input: "dispatchWithName", match: "With")
+    firstMatchTest(
+      #"(?!^)(With)"#, input: "dispatchWithName", match: "With")
+    firstMatchTest(
+      #"(?!\s)^dispatch"#, input: "dispatchWithName", match: "dispatch")
   }
 
   func testMatchAnchors() throws {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     // MARK: Anchors
     firstMatchTests(
       #"^\d+"#,
@@ -983,20 +1708,39 @@ extension RegexTests {
       ("123", "23"),
       (" 123", "23"),
       ("123 456", "23"))
+    
+    allMatchesTest(
+      #"\b\w"#,
+      input: "ab cd efgh",
+      matches: ["a", "c", "e"])
+    allMatchesTest(
+      #"\B\w"#,
+      input: "ab cd efgh",
+      matches: ["b", "d", "f", "g", "h"])
 
-    // TODO: \G and \K
-    do {
-      let regex = try Regex(#"\Gab"#, as: Substring.self)
-      XCTExpectFailure {
-        XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
-      }
-    }
+    let defaultBoundaryRegex = try Regex(#"\b.{3}X.{3}\b"#)
+    // Default word boundaries match at the start/end of a string/line.
+    XCTAssertNotNil(try defaultBoundaryRegex.firstMatch(in: "---X---"))
+    XCTAssertNotNil(try defaultBoundaryRegex.firstMatch(in: "abc\n---X---\ndef"))
+    
+    let simpleBoundaryRegex = defaultBoundaryRegex.wordBoundaryKind(.simple)
+    // Simple word boundaries match only when the adjacent position matches \w.
+    XCTAssertNil(try simpleBoundaryRegex.firstMatch(in: "---X---"))
+    XCTAssertNil(try simpleBoundaryRegex.firstMatch(in: "abc\n---X---\ndef"))
+    
+    XCTAssertNotNil(try simpleBoundaryRegex.firstMatch(in: "x--X--x"))
+    XCTAssertNotNil(try simpleBoundaryRegex.firstMatch(in: "abc\nx--X--x\ndef"))
+    
+    // \G and \K
+    let regex = try Regex(#"\Gab"#, as: Substring.self)
+    XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
+
     
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
-      ("Cafe\u{301}", nil),   // but scalar mode requires boundary at end of match
-      xfail: true)
+      ("Cafe\u{301}", nil))   // but scalar mode requires boundary at end of match
+
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
       ("Sol Cafe", "e"))      // standalone is okay
@@ -1013,7 +1757,30 @@ extension RegexTests {
       ("Sol Cafe", nil), xfail: true)
   }
 
+  func testLevel2WordBoundaries() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
+    // MARK: Level 2 Word Boundaries
+    firstMatchTest(#"\b😊\b"#, input: "🔥😊👍", match: "😊")
+    firstMatchTest(#"\b👨🏽\b"#, input: "👩🏻👶🏿👨🏽🧑🏾👩🏼", match: "👨🏽")
+    firstMatchTest(#"\b🇺🇸\b"#, input: "🇨🇦🇺🇸🇲🇽", match: "🇺🇸")
+    firstMatchTest(#"\b.+\b"#, input: "€1 234,56", match: "€1 234,56")
+    firstMatchTest(#"〱\B㋞\Bツ"#, input: "〱㋞ツ", match: "〱㋞ツ")
+    firstMatchTest(#"\bhello\b"#, input: "hello〱㋞ツ", match: "hello")
+    firstMatchTest(#"\bChicago\b"#, input: "나는 Chicago에 산다", match: "Chicago")
+    firstMatchTest(#"\blove\b"#, input: "眼睛love食物", match: "love")
+    firstMatchTest(#"\b\u{d}\u{a}\b"#, input: "\u{d}\u{a}", match: "\u{d}\u{a}")
+    firstMatchTest(#"\bㅋㅋㅋ\b"#, input: "아니ㅋㅋㅋ네", match: "ㅋㅋㅋ")
+    firstMatchTest(#"Re\B\:\BZero"#, input: "Re:Zero Starting Life in Another World", match: "Re:Zero")
+    firstMatchTest(#"can\B\'\Bt"#, input: "I can't do that.", match: "can't")
+    firstMatchTest(#"\b÷\b"#, input: "3 ÷ 3 = 1", match: "÷")
+  }
+
   func testMatchGroups() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     // MARK: Groups
 
     // Named captures
@@ -1087,9 +1854,13 @@ extension RegexTests {
     firstMatchTests(
       #"(?>(\d+))\w+\1"#,
       (input: "23x23", match: "23x23"),
-      (input: "123x23", match: "23x23"),
-      xfail: true)
+      (input: "123x23", match: "23x23"))
     
+    // Backreferences in scalar mode
+    // In scalar mode the backreference should not match
+    firstMatchTest(#"(.+)\1"#, input: "ée\u{301}", match: "ée\u{301}")
+    firstMatchTest(#"(.+)\1"#, input: "ée\u{301}", match: nil, semanticLevel: .unicodeScalar)
+
     // Backreferences in lookaheads
     firstMatchTests(
       #"^(?=.*(.)(.)\2\1).+$"#,
@@ -1101,12 +1872,10 @@ extension RegexTests {
       (input: "abbba", match: nil),
       (input: "ABBA", match: nil),
       (input: "defABBAdef", match: nil))
-    // FIXME: Backreferences don't escape positive lookaheads
     firstMatchTests(
       #"^(?=.*(.)(.)\2\1).+\2$"#,
       (input: "ABBAB", match: "ABBAB"),
-      (input: "defABBAdefB", match: "defABBAdefB"),
-      xfail: true)
+      (input: "defABBAdefB", match: "defABBAdefB"))
     
     firstMatchTests(
       #"^(?!.*(.)(.)\2\1).+$"#,
@@ -1237,6 +2006,9 @@ extension RegexTests {
   }
   
   func testMatchExamples() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     // Backreferences
     matchTest(
       #"(sens|respons)e and \1ibility"#,
@@ -1317,9 +2089,85 @@ extension RegexTests {
   func testSingleLineMode() {
     firstMatchTest(#".+"#, input: "a\nb", match: "a")
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
+
+    // We recognize LF, line tab, FF, and CR as newlines by default
+    firstMatchTest(#"."#, input: "\u{A}\u{B}\u{C}\u{D}\nb", match: "b")
+    firstMatchTest(#".+"#, input: "\u{A}\u{B}\u{C}\u{D}\nbb", match: "bb")
+
+  }
+
+  func testMatchNewlines() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
+    for semantics in [RegexSemanticLevel.unicodeScalar, .graphemeCluster] {
+      firstMatchTest(
+        #"\r\n"#, input: "\r\n", match: "\r\n",
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"\r\n"#, input: "\n", match: nil, semanticLevel: semantics)
+      firstMatchTest(
+        #"\r\n"#, input: "\r", match: nil, semanticLevel: semantics)
+
+      // \r\n is not treated as ASCII.
+      firstMatchTest(
+        #"^\p{ASCII}$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^\r$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^[\r]$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^\n$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^[\n]$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^[\u{0}-\u{7F}]$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+
+      let scalarSemantics = semantics == .unicodeScalar
+      firstMatchTest(
+        #"\p{ASCII}"#, input: "\r\n", match:  scalarSemantics ? "\r" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"\r"#, input: "\r\n", match:  scalarSemantics ? "\r" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"[\r]"#, input: "\r\n", match:  scalarSemantics ? "\r" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"\n"#, input: "\r\n", match:  scalarSemantics ? "\n" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"[\n]"#, input: "\r\n", match:  scalarSemantics ? "\n" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"[\u{0}-\u{7F}]"#, input: "\r\n", match:  scalarSemantics ? "\r" : nil,
+        semanticLevel: semantics
+      )
+    }
   }
   
   func testCaseSensitivity() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     matchTest(
       #"c..e"#,
       ("cafe", true),
@@ -1359,6 +2207,41 @@ extension RegexTests {
       ("cafe", true),
       ("CaFe", true),
       ("EfAc", true))
+    
+    matchTest(
+      #"(?i)a+b"#,
+      ("ab", true),
+      ("Ab", true),
+      ("aB", true),
+      ("AB", true),
+      ("AaAab", true),
+      ("aaaAB", true))
+    matchTest(
+      #"^(?i)a?b$"#,
+      ("ab", true),
+      ("Ab", true),
+      ("aB", true),
+      ("AB", true),
+      ("aaB", false),
+      ("b", true),
+      ("B", true))
+    matchTest(
+      #"^(?i)[a]?b$"#,
+      ("ab", true),
+      ("Ab", true),
+      ("aB", true),
+      ("AB", true),
+      ("b", true),
+      ("B", true))
+    matchTest(
+      #"^(?i)a{2,4}b$"#,
+      ("ab", false),
+      ("Ab", false),
+      ("AaB", true),
+      ("aAB", true),
+      ("aAaB", true),
+      ("aAaAB", true),
+      ("AaAaAB", false))
   }
 
   func testNonSemanticWhitespace() {
@@ -1382,6 +2265,9 @@ extension RegexTests {
   }
   
   func testASCIIClasses() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     // 'D' ASCII-only digits
     matchTest(
       #"\d+"#,
@@ -1419,12 +2305,12 @@ extension RegexTests {
       #"(?W)abcd\b.+"#,
       ("abcd ef", true),
       ("abcdef", false),
-      ("abcdéf", true)) // "dé" matches /d\b./ because "é" isn't ASCII
+      ("abcdéf", false))
     matchTest(
       #"(?P)abcd\b.+"#,
       ("abcd ef", true),
       ("abcdef", false),
-      ("abcdéf", true)) // "dé" matches /d\b./ because "é" isn't ASCII
+      ("abcdéf", false))
 
     // 'S' ASCII-only spaces
     matchTest(
@@ -1544,12 +2430,26 @@ extension RegexTests {
     XCTAssertTrue("cafe".contains(caseInsensitiveRegex))
     XCTAssertTrue("CaFe".contains(caseInsensitiveRegex))
   }
-  
+
+  // https://github.com/swiftlang/swift-experimental-string-processing/issues/768
+  func testWordBoundaryCaching() throws {
+    // This will first find word boundaries up til the middle before failing,
+    // then it will find word boundaries til late in the string, then fail,
+    // and finally should succeed on a word boundary cached from the first
+    // attempt.
+    let input = "first second third fourth"
+    let regex = try Regex(#".*second\bX|.*third\bX|.*first\b"#)
+    XCTAssertTrue(input.contains(regex))
+  }
+
   // MARK: Character Semantics
   
   var eComposed: String { "é" }
   var eDecomposed: String { "e\u{301}" }
   
+  var eComposedUpper: String { "É" }
+  var eDecomposedUpper: String { "E\u{301}" }
+
   func testIndividualScalars() {
     // Expectation: A standalone Unicode scalar value in a regex literal
     // can match either that specific scalar value or participate in matching
@@ -1562,19 +2462,15 @@ extension RegexTests {
     firstMatchTest(#"\u{65 301}$"#, input: eComposed, match: eComposed)
 
     // FIXME: Implicit \y at end of match
-    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil,
-      xfail: true)
+    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil)
     firstMatchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
-    // FIXME: \y is unsupported
-    firstMatchTest(#"\u{65}\y"#, input: eDecomposed, match: nil,
-      xfail: true)
+    firstMatchTest(#"\u{65}\y"#, input: eDecomposed, match: nil)
 
     // FIXME: Unicode scalars are only matched at the start of a grapheme cluster
     firstMatchTest(#"\u{301}"#, input: eDecomposed, match: "\u{301}",
       xfail: true)
-    // FIXME: \y is unsupported
-    firstMatchTest(#"\y\u{301}"#, input: eDecomposed, match: nil,
-      xfail: true)
+
+    firstMatchTest(#"\y\u{301}"#, input: eDecomposed, match: nil)
   }
 
   func testCanonicalEquivalence() throws {
@@ -1596,6 +2492,16 @@ extension RegexTests {
       #"e$"#,
       (eComposed, false),
       (eDecomposed, false))
+
+    matchTest(
+      #"\u{65 301}"#,
+      (eComposed, true),
+      (eDecomposed, true))
+
+    matchTest(
+      #"(?x) \u{65} \u{301}"#,
+      (eComposed, true),
+      (eDecomposed, true))
   }
 
   func testCanonicalEquivalenceCharacterClass() throws {
@@ -1632,41 +2538,70 @@ extension RegexTests {
     // \s
     firstMatchTest(#"\s"#, input: " ", match: " ")
     // FIXME: \s shouldn't match a number composed with a non-number character
-    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil,
-              xfail: true)
+    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil)
     // \p{Whitespace}
     firstMatchTest(#"\s"#, input: " ", match: " ")
-    // FIXME: \p{Whitespace} shouldn't match whitespace composed with a non-whitespace character
-    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil,
-              xfail: true)
+    // \p{Whitespace} shouldn't match whitespace composed with a non-whitespace character
+    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil)
   }
   
   func testCanonicalEquivalenceCustomCharacterClass() throws {
-    // Expectation: Concatenations with custom character classes should be able
-    // to match within a grapheme cluster. That is, a regex should be able to
-    // match the scalar values that comprise a grapheme cluster in separate,
-    // or repeated, custom character classes.
-    
+    // Expectation: Custom character class matches do not cross grapheme
+    // character boundaries by default. When matching with Unicode scalar
+    // semantics, grapheme cluster boundaries are ignored, so matching
+    // sequences of custom character classes can succeed.
+
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     matchTest(
       #"[áéíóú]$"#,
       (eComposed, true),
       (eDecomposed, true))
 
-    // FIXME: Custom char classes don't use canonical equivalence with composed characters
-    firstMatchTest(#"e[\u{301}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
-    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
-    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
+    for input in [eDecomposed, eComposed] {
+      // Unicode scalar semantics means that only the decomposed version can
+      // match here.
+      let match = input.unicodeScalars.count == 2 ? input : nil
+      firstMatchTest(
+        #"e[\u{301}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+      firstMatchTest(
+        #"e[\u{300}-\u{320}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+      firstMatchTest(
+        #"[e][\u{300}-\u{320}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+      firstMatchTest(
+        #"[e-e][\u{300}-\u{320}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+      firstMatchTest(
+        #"[a-z][\u{300}-\u{320}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+    }
+    for input in [eComposed, eDecomposed] {
+      // Grapheme cluster semantics means that we can't match the 'e' separately
+      // from the accent.
+      firstMatchTest(#"e[\u{301}]$"#, input: input, match: nil)
+      firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: input, match: nil)
+      firstMatchTest(#"[e][\u{300}-\u{320}]$"#, input: input, match: nil)
+      firstMatchTest(#"[e-e][\u{300}-\u{320}]$"#, input: input, match: nil)
+      firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: input, match: nil)
 
-    // FIXME: Custom char classes don't match decomposed characters
-    firstMatchTest(#"e[\u{301}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
+      // A range that covers é (U+E9). Inputs are mapped to NFC, so match.
+      firstMatchTest(#"[\u{E8}-\u{EA}]"#, input: input, match: input)
+    }
+
+    // A range that covers É (U+C9). Inputs are mapped to NFC, so match.
+    for input in [eComposedUpper, eDecomposedUpper] {
+      firstMatchTest(#"[\u{C8}-\u{CA}]"#, input: input, match: input)
+      firstMatchTest(#"[\u{C9}-\u{C9}]"#, input: input, match: input)
+    }
+    // Case insensitive matching of É (U+C9).
+    for input in [eComposed, eDecomposed, eComposedUpper, eDecomposedUpper] {
+      firstMatchTest(#"(?i)[\u{C8}-\u{CA}]"#, input: input, match: input)
+      firstMatchTest(#"(?i)[\u{C9}-\u{C9}]"#, input: input, match: input)
+    }
 
     let flag = "🇰🇷"
     firstMatchTest(#"🇰🇷"#, input: flag, match: flag)
@@ -1675,27 +2610,33 @@ extension RegexTests {
     firstMatchTest(#"\u{1F1F0 1F1F7}"#, input: flag, match: flag)
 
     // First Unicode scalar followed by CCC of regional indicators
-    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag,
-              xfail: true)
-
-    // FIXME: CCC of Regional Indicator doesn't match with both parts of a flag character
-    // A CCC of regional indicators x 2
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]{2}"#, input: flag, match: flag,
-              xfail: true)
-
-    // FIXME: A single CCC of regional indicators matches the whole flag character
+    firstMatchTest(
+      #"^\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: flag,
+      semanticLevel: .unicodeScalar
+    )
     // A CCC of regional indicators followed by the second Unicode scalar
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}"#, input: flag, match: flag,
-              xfail: true)
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}$"#, input: flag, match: flag,
+      semanticLevel: .unicodeScalar
+    )
+    // A CCC of regional indicators x 2
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]{2}$"#, input: flag, match: flag,
+      semanticLevel: .unicodeScalar
+    )
+    // A CCC of N regional indicators
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]+$"#, input: flag, match: flag,
+      semanticLevel: .unicodeScalar
+    )
+
     // A single CCC of regional indicators
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: nil,
-              xfail: true)
-    
-    // A single CCC of actual flag emojis / combined regional indicators
-    firstMatchTest(#"[🇦🇫-🇿🇼]"#, input: flag, match: flag)
-    // This succeeds (correctly) because \u{1F1F0} is lexicographically
-    // within the CCC range
-    firstMatchTest(#"[🇦🇫-🇿🇼]"#, input: "\u{1F1F0}abc", match: "\u{1F1F0}")
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: nil)
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: nil,
+      semanticLevel: .unicodeScalar
+    )
   }
   
   func testAnyChar() throws {
@@ -1730,7 +2671,7 @@ extension RegexTests {
       match: eDecomposed,
       xfail: true
     )
-    firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
+    firstMatchTest(#"\O"#, input: eComposed, match: eComposed, xfail: true)
     firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
 
@@ -1768,6 +2709,22 @@ extension RegexTests {
   
   // TODO: Add test for grapheme boundaries at start/end of match
 
+  // Testing the matchScalar optimization for ascii quoted literals and characters
+  func testScalarOptimization() throws {
+    // check that we are correctly doing the boundary check after matchScalar
+    firstMatchTest("a", input: "a\u{301}", match: nil)
+    firstMatchTest("aa", input: "aa\u{301}", match: nil)
+
+    firstMatchTest("a", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
+    firstMatchTest("aa", input: "aa\u{301}", match: "aa", semanticLevel: .unicodeScalar)
+
+    // case insensitive tests
+    firstMatchTest(#"(?i)abc\u{301}d"#, input: "AbC\u{301}d", match: "AbC\u{301}d", semanticLevel: .unicodeScalar)
+
+    // check that we don't crash on empty strings
+    firstMatchTest(#"\Q\E"#, input: "", match: "")
+  }
+  
   func testCase() {
     let regex = try! Regex(#".\N{SPARKLING HEART}."#)
     let input = "🧟‍♀️💖🧠 or 🧠💖☕️"
@@ -1808,5 +2765,164 @@ extension RegexTests {
       XCTAssertEqual(matches.count, 3)
     }
   }
-}
 
+  func expectCompletion(regex: String, in target: String) {
+    let expectation = XCTestExpectation(description: "Run the given regex to completion")
+    Task.init {
+      let r = try! Regex(regex)
+      let val = target.matches(of: r).isEmpty
+      expectation.fulfill()
+      return val
+    }
+    wait(for: [expectation], timeout: 3.0)
+  }
+
+  func testQuantificationForwardProgress() {
+    expectCompletion(regex: #"(?:(?=a)){1,}"#, in: "aa")
+    expectCompletion(regex: #"(?:\b)+"#, in: "aa")
+    expectCompletion(regex: #"(?:(?#comment))+"#, in: "aa")
+    expectCompletion(regex: #"(?:|)+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|)+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?i-i:))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?#comment))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?#comment)(?i-i:))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?i))+"#, in: "aa")
+    expectCompletion(regex: #"(a*)*"#, in: "aa")
+    expectCompletion(regex: #"(a?)*"#, in: "aa")
+    expectCompletion(regex: #"(a{,4})*"#, in: "aa")
+    expectCompletion(regex: #"((|)+)*"#, in: "aa")
+  }
+
+  func testQuantifyOptimization() throws {
+    // test that the maximum values for minTrips and maxExtraTrips are handled correctly
+    let maxStorable = Int(QuantifyPayload.maxStorableTrips)
+    let maxExtraTrips = "a{,\(maxStorable)}"
+    expectProgram(for: maxExtraTrips, contains: [.quantify])
+    firstMatchTest(maxExtraTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxExtraTrips, input: String(repeating: "a", count: maxStorable + 1), match: String(repeating: "a", count: maxStorable))
+    XCTAssertNil(try Regex(maxExtraTrips).wholeMatch(in: String(repeating: "a", count: maxStorable + 1)))
+
+    let maxMinTrips = "a{\(maxStorable),}"
+    expectProgram(for: maxMinTrips, contains: [.quantify])
+    firstMatchTest(maxMinTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxMinTrips, input: String(repeating: "a", count: maxStorable - 1), match: nil)
+
+    let maxBothTrips = "a{\(maxStorable),\(maxStorable*2)}"
+    expectProgram(for: maxBothTrips, contains: [.quantify])
+    XCTAssertNil(try Regex(maxBothTrips).wholeMatch(in: String(repeating: "a", count: maxStorable*2 + 1)))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable*2), match: String(repeating: "a", count: maxStorable*2))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable - 1), match: nil)
+    
+    expectProgram(for: "a{,\(maxStorable+1)}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable+1),}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable-1),\(maxStorable*2)}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable),\(maxStorable*2+1)}", doesNotContain: [.quantify])
+  }
+  
+  func testFuzzerArtifacts() throws {
+    expectCompletion(regex: #"(b?)\1*"#, in: "a")
+  }
+  
+  func testIssue640() throws {
+    // Original report from https://github.com/apple/swift-experimental-string-processing/issues/640
+    let original = try Regex("[1-9][0-9]{0,2}(?:,?[0-9]{3})*")
+    XCTAssertNotNil("36,769".wholeMatch(of: original))
+    XCTAssertNotNil("36769".wholeMatch(of: original))
+
+    // Simplified case
+    let simplified = try Regex("a{0,2}a")
+    XCTAssertNotNil("aaa".wholeMatch(of: simplified))
+
+    for max in 1...8 {
+      let patternEager = "a{0,\(max)}a"
+      let regexEager = try Regex(patternEager)
+      let patternReluctant = "a{0,\(max)}?a"
+      let regexReluctant = try Regex(patternReluctant)
+      for length in 1...(max + 1) {
+        let str = String(repeating: "a", count: length)
+        if str.wholeMatch(of: regexEager) == nil {
+          XCTFail("Didn't match '\(patternEager)' in '\(str)' (\(max),\(length)).")
+        }
+        if str.wholeMatch(of: regexReluctant) == nil {
+          XCTFail("Didn't match '\(patternReluctant)' in '\(str)' (\(max),\(length)).")
+        }
+      }
+      
+      let possessiveRegex = try Regex("a{0,\(max)}+a")
+      let str = String(repeating: "a", count: max + 1)
+      XCTAssertNotNil(str.wholeMatch(of: possessiveRegex))
+    }
+  }
+  
+  func testIssue713() throws {
+    // Original report from https://github.com/apple/swift-experimental-string-processing/issues/713
+    let originalInput = "Something 9a"
+    let originalRegex = #/(?=([1-9]|(a|b)))/#
+    let originalOutput = originalInput.matches(of: originalRegex).map(\.output)
+    XCTAssert(originalOutput[0] == ("", "9", nil))
+    XCTAssert(originalOutput[1] == ("", "a", "a"))
+
+    let simplifiedRegex = #/(?=(9))/#
+    let simplifiedOutput = originalInput.matches(of: simplifiedRegex).map(\.output)
+    XCTAssert(simplifiedOutput[0] == ("", "9"))
+
+    let additionalRegex = #/(a+)b(a+)/#
+    let additionalInput = "abaaba"
+    XCTAssertNil(additionalInput.wholeMatch(of: additionalRegex))
+  }
+  
+  func testIssueSwift81427() throws {
+    // This issue is a nondeterministic matching failure, where this character
+    // set is occasionally compiled incorrectly. Multiple test runs (not just
+    // multiple executions of this test) are required for verification.
+    firstMatchTests(
+      "[(?:\r\n)\n\r]",
+      ("\n", "\n"),
+      ("\r", "\r"),
+      ("\r\n", "\r\n")
+    )
+  }
+
+  func testIssue815() throws {
+    // Original report from https://github.com/swiftlang/swift-experimental-string-processing/issues/815
+    let matches = "dispatchWithName".matches(of: #/(?!^)(With(?!No)|For|In|At|To)(?=[A-Z])/#)
+    XCTAssert(matches[0].output == ("With", "With"))
+  }
+  
+  func testNSRECompatibility() throws {
+    // NSRE-compatibility includes scalar matching, so `[\r\n]` should match
+    // either `\r` or `\n`.
+    let text = #"""
+      y=sin(x)+sin(2x)+sin(3x);\#rText "This is a function of x.";\r
+      """#
+    let lineTerminationRegex = try Regex(#";[\r\n]"#)
+      ._nsreCompatibility
+    
+    let afterLine = try XCTUnwrap(text.firstRange(of: "Text"))
+    let match = try lineTerminationRegex.firstMatch(in: text)
+    XCTAssert(match?.range.upperBound == afterLine.lowerBound)
+    
+    // NSRE-compatibility treats "dot" as special, in that it can match a
+    // newline sequence as well as a single Unicode scalar.
+    let aDotBRegex = try Regex(#"a.b"#)
+      ._nsreCompatibility
+      .dotMatchesNewlines()
+    for input in ["a\rb", "a\nb", "a\r\nb"] {
+      XCTAssertNotNil(try aDotBRegex.wholeMatch(in: input))
+    }
+    
+    // NSRE-compatibility doesn't give special treatment to newline sequences
+    // when matching other "match everything" regex patterns, like `[[^z]z]`,
+    // so this pattern doesn't match "a\r\nb".
+    let aCCBRegex = try Regex(#"a[[^z]z]b"#)
+      ._nsreCompatibility
+    for input in ["a\rb", "a\nb", "a\r\nb"] {
+      if input.unicodeScalars.count == 3 {
+        XCTAssertNotNil(try aCCBRegex.wholeMatch(in: input))
+      } else {
+        XCTAssertNil(try aCCBRegex.wholeMatch(in: input))
+      }
+    }
+  }
+}

@@ -8,7 +8,7 @@ See [Declarative String Processing Overview][decl-string]
 
 ## Requirements
 
-- [Swift Trunk Development Snapshot](https://www.swift.org/download/#snapshots) DEVELOPMENT-SNAPSHOT-2022-04-20 or later.
+- Currently tested with [Swift Trunk Development Snapshot](https://www.swift.org/download/#snapshots) DEVELOPMENT-SNAPSHOT-2025-09-14 or later.
 
 ## Trying it out
 
@@ -27,7 +27,7 @@ For example, in a `Package.swift` file's target declaration:
 
 ## Integration with Swift
 
-`_RegexParser` and `_StringProcessing` are specially integrated modules that are built as part of apple/swift.
+`_RegexParser` and `_StringProcessing` are specially integrated modules that are built as part of [apple/swift](https://github.com/apple/swift).
 
 Specifically, `_RegexParser` contains the parser for regular expression literals and is built both as part of the compiler and as a core library. `_CUnicode` and `_StringProcessing` are built together as a core library named `_StringProcessing`.
 
@@ -39,17 +39,14 @@ Specifically, `_RegexParser` contains the parser for regular expression literals
 
 ### Branching scheme
 
-#### Development branch
-
 The `main` branch is the branch for day-to-day development. Generally, you should create PRs against this branch.
-
-#### Swift integration branches
 
 Branches whose name starts with `swift/` are Swift integration branches similar to those in [apple/llvm-project](https://github.com/apple/llvm-project). For each branch, dropping the `swift/` prefix is the corresponding branch in [apple/swift](https://github.com/apple/swift).
 
+This package's `main` branch automatically integrates with Swift's `main` branch.
+
 | apple/swift branch  | apple/swift-experimental-string-processing branch     |
 | ------------------- | ----------------------------------------------------- |
-| main                | swift/main                                            |
 | release/5.7         | swift/release/5.7                                     |
 | ...                 | swift/...                                             |
 
@@ -59,11 +56,13 @@ A pair of corresponding branches are expected to build successfully together and
 
 To integrate the latest changes in apple/swift-experimental-string-processing to apple/swift, carefully follow the workflow: 
 
-- Create pull requests.
-  - Create a branch from a commit on `main` that you would like to integrate into `swift/main`.
-  - Create a pull request in apple/swift-experimental-string-processing from that branch to `swift/main`, e.g. "[Integration] main (<commit>) -> swift/main".
-  - If apple/swift needs to be modified to work with the latest `main` in apple/swift-experimental-string-processing, create a pull request in apple/swift.  **Note:** Since CI in apple/swift-experimental-string-processing has not yet been set up to run full toolchain tests, you should create a PR in apple/swift regardless; if the integartion does not require changing apple/swift, create a dummy PR in apple/swift by changing the README and just not merge it in the end.
-- Trigger CI.
+- Run package CI
+  - In the pull request, trigger package CI using
+```
+@swift-ci please test
+```
+- Run full Swift CI for any changes to public or SPI interfaces or the `_RegexParser` module.
+  - If apple/swift needs to be modified to work with the latest `main` in apple/swift-experimental-string-processing, create a pull request in apple/swift.  **Note:** Since CI in apple/swift-experimental-string-processing has not yet been set up to run full toolchain tests, you should create a PR in apple/swift regardless; if the integration does not require changing apple/swift, create a dummy PR in apple/swift by changing the README and close it in the end instead of merging.
   - In the apple/swift-experimental-string-processing pull request, trigger CI using the following command (replacing `<PR NUMBER>` with the apple/swift pull request number, if any):
     ```
     apple/swift#<PR NUMBER> # use this line only if there is an corresponding apple/swift PR
@@ -75,7 +74,9 @@ To integrate the latest changes in apple/swift-experimental-string-processing to
     @swift-ci please test
     ```
 - Merge when approved.
-  - Merge the pull request in apple/swift-experimental-string-processing as a **merge commit**.
+  - Merge the PR in apple/swift-experimental-string-processing:
+    - as a squash or rebase if against main (the development branch).
+    - as a merge commit if it's a merge from main to swift/release/x.y.
   - Merge the pull request in apple/swift (if any).
 
 ### Development notes

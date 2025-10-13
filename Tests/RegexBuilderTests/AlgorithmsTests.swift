@@ -13,9 +13,10 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
+@available(SwiftStdlib 5.7, *)
 class RegexConsumerTests: XCTestCase {
   func testMatches() {
-    let regex = Capture(OneOrMore(.digit)) { 2 * Int($0)! }
+    let regex = Capture<(Substring, Int)>(OneOrMore(.digit)) { 2 * Int($0)! }
     let str = "foo 160 bar 99 baz"
     XCTAssertEqual(str.matches(of: regex).map(\.output.1), [320, 198])
   }
@@ -103,68 +104,9 @@ class RegexConsumerTests: XCTestCase {
        result: "9+16, 3, 10, 99+1")
     )
   }
-
-  func testSwitches() {
-    // Failure cases
-    do {
-      switch "abcde" {
-      case Regex {
-        "a"
-        ZeroOrMore(.any)
-        "f"
-      }:
-        XCTFail()
-
-      case OneOrMore { CharacterClass.whitespace }:
-        XCTFail()
-
-      case "abc":
-        XCTFail()
-
-      case Regex {
-        "a"
-        "b"
-        "c"
-      }:
-        XCTFail()
-
-      default:
-        break
-      }
-    }
-    // Success cases
-    do {
-      let input = "abcde"
-
-      switch input {
-      case Regex {
-        "a"
-        ZeroOrMore(.any)
-        "e"
-      }:
-        break
-
-      default:
-        XCTFail()
-      }
-
-      guard case Regex({
-        "a"
-        ZeroOrMore(.any)
-        "e"
-      }) = input else {
-        XCTFail()
-        return
-      }
-
-      guard case OneOrMore(.word) = input else {
-        XCTFail()
-        return
-      }
-    }
-  }
 }
 
+@available(SwiftStdlib 5.7, *)
 class AlgorithmsResultBuilderTests: XCTestCase {
   enum MatchAlgo {
     case whole
@@ -178,17 +120,17 @@ class AlgorithmsResultBuilderTests: XCTestCase {
     case trimmingPrefix
   }
 
-  func expectMatch<R: RegexComponent, MatchType>(
+  func expectMatch<MatchType, RegexOutputType>(
     _ algo: MatchAlgo,
     _ tests: (input: String, expectedCaptures: MatchType?)...,
     matchType: MatchType.Type,
     equivalence: (MatchType, MatchType) -> Bool,
     file: StaticString = #file,
     line: UInt = #line,
-    @RegexComponentBuilder _ content: () -> R
+    @RegexComponentBuilder _ content: () -> some RegexComponent<RegexOutputType>
   ) throws {
     for (input, expectedCaptures) in tests {
-      var actual: Regex<R.RegexOutput>.Match?
+      var actual: Regex<RegexOutputType>.Match?
       switch algo {
       case .whole:
         actual = input.wholeMatch(of: content)
@@ -207,12 +149,12 @@ class AlgorithmsResultBuilderTests: XCTestCase {
     }
   }
 
-  func expectEqual<R: RegexComponent, Expected: Equatable>(
+  func expectEqual<Expected: Equatable>(
     _ algo: EquatableAlgo,
     _ tests: (input: String, expected: Expected)...,
     file: StaticString = #file,
     line: UInt = #line,
-    @RegexComponentBuilder _ content: () -> R
+    @RegexComponentBuilder _ content: () -> some RegexComponent
   ) throws {
     for (input, expected) in tests {
       var actual: Expected
@@ -314,12 +256,34 @@ class AlgorithmsResultBuilderTests: XCTestCase {
       "+"
       int
     }
+
+    let ref1 = Reference<Substring>()
+    let ref2 = Reference<Substring>()
+    try expectMatch(
+      .first,
+      ("ABBAB", ("ABBAB", "A", "B")),
+      ("defABBAdefB", ("defABBAdefB", "A", "B")),
+      matchType: (Substring, Substring, Substring).self,
+      equivalence: ==
+    ) {
+      Anchor.startOfSubject
+      Lookahead {
+        ZeroOrMore(.any)
+        Capture(as: ref1) { One(.any) }
+        Capture(as: ref2) { One(.any) }
+        ref2
+        ref1
+      }
+      OneOrMore(.any)
+      ref2
+      Anchor.endOfSubject
+    }
   }
 
   func testStartsAndContains() throws {
     let fam = "👨‍👩‍👧‍👦👨‍👨‍👧‍👧  we Ⓡ family"
     let startsWithGrapheme = fam.starts {
-      OneOrMore(.anyGrapheme)
+      OneOrMore(.anyGraphemeCluster)
       OneOrMore(.whitespace)
     }
     XCTAssertEqual(startsWithGrapheme, true)
@@ -331,7 +295,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
 
     let content = {
       Regex {
-        OneOrMore(.anyGrapheme)
+        OneOrMore(.anyGraphemeCluster)
         OneOrMore(.whitespace)
       }
     }
@@ -380,7 +344,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
 
     var mutable = "👨‍👩‍👧‍👦  we Ⓡ family"
     mutable.trimPrefix {
-      .anyGrapheme
+      .anyGraphemeCluster
       ZeroOrMore(.whitespace)
     }
     XCTAssertEqual(mutable, "we Ⓡ family")

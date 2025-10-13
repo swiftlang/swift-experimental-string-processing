@@ -16,133 +16,59 @@ concerns upon request.
 
 API convention:
 
-- lexFoo will try to consume a foo and return it if successful, throws errors
-- expectFoo will consume a foo, throwing errors, and throw an error if it can't
-- eat() and tryEat() is still used by the parser as a character-by-character interface
+- lexFoo will try to consume a foo and return it if successful, otherwise returns nil
+- expectFoo will consume a foo, diagnosing an error if unsuccessful
 */
 
-extension Error {
-  func addingLocation(_ loc: Range<Source.Position>) -> Error {
-    // If we're already a LocatedError, don't change the location.
-    if self is LocatedErrorProtocol {
-      return self
-    }
-    return Source.LocatedError<Self>(self, loc)
-  }
-}
+extension Parser {
+  typealias Located = Source.Located
+  typealias Location = Source.Location
+  typealias LocatedError = Source.LocatedError
+  typealias Char = Source.Char
 
-extension Source {
   // MARK: - recordLoc
 
-  /// Record source loc before processing and return
-  /// or throw the value/error with source locations.
+  /// Attach a source location to the parsed contents of a given function.
   fileprivate mutating func recordLoc<T>(
-    _ f: (inout Self) throws -> T
-  ) rethrows -> Located<T> {
-    let start = currentPosition
-    do {
-      let result = try f(&self)
-      return Located(result, Location(start..<currentPosition))
-    } catch let e as LocatedError<ParseError> {
-      throw e
-    } catch let e as ParseError {
-      throw LocatedError(e, Location(start..<currentPosition))
-    } catch {
-      fatalError("FIXME: Let's not keep the boxed existential...")
-    }
+    _ f: (inout Self) -> T
+  ) -> Located<T> {
+    let start = src.currentPosition
+    let result = f(&self)
+    return Located(result, loc(start))
   }
 
-  /// Record source loc before processing and return
-  /// or throw the value/error with source locations.
+  /// Attach a source location to the parsed contents of a given function.
   fileprivate mutating func recordLoc<T>(
-    _ f: (inout Self) throws -> T?
-  ) rethrows -> Located<T>? {
-    let start = currentPosition
-    do {
-      guard let result = try f(&self) else { return nil }
-      return Located(result, start..<currentPosition)
-    } catch let e {
-      throw e.addingLocation(start..<currentPosition)
-    }
+    _ f: (inout Self) -> T?
+  ) -> Located<T>? {
+    let start = src.currentPosition
+    guard let result = f(&self) else { return nil }
+    return Located(result, loc(start))
   }
 
-  /// Record source loc before processing and return
-  /// or throw the value/error with source locations.
+  /// Attach a source location to the parsed contents of a given function.
   @discardableResult
   fileprivate mutating func recordLoc(
-    _ f: (inout Self) throws -> ()
-  ) rethrows -> SourceLocation {
-    let start = currentPosition
-    do {
-      try f(&self)
-      return SourceLocation(start..<currentPosition)
-    } catch let e as Source.LocatedError<ParseError> {
-      throw e
-    } catch let e as ParseError {
-      throw LocatedError(e, start..<currentPosition)
-    } catch {
-      fatalError("FIXME: Let's not keep the boxed existential...")
-    }
+    _ f: (inout Self) -> ()
+  ) -> SourceLocation {
+    let start = src.currentPosition
+    f(&self)
+    return loc(start)
   }
 }
 
-// MARK: - Consumption routines
-extension Source {
-  typealias Quant = AST.Quantification
+// MARK: Backtracking routines
 
-  /// Throws an expected character error if not matched
-  @discardableResult
-  mutating func expect(_ c: Character) throws -> SourceLocation {
-    try recordLoc { src in
-      guard src.tryEat(c) else {
-        throw ParseError.expected(String(c))
-      }
-    }
-  }
-
-  /// Throws an expected character error if not matched
-  mutating func expect<C: Collection>(
-    sequence c: C
-  ) throws where C.Element == Character {
-    _ = try recordLoc { src in
-      guard src.tryEat(sequence: c) else {
-        throw ParseError.expected(String(c))
-      }
-    }
-  }
-
-  /// Throws an unexpected end of input error if not matched
-  ///
-  /// Note: much of the time, but not always, we can vend a more specific error.
-  mutating func expectNonEmpty(
-    _ error: ParseError = .unexpectedEndOfInput
-  ) throws {
-    _ = try recordLoc { src in
-      if src.isEmpty { throw error }
-    }
-  }
-
-  mutating func tryEatNonEmpty<C: Collection>(sequence c: C) throws -> Bool
-    where C.Element == Char
-  {
-    try expectNonEmpty(.expected(String(c)))
-    return tryEat(sequence: c)
-  }
-
-  mutating func tryEatNonEmpty(_ c: Char) throws -> Bool {
-    try tryEatNonEmpty(sequence: String(c))
-  }
-
+extension Parser {
   /// Attempt to make a series of lexing steps in `body`, returning `nil` if
-  /// unsuccesful, which will revert the source back to its previous state. If
-  /// an error is thrown, the source will not be reverted.
+  /// unsuccesful, which will revert the parser back to its previous state.
   mutating func tryEating<T>(
-    _ body: (inout Source) throws -> T?
-  ) rethrows -> T? {
-    // We don't revert the source if an error is thrown, as it's useful to
-    // maintain the source location in that case.
-    let current = self
-    guard let result = try body(&self) else {
+    _ body: (inout Self) -> T?
+  ) -> T? {
+    var current = self
+    guard let result = body(&self) else {
+      // Fatal errors are always preserved.
+      current.diags.appendNewFatalErrors(from: diags)
       self = current
       return nil
     }
@@ -152,42 +78,182 @@ extension Source {
   /// Perform a lookahead using a temporary source. Within the body of the
   /// lookahead, any modifications to the source will not be reflected outside
   /// the body.
-  func lookahead<T>(_ body: (inout Source) throws -> T) rethrows -> T {
-    var src = self
-    return try body(&src)
+  mutating func lookahead<T>(_ body: (inout Self) -> T) -> T {
+    var p = self
+    let result = body(&p)
+    // Fatal errors are always preserved.
+    diags.appendNewFatalErrors(from: p.diags)
+    return result
+  }
+}
+
+// MARK: - Consumption routines
+extension Parser {
+  typealias Quant = AST.Quantification
+
+  /// Expect to eat a given character, diagnosing an error and returning
+  /// `false` if unsuccessful, `true` otherwise.
+  @discardableResult
+  mutating func expect(_ c: Character) -> Bool {
+    guard tryEat(c) else {
+      errorAtCurrentPosition(.expected(String(c)))
+      return false
+    }
+    return true
+  }
+
+  /// Same as `expect`, but with a source location.
+  mutating func expectWithLoc(_ c: Character) -> Located<Bool> {
+    recordLoc {
+      $0.expect(c)
+    }
+  }
+
+  /// Expect to eat a sequence of characters, diagnosing an error and returning
+  /// `false` if unsuccessful, `true` otherwise.
+  @discardableResult
+  mutating func expect<C: Collection>(
+    sequence c: C
+  ) -> Bool where C.Element == Character {
+    guard tryEat(sequence: c) else {
+      errorAtCurrentPosition(.expected(String(c)))
+      return false
+    }
+    return true
+  }
+
+  /// Diagnoses an error and returns `false` if the end of input has been
+  /// reached. Otherwise returns `true`.
+  @discardableResult
+  mutating func expectNonEmpty(
+    _ error: ParseError = .unexpectedEndOfInput
+  ) -> Bool {
+    guard !src.isEmpty else {
+      errorAtCurrentPosition(error)
+      return false
+    }
+    return true
+  }
+
+  /// Attempt to eat a sequence of characters, additionally diagnosing if the
+  /// end of the source has been reached.
+  mutating func tryEatNonEmpty<C: Collection>(
+    sequence c: C
+  ) -> Bool where C.Element == Char {
+    expectNonEmpty(.expected(String(c))) && tryEat(sequence: c)
+  }
+
+  /// Returns the next character, or `nil` if the end of the source has been
+  /// reached.
+  func peek() -> Char? { src.peek() }
+
+  /// Same as `peek()`, but with the source location of the next character.
+  func peekWithLoc() -> Located<Char>? {
+    peek().map { c in
+      let nextPos = src.input.index(after: src.currentPosition)
+      return Located(c, Location(src.currentPosition ..< nextPos))
+    }
+  }
+
+  /// Advance the input `n` characters ahead.
+  mutating func advance(_ n: Int = 1) {
+    guard src.tryAdvance(n) else {
+      unreachable("Advancing beyond end!")
+
+      // Empty out the remaining characters.
+      src.tryAdvance(src._slice.count)
+      return
+    }
+  }
+
+  /// Try to eat any character, returning `nil` if the input has been exhausted.
+  mutating func tryEat() -> Char? {
+    guard let char = peek() else { return nil }
+    advance()
+    return char
+  }
+
+  /// Same as `tryEat()`, but with the source location of the eaten character.
+  mutating func tryEatWithLoc() -> Located<Char>? {
+    recordLoc { $0.tryEat() }
+  }
+
+  /// Attempt to eat the given character, returning `true` if successful,
+  /// `false` otherwise.
+  mutating func tryEat(_ c: Char) -> Bool {
+    guard peek() == c else { return false }
+    advance()
+    return true
   }
 
   /// Attempt to eat the given character, returning its source location if
   /// successful, `nil` otherwise.
   mutating func tryEatWithLoc(_ c: Character) -> SourceLocation? {
-    let start = currentPosition
+    let start = src.currentPosition
     guard tryEat(c) else { return nil }
-    return .init(start ..< currentPosition)
+    return .init(start ..< src.currentPosition)
+  }
+
+  /// Attempt to eat a character if it matches a given predicate, returning
+  /// `true` if the character was eaten, or `false` if the character did not
+  /// meet the predicate.
+  mutating func tryEat(where pred: (Char) -> Bool) -> Bool {
+    guard let next = peek(), pred(next) else { return false }
+    advance()
+    return true
+  }
+
+  /// Attempt to eat a sequence of characters, returning `true` if successful.
+  mutating func tryEat<C: Collection>(
+    sequence c: C
+  ) -> Bool where C.Element == Char {
+    guard src.starts(with: c) else { return false }
+    advance(c.count)
+    return true
+  }
+
+  /// Attempt to eat any of the given characters, returning the one that was
+  /// eaten.
+  mutating func tryEat<C: Collection>(
+    anyOf set: C
+  ) -> Char? where C.Element == Char {
+    guard let c = peek(), set.contains(c) else { return nil }
+    advance()
+    return c
+  }
+
+  /// Attempt to eat any of the given characters, returning the one that was
+  /// eaten.
+  mutating func tryEat(anyOf set: Char...) -> Char? {
+    tryEat(anyOf: set)
+  }
+
+  /// Eat up to `count` characters, returning the range of characters eaten.
+  mutating func eat(upToCount count: Int) -> Located<String> {
+    recordLoc { $0.src.eat(upToCount: count).string }
   }
 
   /// Attempt to eat a given prefix that satisfies a given predicate, with the
   /// source location recorded.
-  mutating func tryEatLocatedPrefix(
+  mutating func tryEatPrefix(
     maxLength: Int? = nil,
     _ f: (Char) -> Bool
   ) -> Located<String>? {
-    let result = recordLoc { src in
-      src.tryEatPrefix(maxLength: maxLength, f)
-    }
-    guard let result = result else { return nil }
-    return result.map(\.string)
+    recordLoc { $0.src.tryEatPrefix(maxLength: maxLength, f)?.string }
   }
 
-  /// Throws an expected ASCII character error if not matched
-  mutating func expectASCII() throws -> Located<Character> {
-    try recordLoc { src in
-      guard let c = src.peek() else {
-        throw ParseError.unexpectedEndOfInput
+  /// Attempts to eat an ASCII value, diagnosing an error and returning `nil`
+  /// if unsuccessful.
+  mutating func expectASCII() -> Located<Character>? {
+    recordLoc { p in
+      guard let c = p.tryEat() else {
+        p.errorAtCurrentPosition(.unexpectedEndOfInput)
+        return nil
       }
       guard c.isASCII else {
-        throw ParseError.expectedASCII(c)
+        p.errorAtCurrentPosition(.expectedASCII(c))
+        return nil
       }
-      src.eat(asserting: c)
       return c
     }
   }
@@ -218,31 +284,43 @@ enum IdentifierKind {
   case onigurumaCalloutTag
 }
 
-extension Source {
+extension Parser {
   /// Validate a string of digits as a particular radix, and return the number,
-  /// or throw an error if the string is malformed or would overflow the number
-  /// type.
-  private static func validateNumber<Num: FixedWidthInteger>(
-    _ str: String, _: Num.Type, _ kind: RadixKind
-  ) throws -> Num {
+  /// or diagnose an error if the string is malformed or would overflow the
+  /// number type.
+  private mutating func validateNumber<Num: FixedWidthInteger>(
+    _ locStr: Located<String>, _: Num.Type, _ kind: RadixKind
+  ) -> Num? {
+    let str = locStr.value
     guard !str.isEmpty && str.all(kind.characterFilter) else {
-      throw ParseError.expectedNumber(str, kind: kind)
+      error(.expectedNumber(str, kind: kind), at: locStr.location)
+      return nil
     }
     guard let i = Num(str, radix: kind.radix) else {
-      throw ParseError.numberOverflow(str)
+      error(.numberOverflow(str), at: locStr.location)
+      return nil
     }
     return i
   }
 
   /// Validate a string of digits as a unicode scalar of a particular radix, and
-  /// return the scalar value, or throw an error if the string is malformed or
-  /// would overflow the scalar.
-  private static func validateUnicodeScalar(
+  /// return the scalar value, or diagnose an error if the string is malformed
+  /// or would overflow the scalar.
+  private mutating func validateUnicodeScalar(
     _ str: Source.Located<String>, _ kind: RadixKind
-  ) throws -> AST.Atom.Scalar {
-    let num = try validateNumber(str.value, UInt32.self, kind)
+  ) -> AST.Atom.Scalar {
+    func nullScalar() -> AST.Atom.Scalar {
+      // For now, return a null scalar in the case of an error. This should be
+      // benign as it shouldn't affect other validation logic.
+      // TODO: Should we store nil like we do with regular numbers?
+      return .init(UnicodeScalar(0), str.location)
+    }
+    guard let num = validateNumber(str, UInt32.self, kind) else {
+      return nullScalar()
+    }
     guard let scalar = Unicode.Scalar(num) else {
-      throw ParseError.misc("Invalid scalar value U+\(num.hexStr)")
+      error(.misc("Invalid scalar value U+\(num.hexStr)"), at: str.location)
+      return nullScalar()
     }
     return .init(scalar, str.location)
   }
@@ -251,51 +329,61 @@ extension Source {
   ///
   /// Returns: `nil` if there's no number, otherwise the number
   ///
-  /// Throws on overflow
+  /// Diagnoses on overflow
   ///
-  private mutating func lexNumber<Num: FixedWidthInteger>(
-    _ ty: Num.Type, _ kind: RadixKind
-  ) throws -> Located<Num>? {
-    try recordLoc { src in
-      guard let str = src.tryEatPrefix(kind.characterFilter)?.string else {
-        return nil
-      }
-      guard let i = Num(str, radix: kind.radix) else {
-        throw ParseError.numberOverflow(str)
-      }
-      return i
+  mutating func lexNumber(
+    _ kind: RadixKind = .decimal
+  ) -> AST.Atom.Number? {
+    guard let str = tryEatPrefix(kind.characterFilter) else {
+      return nil
     }
+    guard let i = Int(str.value, radix: kind.radix) else {
+      error(.numberOverflow(str.value), at: str.location)
+      return .init(nil, at: str.location)
+    }
+    return .init(i, at: str.location)
   }
 
-  /// Try to eat a number off the front.
+  /// Try to eat a quantification bound, such as appears in `/x{3,12}`
   ///
   /// Returns: `nil` if there's no number, otherwise the number
   ///
-  /// Throws on overflow
+  /// Diagnoses on overflow. Currently, we will diagnose for any values over `UInt16.max`
   ///
-  mutating func lexNumber() throws -> Located<Int>? {
-    try lexNumber(Int.self, .decimal)
+  mutating func lexQuantBound() -> AST.Atom.Number? {
+    let kind = RadixKind.decimal
+    guard let str = tryEatPrefix(kind.characterFilter) else {
+      return nil
+    }
+    guard let i = UInt16(str.value, radix: kind.radix) else {
+      error(.numberOverflow(str.value), at: str.location)
+      return .init(nil, at: str.location)
+    }
+
+    return .init(Int(i), at: str.location)
   }
 
-  mutating func expectNumber() throws -> Located<Int> {
-    guard let num = try lexNumber() else {
-      throw ParseError.expectedNumber("", kind: .decimal)
+
+  /// Expect a number of a given `kind`, diagnosing if a number cannot be
+  /// parsed.
+  mutating func expectNumber(_ kind: RadixKind = .decimal) -> AST.Atom.Number {
+    guard let num = lexNumber(kind) else {
+      errorAtCurrentPosition(.expectedNumber("", kind: kind))
+      return .init(nil, at: loc(src.currentPosition))
     }
     return num
   }
 
   /// Eat a scalar value from hexadecimal notation off the front
-  private mutating func expectUnicodeScalar(
-    numDigits: Int
-  ) throws -> AST.Atom.Scalar {
-    let str = try recordLoc { src -> String in
-      let str = src.eat(upToCount: numDigits).string
-      guard str.count == numDigits else {
-        throw ParseError.expectedNumDigits(str, numDigits)
+  mutating func expectUnicodeScalar(numDigits: Int) -> AST.Atom.Scalar {
+    let str = recordLoc { p -> String in
+      let str = p.eat(upToCount: numDigits)
+      if str.value.count != numDigits {
+        p.error(.expectedNumDigits(str.value, numDigits), at: str.location)
       }
-      return str
+      return str.value
     }
-    return try Source.validateUnicodeScalar(str, .hex)
+    return validateUnicodeScalar(str, .hex)
   }
 
   /// Try to lex a seqence of hex digit unicode scalars.
@@ -305,41 +393,40 @@ extension Source {
   ///
   mutating func expectUnicodeScalarSequence(
     eating ending: Character
-  ) throws -> AST.Atom.Kind {
-    try recordLoc { src in
-      var scalars = [AST.Atom.Scalar]()
-      var trivia = [AST.Trivia]()
+  ) -> AST.Atom.Kind {
+    var scalars = [AST.Atom.Scalar]()
+    var trivia = [AST.Trivia]()
 
-      // Eat up any leading whitespace.
-      if let t = src.lexWhitespace() { trivia.append(t) }
+    // Eat up any leading whitespace.
+    if let t = lexWhitespace() { trivia.append(t) }
 
-      while true {
-        let str = src.lexUntil { src in
-          // Hit the ending, stop lexing.
-          if src.isEmpty || src.peek() == ending {
-            return true
-          }
-          // Eat up trailing whitespace, and stop lexing to record the scalar.
-          if let t = src.lexWhitespace() {
-            trivia.append(t)
-            return true
-          }
-          // Not the ending or trivia, must be a digit of the scalar.
-          return false
+    while true {
+      let str = lexUntil { p in
+        // Hit the ending, stop lexing.
+        if p.src.isEmpty || p.peek() == ending {
+          return true
         }
-        guard !str.value.isEmpty else { break }
-        scalars.append(try Source.validateUnicodeScalar(str, .hex))
+        // Eat up trailing whitespace, and stop lexing to record the scalar.
+        if let t = p.lexWhitespace() {
+          trivia.append(t)
+          return true
+        }
+        // Not the ending or trivia, must be a digit of the scalar.
+        return false
       }
-      guard !scalars.isEmpty else {
-        throw ParseError.expectedNumber("", kind: .hex)
-      }
-      try src.expect(ending)
+      guard !str.value.isEmpty else { break }
+      scalars.append(validateUnicodeScalar(str, .hex))
+    }
+    expect(ending)
 
-      if scalars.count == 1 {
-        return .scalar(scalars[0])
-      }
-      return .scalarSequence(.init(scalars, trivia: trivia))
-    }.value
+    if scalars.isEmpty {
+      errorAtCurrentPosition(.expectedNumber("", kind: .hex))
+      return .scalar(.init(UnicodeScalar(0), loc(src.currentPosition)))
+    }
+    if scalars.count == 1 {
+      return .scalar(scalars[0])
+    }
+    return .scalarSequence(.init(scalars, trivia: trivia))
   }
 
   /// Try to eat a scalar off the front, starting from after the backslash and
@@ -353,62 +440,59 @@ extension Source {
   ///                | 'o{' OctalDigit{1...} '}'
   ///                | '0' OctalDigit{0...3}
   ///
-  mutating func lexUnicodeScalar() throws -> AST.Atom.Kind? {
-    try recordLoc { src in
-      try src.tryEating { src in
+  mutating func lexUnicodeScalar() -> AST.Atom.Kind? {
+    tryEating { p in
 
-        func nullScalar() -> AST.Atom.Kind {
-          let pos = src.currentPosition
-          return .scalar(.init(UnicodeScalar(0), SourceLocation(pos ..< pos)))
-        }
+      func nullScalar() -> AST.Atom.Scalar {
+        .init(UnicodeScalar(0), p.loc(p.src.currentPosition))
+      }
 
-        // TODO: PCRE offers a different behavior if PCRE2_ALT_BSUX is set.
-        switch src.tryEat() {
+      // TODO: PCRE offers a different behavior if PCRE2_ALT_BSUX is set.
+      switch p.tryEat() {
         // Hex numbers.
-        case "u" where src.tryEat("{"):
-          return try src.expectUnicodeScalarSequence(eating: "}")
+      case "u" where p.tryEat("{"):
+        return p.expectUnicodeScalarSequence(eating: "}")
 
-        case "x" where src.tryEat("{"):
-          let str = try src.lexUntil(eating: "}")
-          return .scalar(try Source.validateUnicodeScalar(str, .hex))
+      case "x" where p.tryEat("{"):
+        let str = p.lexUntil(eating: "}")
+        return .scalar(p.validateUnicodeScalar(str, .hex))
 
-        case "x":
-          // \x expects *up to* 2 digits.
-          guard let digits = src.tryEatLocatedPrefix(maxLength: 2, \.isHexDigit)
-          else {
-            // In PCRE, \x without any valid hex digits is \u{0}.
-            // TODO: This doesn't appear to be followed by ICU or Oniguruma, so
-            // could be changed to throw an error if we had a parsing mode for
-            // them.
-            return nullScalar()
-          }
-          return .scalar(try Source.validateUnicodeScalar(digits, .hex))
+      case "x":
+        // \x expects *up to* 2 digits.
+        guard let digits = p.tryEatPrefix(maxLength: 2, \.isHexDigit)
+        else {
+          // In PCRE, \x without any valid hex digits is \u{0}.
+          // TODO: This doesn't appear to be followed by ICU or Oniguruma, so
+          // could be changed to diagnose an error if we had a parsing mode for
+          // them.
+          return .scalar(nullScalar())
+        }
+        return .scalar(p.validateUnicodeScalar(digits, .hex))
 
-        case "u":
-          return .scalar(try src.expectUnicodeScalar(numDigits: 4))
-        case "U":
-          return .scalar(try src.expectUnicodeScalar(numDigits: 8))
+      case "u":
+        return .scalar(p.expectUnicodeScalar(numDigits: 4))
+      case "U":
+        return .scalar(p.expectUnicodeScalar(numDigits: 8))
 
         // Octal numbers.
-        case "o" where src.tryEat("{"):
-          let str = try src.lexUntil(eating: "}")
-          return .scalar(try Source.validateUnicodeScalar(str, .octal))
+      case "o" where p.tryEat("{"):
+        let str = p.lexUntil(eating: "}")
+        return .scalar(p.validateUnicodeScalar(str, .octal))
 
-        case "0":
-          // We can read *up to* 3 more octal digits.
-          // FIXME: PCRE can only read up to 2 octal digits, if we get a strict
-          // PCRE mode, we should limit it here.
-          guard let digits = src.tryEatLocatedPrefix(maxLength: 3, \.isOctalDigit)
-          else {
-            return nullScalar()
-          }
-          return .scalar(try Source.validateUnicodeScalar(digits, .octal))
-
-        default:
-          return nil
+      case "0":
+        // We can read *up to* 3 more octal digits.
+        // FIXME: PCRE can only read up to 2 octal digits, if we get a strict
+        // PCRE mode, we should limit it here.
+        guard let digits = p.tryEatPrefix(maxLength: 3, \.isOctalDigit)
+        else {
+          return .scalar(nullScalar())
         }
+        return .scalar(p.validateUnicodeScalar(digits, .octal))
+
+      default:
+        return nil
       }
-    }.value
+    }
   }
 
   /// Try to consume a quantifier
@@ -417,37 +501,38 @@ extension Source {
   ///     QuantKind  -> '?' | '+'
   ///
   mutating func lexQuantifier(
-    context: ParsingContext
-  ) throws -> (Located<Quant.Amount>, Located<Quant.Kind>, [AST.Trivia])? {
-    var trivia: [AST.Trivia] = []
+  ) -> (Located<Quant.Amount>, Located<Quant.Kind>, [AST.Trivia])? {
+    tryEating { p in
+      var trivia: [AST.Trivia] = []
 
-    if let t = lexNonSemanticWhitespace(context: context) { trivia.append(t) }
+      if let t = p.lexNonSemanticWhitespace() { trivia.append(t) }
 
-    let amt: Located<Quant.Amount>? = try recordLoc { src in
-      if src.tryEat("*") { return .zeroOrMore }
-      if src.tryEat("+") { return .oneOrMore }
-      if src.tryEat("?") { return .zeroOrOne }
+      let amt: Located<Quant.Amount>? = p.recordLoc { p in
+        if p.tryEat("*") { return .zeroOrMore }
+        if p.tryEat("+") { return .oneOrMore }
+        if p.tryEat("?") { return .zeroOrOne }
 
-      return try src.tryEating { src in
-        guard src.tryEat("{"),
-              let range = try src.lexRange(context: context, trivia: &trivia),
-              src.tryEat("}")
-        else { return nil }
-        return range.value
+        return p.tryEating { p in
+          guard p.tryEat("{"),
+                let range = p.lexQuantRange(trivia: &trivia),
+                p.tryEat("}")
+          else { return nil }
+          return range.value
+        }
       }
+      guard let amt = amt else { return nil }
+
+      // PCRE allows non-semantic whitespace here in extended syntax mode.
+      if let t = p.lexNonSemanticWhitespace() { trivia.append(t) }
+
+      let kind: Located<Quant.Kind> = p.recordLoc { p in
+        if p.tryEat("?") { return .reluctant  }
+        if p.tryEat("+") { return .possessive }
+        return .eager
+      }
+
+      return (amt, kind, trivia)
     }
-    guard let amt = amt else { return nil }
-
-    // PCRE allows non-semantic whitespace here in extended syntax mode.
-    if let t = lexNonSemanticWhitespace(context: context) { trivia.append(t) }
-
-    let kind: Located<Quant.Kind> = recordLoc { src in
-      if src.tryEat("?") { return .reluctant  }
-      if src.tryEat("+") { return .possessive }
-      return .eager
-    }
-
-    return (amt, kind, trivia)
   }
 
   /// Try to consume a range, returning `nil` if unsuccessful.
@@ -456,44 +541,42 @@ extension Source {
   ///                  | ExpRange
   ///     ExpRange    -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func lexRange(
-    context: ParsingContext, trivia: inout [AST.Trivia]
-  ) throws -> Located<Quant.Amount>? {
-    try recordLoc { src in
-      try src.tryEating { src in
-        if let t = src.lexWhitespace() { trivia.append(t) }
+  mutating func lexQuantRange(
+    trivia: inout [AST.Trivia]
+  ) -> Located<Quant.Amount>? {
+    recordLoc { p in
+      p.tryEating { p in
+        if let t = p.lexWhitespace() { trivia.append(t) }
 
-        let lowerOpt = try src.lexNumber()
+        let lowerOpt = p.lexQuantBound()
 
-        if let t = src.lexWhitespace() { trivia.append(t) }
+        if let t = p.lexWhitespace() { trivia.append(t) }
 
         // ',' or '...' or '..<' or nothing
-        // TODO: We ought to try and consume whitespace here and emit a
-        // diagnostic for the user warning them that it would cause the range to
-        // be treated as literal.
         let closedRange: Bool?
-        if src.tryEat(",") {
+        if p.tryEat(",") {
           closedRange = true
-        } else if context.experimentalRanges && src.tryEat(".") {
-          try src.expect(".")
-          if src.tryEat(".") {
+        } else if p.context.experimentalRanges && p.tryEat(".") {
+          p.expect(".")
+          if p.tryEat(".") {
             closedRange = true
           } else {
-            try src.expect("<")
+            p.expect("<")
             closedRange = false
           }
         } else {
           closedRange = nil
         }
 
-        if let t = src.lexWhitespace() { trivia.append(t) }
+        if let t = p.lexWhitespace() { trivia.append(t) }
 
-        let upperOpt = try src.lexNumber()?.map { upper in
+        var upperOpt = p.lexQuantBound()
+        if closedRange == false {
           // If we have an open range, the upper bound should be adjusted down.
-          closedRange == true ? upper : upper - 1
+          upperOpt?.value? -= 1
         }
 
-        if let t = src.lexWhitespace() { trivia.append(t) }
+        if let t = p.lexWhitespace() { trivia.append(t) }
 
         switch (lowerOpt, closedRange, upperOpt) {
         case let (l?, nil, nil):
@@ -506,7 +589,8 @@ extension Source {
           return .range(l, u)
 
         case (nil, nil, _?):
-          fatalError("Didn't lex lower bound, but lexed upper bound?")
+          p.unreachable("Didn't lex lower bound, but lexed upper bound?")
+          return nil
         default:
           return nil
         }
@@ -515,34 +599,31 @@ extension Source {
   }
 
   private mutating func lexUntil(
-    _ predicate: (inout Source) throws -> Bool
-  ) rethrows -> Located<String> {
-    // We track locations outside of recordLoc, as the predicate may advance the
-    // input when we hit the end, and we don't want that to affect the location
-    // of what was lexed in the `result`. We still want the recordLoc call to
-    // attach locations to any thrown errors though.
+    _ predicate: (inout Self) -> Bool
+  ) -> Located<String> {
+    // We track locations without using recordLoc, as the predicate may advance
+    // the input when we hit the end, and we don't want that to affect the
+    // location of what was lexed in the `result`.
     // TODO: We should find a better way of doing this, `lexUntil` seems full
     // of footguns.
-    let start = currentPosition
-    var end = currentPosition
+    let start = src.currentPosition
+    var end = src.currentPosition
     var result = ""
-    try recordLoc { src in
-      while try !predicate(&src) {
-        result.append(src.eat())
-        end = src.currentPosition
-      }
+    while !predicate(&self), let c = tryEat() {
+      result.append(c)
+      end = src.currentPosition
     }
     return .init(result, start ..< end)
   }
 
-  private mutating func lexUntil(eating end: String) throws -> Located<String> {
-    try lexUntil { try $0.tryEatNonEmpty(sequence: end) }
+  private mutating func lexUntil(eating end: String) -> Located<String> {
+    lexUntil { $0.tryEatNonEmpty(sequence: end) }
   }
 
   private mutating func lexUntil(
     eating end: Character
-  ) throws -> Located<String> {
-    try lexUntil(eating: String(end))
+  ) -> Located<String> {
+    lexUntil(eating: String(end))
   }
 
   /// Expect a linear run of non-nested non-empty content ending with a given
@@ -551,28 +632,28 @@ extension Source {
   private mutating func expectQuoted(
     endingWith endSingle: String, count: Int = 1, ignoreEscaped: Bool = false,
     eatEnding: Bool = true
-  ) throws -> Located<String> {
+  ) -> Located<String> {
     let end = String(repeating: endSingle, count: count)
-    let result = try recordLoc { src -> String in
-      try src.lexUntil { src in
-        if src.starts(with: end) {
+    let result = recordLoc { p -> String in
+      p.lexUntil { p in
+        if p.src.starts(with: end) {
           return true
         }
-        try src.expectNonEmpty(.expected(endSingle))
+        guard p.expectNonEmpty(.expected(endSingle)) else { return true }
 
         // Ignore escapes if we're allowed to. lexUntil will consume the next
         // character.
-        if ignoreEscaped, src.tryEat("\\") {
-          try src.expectNonEmpty(.expectedEscape)
+        if ignoreEscaped, p.tryEat("\\") {
+          guard p.expectNonEmpty(.expectedEscape) else { return true }
         }
         return false
       }.value
     }
-    guard !result.value.isEmpty else {
-      throw ParseError.expectedNonEmptyContents
+    if result.value.isEmpty {
+      error(.expectedNonEmptyContents, at: result.location)
     }
     if eatEnding {
-      try expect(sequence: end)
+      expect(sequence: end)
     }
     return result
   }
@@ -589,28 +670,28 @@ extension Source {
   ///
   /// TODO: Need to support some escapes
   ///
-  mutating func lexQuote(context: ParsingContext) throws -> AST.Quote? {
-    let str = try recordLoc { src -> String? in
-      if src.tryEat(sequence: #"\Q"#) {
-        let contents = src.lexUntil { src in
-          src.isEmpty || src.tryEat(sequence: #"\E"#)
-        }.value
+  mutating func lexQuote() -> AST.Quote? {
+    let str = recordLoc { p -> String? in
+      if p.tryEat(sequence: #"\Q"#) {
+        let contents = p.lexUntil { p in
+          p.src.isEmpty || p.tryEat(sequence: #"\E"#)
+        }
 
         // In multi-line literals, the quote may not span multiple lines.
-        if context.syntax.contains(.multilineCompilerLiteral),
-            contents.spansMultipleLinesInRegexLiteral {
-          throw ParseError.quoteMayNotSpanMultipleLines
+        if p.context.syntax.contains(.multilineCompilerLiteral),
+           contents.value.spansMultipleLinesInRegexLiteral {
+          p.error(.quoteMayNotSpanMultipleLines, at: contents.location)
         }
 
         // The sequence must not be empty in a custom character class.
-        if context.isInCustomCharacterClass && contents.isEmpty {
-          throw ParseError.expectedNonEmptyContents
+        if p.context.isInCustomCharacterClass && contents.value.isEmpty {
+          p.error(.expectedNonEmptyContents, at: contents.location)
         }
-        return contents
+        return contents.value
       }
-      if context.experimentalQuotes, src.tryEat("\"") {
+      if p.context.experimentalQuotes, p.tryEat("\"") {
         // TODO: Can experimental quotes be empty?
-        return try src.expectQuoted(endingWith: "\"", ignoreEscaped: true).value
+        return p.expectQuoted(endingWith: "\"", ignoreEscaped: true).value
       }
       return nil
     }
@@ -622,16 +703,13 @@ extension Source {
   ///
   ///     Interpolation -> '<{' String '}>'
   ///
-  mutating func lexInterpolation() throws -> AST.Interpolation? {
-    let contents = try recordLoc { src -> String? in
-      try src.tryEating { src in
-        guard src.tryEat(sequence: "<{") else { return nil }
-        _ = src.lexUntil { $0.isEmpty || $0.starts(with: "}>") }
-        guard src.tryEat(sequence: "}>") else { return nil }
-
-        // Not currently supported. We error here instead of during Sema to
-        // get a better error for something like `(<{)}>`.
-        throw ParseError.unsupported("interpolation")
+  mutating func lexInterpolation() -> AST.Interpolation? {
+    let contents = recordLoc { p -> String? in
+      p.tryEating { p in
+        guard p.tryEat(sequence: "<{") else { return nil }
+        let contents = p.lexUntil { $0.src.isEmpty || $0.src.starts(with: "}>") }
+        guard p.tryEat(sequence: "}>") else { return nil }
+        return contents.value
       }
     }
     guard let contents = contents else { return nil }
@@ -652,34 +730,34 @@ extension Source {
   ///
   /// TODO: Swift-style nested comments, line-ending comments, etc
   ///
-  mutating func lexComment(context: ParsingContext) throws -> AST.Trivia? {
-    let trivia: Located<String>? = try recordLoc { src in
-      if !context.isInCustomCharacterClass && src.tryEat(sequence: "(?#") {
-        return try src.lexUntil(eating: ")").value
+  mutating func lexComment() -> AST.Trivia? {
+    let trivia: Located<String>? = recordLoc { p in
+      if !p.context.isInCustomCharacterClass && p.tryEat(sequence: "(?#") {
+        return p.lexUntil(eating: ")").value
       }
-      if context.experimentalComments, src.tryEat(sequence: "/*") {
-        return try src.lexUntil(eating: "*/").value
+      if p.context.experimentalComments, p.tryEat(sequence: "/*") {
+        return p.lexUntil(eating: "*/").value
       }
-      if context.endOfLineComments, src.tryEat("#") {
+      if p.context.endOfLineComments, p.tryEat("#") {
         // Try eat until we either exhaust the input, or hit a newline. Note
         // that the definition of newline can be altered depending on the global
         // matching options. By default we consider a newline to be `\n` or
         // `\r`.
-        return src.lexUntil { src in
-          if src.isEmpty { return true }
-          switch context.newlineMode {
+        return p.lexUntil { p in
+          if p.src.isEmpty { return true }
+          switch p.context.newlineMode {
           case .carriageReturnOnly:
-            return src.tryEat("\r")
+            return p.tryEat("\r")
           case .linefeedOnly:
-            return src.tryEat("\n")
+            return p.tryEat("\n")
           case .carriageAndLinefeedOnly:
-            return src.tryEat("\r\n")
+            return p.tryEat("\r\n")
           case .anyCarriageReturnOrLinefeed:
-            return src.tryEat(anyOf: "\r", "\n", "\r\n") != nil
+            return p.tryEat(anyOf: "\r", "\n", "\r\n") != nil
           case .anyUnicode:
-            return src.tryEat(where: \.isNewline)
+            return p.tryEat(where: \.isNewline)
           case .nulCharacter:
-            return src.tryEat("\0")
+            return p.tryEat("\0")
           }
         }.value
       }
@@ -694,9 +772,7 @@ extension Source {
   ///     Whitespace -> WhitespaceChar+
   ///
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
-  mutating func lexNonSemanticWhitespace(
-    context: ParsingContext
-  ) -> AST.Trivia? {
+  mutating func lexNonSemanticWhitespace() -> AST.Trivia? {
     guard context.ignoreWhitespace else { return nil }
 
     // FIXME: PCRE only treats space and tab characters as whitespace when
@@ -713,10 +789,7 @@ extension Source {
   /// Unlike `lexNonSemanticWhitespace`, this will always attempt to lex
   /// whitespace.
   mutating func lexWhitespace() -> AST.Trivia? {
-    let trivia: Located<String>? = recordLoc { src in
-      src.tryEatPrefix(\.isPatternWhitespace)?.string
-    }
-    guard let trivia = trivia else { return nil }
+    guard let trivia = tryEatPrefix(\.isPatternWhitespace) else { return nil }
     return AST.Trivia(trivia)
   }
 
@@ -724,11 +797,11 @@ extension Source {
   ///
   ///     Trivia -> Comment | Whitespace
   ///
-  mutating func lexTrivia(context: ParsingContext) throws -> AST.Trivia? {
-    if let comment = try lexComment(context: context) {
+  mutating func lexTrivia() -> AST.Trivia? {
+    if let comment = lexComment() {
       return comment
     }
-    if let whitespace = lexNonSemanticWhitespace(context: context) {
+    if let whitespace = lexNonSemanticWhitespace() {
       return whitespace
     }
     return nil
@@ -739,55 +812,61 @@ extension Source {
   ///     MatchingOption -> 'i' | 'J' | 'm' | 'n' | 's' | 'U' | 'x' | 'xx' | 'w'
   ///                     | 'D' | 'P' | 'S' | 'W' | 'y{' ('g' | 'w') '}'
   ///
-  mutating func lexMatchingOption() throws -> AST.MatchingOption? {
+  mutating func lexMatchingOption() -> AST.MatchingOption? {
     typealias OptKind = AST.MatchingOption.Kind
 
-    let locOpt = try recordLoc { src -> OptKind? in
-      func advanceAndReturn(_ o: OptKind) -> OptKind {
-        src.advance()
-        return o
-      }
-      guard let c = src.peek() else { return nil }
-      switch c {
-      // PCRE options.
-      case "i": return advanceAndReturn(.caseInsensitive)
-      case "J": return advanceAndReturn(.allowDuplicateGroupNames)
-      case "m": return advanceAndReturn(.multiline)
-      case "n": return advanceAndReturn(.namedCapturesOnly)
-      case "s": return advanceAndReturn(.singleLine)
-      case "U": return advanceAndReturn(.reluctantByDefault)
-      case "x":
-        src.advance()
-        return src.tryEat("x") ? .extraExtended : .extended
+    let locOpt = recordLoc { p -> OptKind? in
+      p.tryEating { p in
+        guard let c = p.tryEat() else { return nil }
+        switch c {
+        // PCRE options.
+        case "i": return .caseInsensitive
+        case "J": return .allowDuplicateGroupNames
+        case "m": return .multiline
+        case "n": return .namedCapturesOnly
+        case "s": return .singleLine
+        case "U": return .reluctantByDefault
+        case "x":
+          return p.tryEat("x") ? .extraExtended : .extended
 
-      // ICU options.
-      case "w": return advanceAndReturn(.unicodeWordBoundaries)
+        // ICU options.
+        case "w": return .unicodeWordBoundaries
 
-      // Oniguruma options.
-      case "D": return advanceAndReturn(.asciiOnlyDigit)
-      case "P": return advanceAndReturn(.asciiOnlyPOSIXProps)
-      case "S": return advanceAndReturn(.asciiOnlySpace)
-      case "W": return advanceAndReturn(.asciiOnlyWord)
-      case "y":
-        src.advance()
-        try src.expect("{")
-        let opt: OptKind
-        if src.tryEat("w") {
-          opt = .textSegmentWordMode
-        } else {
-          try src.expect("g")
-          opt = .textSegmentGraphemeMode
+        // Oniguruma options.
+        case "D": return .asciiOnlyDigit
+        case "P": return .asciiOnlyPOSIXProps
+        case "S": return .asciiOnlySpace
+        case "W": return .asciiOnlyWord
+        case "y":
+          // Default to grapheme cluster if unknown.
+          let recoveryMode = OptKind.textSegmentGraphemeMode
+          guard p.expect("{") else { return recoveryMode }
+
+          guard let optChar = p.tryEatWithLoc(), optChar.value != "}" else {
+            p.errorAtCurrentPosition(.expected("text segment mode"))
+            return recoveryMode
+          }
+          let opt: OptKind
+          switch optChar.value {
+          case "w":
+            opt = .textSegmentWordMode
+          case "g":
+            opt = .textSegmentGraphemeMode
+          case let x:
+            p.error(.unknownTextSegmentMatchingOption(x), at: optChar.location)
+            opt = recoveryMode
+          }
+          p.expect("}")
+          return opt
+
+        // Swift semantic level options
+        case "X": return .graphemeClusterSemantics
+        case "u": return .unicodeScalarSemantics
+        case "b": return .byteSemantics
+
+        default:
+          return nil
         }
-        try src.expect("}")
-        return opt
-
-      // Swift semantic level options
-      case "X": return advanceAndReturn(.graphemeClusterSemantics)
-      case "u": return advanceAndReturn(.unicodeScalarSemantics)
-      case "b": return advanceAndReturn(.byteSemantics)
-        
-      default:
-        return nil
       }
     }
     guard let locOpt = locOpt else { return nil }
@@ -799,109 +878,98 @@ extension Source {
   ///     MatchingOptionSeq -> '^' MatchingOption* | MatchingOption+
   ///                        | MatchingOption* '-' MatchingOption*
   ///
-  mutating func lexMatchingOptionSequence(
-    context: ParsingContext
-  ) throws -> AST.MatchingOptionSequence? {
+  mutating func lexMatchingOptionSequence() -> AST.MatchingOptionSequence? {
     // PCRE accepts '(?)'
     // TODO: This is a no-op, should we warn?
     if peek() == ")" {
       return .init(caretLoc: nil, adding: [], minusLoc: nil, removing: [])
     }
-    let ateCaret = recordLoc { $0.tryEat("^") }
+    let caret = tryEatWithLoc("^")
 
     // TODO: Warn on duplicate options, and options appearing in both adding
     // and removing lists?
     var adding: [AST.MatchingOption] = []
-    while let opt = try lexMatchingOption() {
+    while let opt = lexMatchingOption() {
       adding.append(opt)
     }
 
-    // If the sequence begun with a caret '^', options can only be added, so
-    // we're done.
-    if ateCaret.value {
-      if peek() == "-" {
-        throw ParseError.cannotRemoveMatchingOptionsAfterCaret
-      }
-      return .init(caretLoc: ateCaret.location, adding: adding, minusLoc: nil,
-                   removing: [])
-    }
-
     // Try to lex options to remove.
-    let ateMinus = recordLoc { $0.tryEat("-") }
-    if ateMinus.value {
-      var removing: [AST.MatchingOption] = []
-      while let opt = try lexMatchingOption() {
+    var removing: [AST.MatchingOption] = []
+    let minus = tryEatWithLoc("-")
+    if minus != nil {
+      if let caret = caret {
+        // Options cannot be removed if '^' is used.
+        error(.cannotRemoveMatchingOptionsAfterCaret, at: caret)
+      }
+      while let opt = lexMatchingOption() {
         // Text segment options can only be added, they cannot be removed
         // with (?-), they should instead be set to a different mode.
         if opt.isTextSegmentMode {
-          throw ParseError.cannotRemoveTextSegmentOptions
+          error(.cannotRemoveTextSegmentOptions, at: opt.location)
         }
         // Matching semantics options can only be added, not removed.
         if opt.isSemanticMatchingLevel {
-          throw ParseError.cannotRemoveSemanticsOptions
+          error(.cannotRemoveSemanticsOptions, at: opt.location)
         }
         removing.append(opt)
       }
-      return .init(caretLoc: nil, adding: adding, minusLoc: ateMinus.location,
-                   removing: removing)
     }
-    guard !adding.isEmpty else { return nil }
-    return .init(caretLoc: nil, adding: adding, minusLoc: nil, removing: [])
+    // We must have lexed at least something to proceed.
+    guard caret != nil || minus != nil || !adding.isEmpty else { return nil }
+    return .init(
+      caretLoc: caret, adding: adding, minusLoc: minus, removing: removing)
   }
 
   /// A matching option changing atom.
   ///
   ///     '(?' MatchingOptionSeq ')'
   ///
-  mutating func lexChangeMatchingOptionAtom(
-    context: ParsingContext
-  ) throws -> AST.MatchingOptionSequence? {
-    try tryEating { src in
-      guard src.tryEat(sequence: "(?"),
-            let seq = try src.lexMatchingOptionSequence(context: context)
+  mutating func lexChangeMatchingOptionAtom() -> AST.MatchingOptionSequence? {
+    tryEating { p in
+      guard p.tryEat(sequence: "(?"), let seq = p.lexMatchingOptionSequence()
       else { return nil }
-      try src.expect(")")
+      p.expect(")")
       return seq
     }
   }
 
   /// Try to consume explicitly spelled-out PCRE2 group syntax.
   mutating func lexExplicitPCRE2GroupStart() -> AST.Group.Kind? {
-    tryEating { src in
-      guard src.tryEat(sequence: "(*") else { return nil }
+    tryEating { p in
+      guard p.tryEat(sequence: "(*") else { return nil }
 
-      if src.tryEat(sequence: "atomic:") {
+      if p.tryEat(sequence: "atomic:") {
         return .atomicNonCapturing
       }
-      if src.tryEat(sequence: "pla:") ||
-          src.tryEat(sequence: "positive_lookahead:") {
+      if p.tryEat(sequence: "pla:") ||
+          p.tryEat(sequence: "positive_lookahead:") {
         return .lookahead
       }
-      if src.tryEat(sequence: "nla:") ||
-          src.tryEat(sequence: "negative_lookahead:") {
+      if p.tryEat(sequence: "nla:") ||
+          p.tryEat(sequence: "negative_lookahead:") {
         return .negativeLookahead
       }
-      if src.tryEat(sequence: "plb:") ||
-          src.tryEat(sequence: "positive_lookbehind:") {
+      if p.tryEat(sequence: "plb:") ||
+          p.tryEat(sequence: "positive_lookbehind:") {
         return .lookbehind
       }
-      if src.tryEat(sequence: "nlb:") ||
-          src.tryEat(sequence: "negative_lookbehind:") {
+      if p.tryEat(sequence: "nlb:") ||
+          p.tryEat(sequence: "negative_lookbehind:") {
         return .negativeLookbehind
       }
-      if src.tryEat(sequence: "napla:") ||
-          src.tryEat(sequence: "non_atomic_positive_lookahead:") {
+      if p.tryEat(sequence: "napla:") ||
+          p.tryEat(sequence: "non_atomic_positive_lookahead:") {
         return .nonAtomicLookahead
       }
-      if src.tryEat(sequence: "naplb:") ||
-          src.tryEat(sequence: "non_atomic_positive_lookbehind:") {
+      if p.tryEat(sequence: "naplb:") ||
+          p.tryEat(sequence: "non_atomic_positive_lookbehind:") {
         return .nonAtomicLookbehind
       }
-      if src.tryEat(sequence: "sr:") || src.tryEat(sequence: "script_run:") {
+      if p.tryEat(sequence: "sr:") || p.tryEat(sequence: "script_run:") {
         return .scriptRun
       }
-      if src.tryEat(sequence: "asr:") ||
-          src.tryEat(sequence: "atomic_script_run:") {
+      if p.tryEat(sequence: "asr:") ||
+          p.tryEat(sequence: "atomic_script_run:") {
         return .atomicScriptRun
       }
       return nil
@@ -914,32 +982,28 @@ extension Source {
   ///
   private mutating func expectIdentifier(
     _ kind: IdentifierKind, endingWith ending: String, eatEnding: Bool = true
-  ) throws -> Located<String> {
-    let str = try recordLoc { src -> String in
-      if src.isEmpty || src.tryEat(sequence: ending) {
-        throw ParseError.expectedIdentifier(kind)
+  ) -> Located<String> {
+    let str = recordLoc { p -> String in
+      guard !p.src.isEmpty && !p.src.starts(with: ending) else {
+        p.errorAtCurrentPosition(.expectedIdentifier(kind))
+        return ""
       }
-      if src.peek()!.isNumber {
-        throw ParseError.identifierCannotStartWithNumber(kind)
+      let firstChar = p.peekWithLoc()!
+      if firstChar.value.isNumber {
+        p.error(.identifierCannotStartWithNumber(kind), at: firstChar.location)
       }
-      guard let str = src.tryEatPrefix(\.isWordCharacter)?.string else {
-        throw ParseError.identifierMustBeAlphaNumeric(kind)
+      guard let str = p.tryEatPrefix(\.isWordCharacter) else {
+        p.error(.identifierMustBeAlphaNumeric(kind), at: firstChar.location)
+        // Try skip ahead to the closing delimiter for better recovery.
+        _ = p.lexUntil { $0.src.isEmpty || $0.src.starts(with: ending) }
+        return ""
       }
-      return str
+      return str.value
     }
     if eatEnding {
-      try expect(sequence: ending)
+      expect(sequence: ending)
     }
     return str
-  }
-
-  /// Try to consume an identifier, returning `nil` if unsuccessful.
-  private mutating func lexIdentifier(
-    _ kind: IdentifierKind, endingWith end: String, eatEnding: Bool = true
-  ) -> Located<String>? {
-    tryEating { src in
-      try? src.expectIdentifier(kind, endingWith: end, eatEnding: eatEnding)
-    }
   }
 
   /// Consume a named group field, producing either a named capture or balanced
@@ -952,23 +1016,23 @@ extension Source {
   ///
   private mutating func expectNamedGroup(
     endingWith ending: String
-  ) throws -> AST.Group.Kind {
-    func lexBalanced(_ lhs: Located<String>? = nil) throws -> AST.Group.Kind? {
+  ) -> AST.Group.Kind {
+    func lexBalanced(_ lhs: Located<String>? = nil) -> AST.Group.Kind? {
       // If we have a '-', this is a .NET-style 'balanced group'.
       guard let dash = tryEatWithLoc("-") else { return nil }
-      let rhs = try expectIdentifier(.groupName, endingWith: ending)
+      let rhs = expectIdentifier(.groupName, endingWith: ending)
       return .balancedCapture(.init(name: lhs, dash: dash, priorName: rhs))
     }
 
     // Lex a group name, trying to lex a '-rhs' for a balanced capture group
     // both before and after.
-    if let b = try lexBalanced() { return b }
-    let name = try expectIdentifier(
+    if let b = lexBalanced() { return b }
+    let name = expectIdentifier(
       .groupName, endingWith: ending, eatEnding: false
     )
-    if let b = try lexBalanced(name) { return b }
+    if let b = lexBalanced(name) { return b }
 
-    try expect(sequence: ending)
+    expect(sequence: ending)
     return .namedCapture(name)
   }
 
@@ -989,15 +1053,13 @@ extension Source {
   /// need to be parsed earlier than the group check, as
   /// comments, like quotes, cannot be quantified.
   ///
-  mutating func lexGroupStart(
-    context: ParsingContext
-  ) throws -> Located<AST.Group.Kind>? {
-    try recordLoc { src in
-      try src.tryEating { src in
+  mutating func lexGroupStart() -> Located<AST.Group.Kind>? {
+    recordLoc { p in
+      p.tryEating { p in
         // Explicitly spelled out PRCE2 syntax for some groups. This needs to be
         // done before group-like atoms, as it uses the '(*' syntax, which is
         // otherwise a group-like atom.
-        if let g = src.lexExplicitPCRE2GroupStart() { return g }
+        if let g = p.lexExplicitPCRE2GroupStart() { return g }
 
         // There are some atoms that syntactically look like groups, bail here
         // if we see any. Care needs to be taken here as e.g a group starting
@@ -1005,54 +1067,57 @@ extension Source {
         // otherwise a matching option specifier. Conversely, '(?P' can be the
         // start of a matching option sequence, or a reference if it is followed
         // by '=' or '<'.
-        guard !src.shouldLexGroupLikeAtom(context: context) else { return nil }
+        guard !p.shouldLexGroupLikeAtom() else { return nil }
 
-        guard src.tryEat("(") else { return nil }
-        if src.tryEat("?") {
-          if src.tryEat(":") { return .nonCapture }
-          if src.tryEat("|") { return .nonCaptureReset }
-          if src.tryEat(">") { return .atomicNonCapturing }
-          if src.tryEat("=") { return .lookahead }
-          if src.tryEat("!") { return .negativeLookahead }
-          if src.tryEat("*") { return .nonAtomicLookahead }
+        guard p.tryEat("(") else { return nil }
+        if p.tryEat("?") {
+          if p.tryEat(":") { return .nonCapture }
+          if p.tryEat("|") { return .nonCaptureReset }
+          if p.tryEat(">") { return .atomicNonCapturing }
+          if p.tryEat("=") { return .lookahead }
+          if p.tryEat("!") { return .negativeLookahead }
+          if p.tryEat("*") { return .nonAtomicLookahead }
 
-          if src.tryEat(sequence: "<=") { return .lookbehind }
-          if src.tryEat(sequence: "<!") { return .negativeLookbehind }
-          if src.tryEat(sequence: "<*") { return .nonAtomicLookbehind }
+          if p.tryEat(sequence: "<=") { return .lookbehind }
+          if p.tryEat(sequence: "<!") { return .negativeLookbehind }
+          if p.tryEat(sequence: "<*") { return .nonAtomicLookbehind }
 
           // Named
-          if src.tryEat("<") || src.tryEat(sequence: "P<") {
-            return try src.expectNamedGroup(endingWith: ">")
+          if p.tryEat("<") || p.tryEat(sequence: "P<") {
+            return p.expectNamedGroup(endingWith: ">")
           }
-          if src.tryEat("'") {
-            return try src.expectNamedGroup(endingWith: "'")
+          if p.tryEat("'") {
+            return p.expectNamedGroup(endingWith: "'")
           }
 
           // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
-          if let seq = try src.lexMatchingOptionSequence(context: context) {
-            guard src.tryEat(":") else {
-              if let next = src.peek() {
-                throw ParseError.invalidMatchingOption(next)
+          if let seq = p.lexMatchingOptionSequence() {
+            if !p.tryEat(":") {
+              if let next = p.peekWithLoc() {
+                p.error(.invalidMatchingOption(next.value), at: next.location)
+              } else {
+                p.errorAtCurrentPosition(.expected(")"))
               }
-              throw ParseError.expected(")")
             }
             return .changeMatchingOptions(seq)
           }
 
-          guard let next = src.peek() else {
-            throw ParseError.expectedGroupSpecifier
+          if let next = p.peekWithLoc() {
+            p.error(.unknownGroupKind("?\(next.value)"), at: next.location)
+          } else {
+            p.errorAtCurrentPosition(.expectedGroupSpecifier)
           }
-          throw ParseError.unknownGroupKind("?\(next)")
+          return .nonCapture
         }
 
         // (_:)
-        if context.experimentalCaptures && src.tryEat(sequence: "_:") {
+        if p.context.experimentalCaptures && p.tryEat(sequence: "_:") {
           return .nonCapture
         }
         // TODO: (name:)
 
         // If (?n) is set, a bare (...) group is non-capturing.
-        if context.syntax.contains(.namedCapturesOnly) {
+        if p.context.syntax.contains(.namedCapturesOnly) {
           return .nonCapture
         }
         return .capture
@@ -1065,11 +1130,12 @@ extension Source {
   ///     PCREVersionNumber -> <Int>.<Int>
   ///
   private mutating func expectPCREVersionNumber(
-  ) throws -> AST.Conditional.Condition.PCREVersionNumber {
-    let nums = try recordLoc { src -> (major: Int, minor: Int) in
-      let major = try src.expectNumber().value
-      try src.expect(".")
-      let minor = try src.expectNumber().value
+  ) -> AST.Conditional.Condition.PCREVersionNumber {
+    let nums = recordLoc { p -> (major: AST.Atom.Number,
+                                 minor: AST.Atom.Number) in
+      let major = p.expectNumber()
+      p.expect(".")
+      let minor = p.expectNumber()
       return (major, minor)
     }
     return .init(major: nums.value.major, minor: nums.value.minor,
@@ -1081,14 +1147,14 @@ extension Source {
   ///     PCREVersionCheck -> '>'? '=' PCREVersionNumber
   ///
   private mutating func expectPCREVersionCheck(
-  ) throws -> AST.Conditional.Condition.Kind {
+  ) -> AST.Conditional.Condition.Kind {
     typealias Kind = AST.Conditional.Condition.PCREVersionCheck.Kind
-    let kind = try recordLoc { src -> Kind in
-      let greaterThan = src.tryEat(">")
-      try src.expect("=")
+    let kind = recordLoc { p -> Kind in
+      let greaterThan = p.tryEat(">")
+      p.expect("=")
       return greaterThan ? .greaterThanOrEqual : .equal
     }
-    return .pcreVersionCheck(.init(kind, try expectPCREVersionNumber()))
+    return .pcreVersionCheck(.init(kind, expectPCREVersionNumber()))
   }
 
   /// Try to lex a known condition (excluding group conditions).
@@ -1103,46 +1169,44 @@ extension Source {
   ///                     | NumberRef
   ///                     | NameRef
   ///
-  private mutating func lexKnownCondition(
-    context: ParsingContext
-  ) throws -> AST.Conditional.Condition? {
+  private mutating func lexKnownCondition() -> AST.Conditional.Condition? {
     typealias ConditionKind = AST.Conditional.Condition.Kind
 
-    let kind = try recordLoc { src -> ConditionKind? in
-      try src.tryEating { src in
+    let kind = recordLoc { p -> ConditionKind? in
+      p.tryEating { p in
 
         // PCRE recursion check.
-        if src.tryEat("R") {
-          if src.tryEat("&") {
+        if p.tryEat("R") {
+          if p.tryEat("&") {
             return .groupRecursionCheck(
-              try src.expectNamedReference(endingWith: ")", eatEnding: false))
+              p.expectNamedReference(endingWith: ")", eatEnding: false))
           }
-          if let num = try src.lexNumber() {
+          if let num = p.lexNumber() {
             return .groupRecursionCheck(
-              .init(.absolute(num.value), innerLoc: num.location))
+              .init(.absolute(num), innerLoc: num.location))
           }
           return .recursionCheck
         }
 
-        if let open = src.tryEat(anyOf: "<", "'") {
+        if let open = p.tryEat(anyOf: "<", "'") {
           // In PCRE, this can only be a named reference. In Oniguruma, it can
           // also be a numbered reference.
-          let closing = String(Source.getClosingDelimiter(for: open))
+          let closing = String(p.getClosingDelimiter(for: open))
           return .groupMatched(
-            try src.expectNamedOrNumberedReference(endingWith: closing))
+            p.expectNamedOrNumberedReference(endingWith: closing))
         }
 
         // PCRE group definition and version check.
-        if src.tryEat(sequence: "DEFINE") {
+        if p.tryEat(sequence: "DEFINE") {
           return .defineGroup
         }
-        if src.tryEat(sequence: "VERSION") {
-          return try src.expectPCREVersionCheck()
+        if p.tryEat(sequence: "VERSION") {
+          return p.expectPCREVersionCheck()
         }
 
         // If we have a numbered reference, this is a check to see if a group
         // matched. Oniguruma also permits a recursion level here.
-        if let num = try src.lexNumberedReference(allowRecursionLevel: true) {
+        if let num = p.lexNumberedReference(allowRecursionLevel: true) {
           return .groupMatched(num)
         }
 
@@ -1153,9 +1217,9 @@ extension Source {
         // FIXME: This should apply to future groups too.
         // TODO: We should probably advise users to use the more explicit
         // syntax.
-        let nameRef = src.lexNamedReference(
+        let nameRef = p.lexNamedReference(
           endingWith: ")", eatEnding: false, allowRecursionLevel: true)
-        if let nameRef = nameRef, context.isPriorGroupRef(nameRef.kind) {
+        if let nameRef = nameRef, p.context.isPriorGroupRef(nameRef.kind) {
           return .groupMatched(nameRef)
         }
         return nil
@@ -1169,14 +1233,11 @@ extension Source {
   ///
   ///     KnownConditionalStart -> '(?(' KnownCondition ')'
   ///
-  mutating func lexKnownConditionalStart(
-    context: ParsingContext
-  ) throws -> AST.Conditional.Condition? {
-    try tryEating { src in
-      guard src.tryEat(sequence: "(?("),
-            let cond = try src.lexKnownCondition(context: context)
+  mutating func lexKnownConditionalStart() -> AST.Conditional.Condition? {
+    tryEating { p in
+      guard p.tryEat(sequence: "(?("), let cond = p.lexKnownCondition()
       else { return nil }
-      try src.expect(")")
+      p.expect(")")
       return cond
     }
   }
@@ -1185,12 +1246,10 @@ extension Source {
   ///
   ///     GroupCondStart -> '(?' GroupStart
   ///
-  mutating func lexGroupConditionalStart(
-    context: ParsingContext
-  ) throws -> Located<AST.Group.Kind>? {
-    try tryEating { src in
-      guard src.tryEat(sequence: "(?") else { return nil }
-      return try src.lexGroupStart(context: context)
+  mutating func lexGroupConditionalStart() -> Located<AST.Group.Kind>? {
+    tryEating { p in
+      guard p.tryEat(sequence: "(?") else { return nil }
+      return p.lexGroupStart()
     }
   }
 
@@ -1200,24 +1259,24 @@ extension Source {
   ///
   mutating func lexAbsentFunctionStart(
   ) -> Located<AST.AbsentFunction.Start>? {
-    recordLoc { src in
-      if src.tryEat(sequence: "(?~|") { return .withPipe }
-      if src.tryEat(sequence: "(?~") { return .withoutPipe }
+    recordLoc { p in
+      if p.tryEat(sequence: "(?~|") { return .withPipe }
+      if p.tryEat(sequence: "(?~") { return .withoutPipe }
       return nil
     }
   }
 
   mutating func lexCustomCCStart() -> Located<CustomCC.Start>? {
-    recordLoc { src in
+    recordLoc { p in
       // Make sure we don't have a POSIX character property. This may require
       // walking to its ending to make sure we have a closing ':]', as otherwise
       // we have a custom character class.
       // TODO: This behavior seems subtle, could we warn?
-      guard !src.canLexPOSIXCharacterProperty() else {
+      guard !p.canLexPOSIXCharacterProperty() else {
         return nil
       }
-      if src.tryEat("[") {
-        return src.tryEat("^") ? .inverted : .normal
+      if p.tryEat("[") {
+        return p.tryEat("^") ? .inverted : .normal
       }
       return nil
     }
@@ -1227,56 +1286,63 @@ extension Source {
   ///
   ///     CustomCCBinOp -> '--' | '~~' | '&&'
   ///
-  mutating func lexCustomCCBinOp() throws -> Located<CustomCC.SetOp>? {
-    recordLoc { src in
+  mutating func lexCustomCCBinOp() -> Located<CustomCC.SetOp>? {
+    recordLoc { p in
       // TODO: Perhaps a syntax options check (!PCRE)
       // TODO: Better AST types here
-      guard let binOp = src.peekCCBinOp() else { return nil }
-      try! src.expect(sequence: binOp.rawValue)
+      guard let binOp = p.peekCCBinOp() else { return nil }
+      p.expect(sequence: binOp.rawValue)
       return binOp
     }
   }
 
   // Check to see if we can lex a binary operator.
   func peekCCBinOp() -> CustomCC.SetOp? {
-    if starts(with: "--") { return .subtraction }
-    if starts(with: "~~") { return .symmetricDifference }
-    if starts(with: "&&") { return .intersection }
+    if src.starts(with: "--") { return .subtraction }
+    if src.starts(with: "~~") { return .symmetricDifference }
+    if src.starts(with: "&&") { return .intersection }
     return nil
   }
 
+  /// Check to see if we can lex a .NET subtraction. Returns the
+  /// location of the `-`.
+  ///
+  ///     DotNetSubtraction -> Trivia* '-' Trivia* CustomCharClass
+  ///
+  mutating func canLexDotNetCharClassSubtraction() -> SourceLocation? {
+    lookahead { p in
+      // We can lex '-' as a .NET subtraction if it precedes a custom character
+      // class.
+      while p.lexTrivia() != nil {}
+      guard let dashLoc = p.tryEatWithLoc("-") else { return nil }
+      while p.lexTrivia() != nil {}
+      guard p.lexCustomCCStart() != nil else { return nil }
+      return dashLoc
+    }
+  }
+
   private mutating func lexPOSIXCharacterProperty(
-  ) throws -> Located<AST.Atom.CharacterProperty>? {
-    try recordLoc { src in
-      try src.tryEating { src in
-        guard src.tryEat(sequence: "[:") else { return nil }
-        let inverted = src.tryEat("^")
+  ) -> Located<AST.Atom.CharacterProperty>? {
+    recordLoc { p in
+      p.tryEating { p in
+        guard p.tryEat(sequence: "[:") else { return nil }
+        let inverted = p.tryEat("^")
 
         // Note we lex the contents and ending *before* classifying, because we
         // want to bail with nil if we don't have the right ending. This allows
         // the lexing of a custom character class if we don't have a ':]'
         // ending.
-        let (key, value) = src.lexCharacterPropertyKeyValue()
-        guard src.tryEat(sequence: ":]") else { return nil }
+        let (key, value) = p.lexCharacterPropertyKeyValue()
+        guard p.tryEat(sequence: ":]") else { return nil }
 
-        let prop = try Source.classifyCharacterPropertyContents(key: key,
-                                                                value: value)
+        let prop = p.classifyCharacterPropertyContents(key: key, value: value)
         return .init(prop, isInverted: inverted, isPOSIX: true)
       }
     }
   }
 
-  private func canLexPOSIXCharacterProperty() -> Bool {
-    do {
-      return try lookahead { src in
-        try src.lexPOSIXCharacterProperty() != nil
-      }
-    } catch {
-      // We want to tend on the side of lexing a POSIX character property, so
-      // even if it is invalid in some way (e.g invalid property names), still
-      // try and lex it.
-      return true
-    }
+  private mutating func canLexPOSIXCharacterProperty() -> Bool {
+    lookahead { $0.lexPOSIXCharacterProperty() != nil }
   }
 
   /// Try to consume a named character.
@@ -1284,26 +1350,26 @@ extension Source {
   ///     NamedCharacter -> '\N{' CharName '}'
   ///     CharName -> 'U+' HexDigit{1...8} | [\s\w-]+
   ///
-  private mutating func lexNamedCharacter() throws -> Located<AST.Atom.Kind>? {
-    try recordLoc { src in
-      guard src.tryEat(sequence: "N{") else { return nil }
+  private mutating func lexNamedCharacter() -> Located<AST.Atom.Kind>? {
+    recordLoc { p in
+      guard p.tryEat(sequence: "N{") else { return nil }
 
       // We should either have a unicode scalar.
-      if src.tryEat(sequence: "U+") {
-        let str = try src.lexUntil(eating: "}")
-        return .scalar(try Source.validateUnicodeScalar(str, .hex))
+      if p.tryEat(sequence: "U+") {
+        let str = p.lexUntil(eating: "}")
+        return .scalar(p.validateUnicodeScalar(str, .hex))
       }
 
       // Or we should have a character name.
       // TODO: Validate the types of characters that can appear in the name?
-      return .namedCharacter(try src.lexUntil(eating: "}").value)
+      return .namedCharacter(p.lexUntil(eating: "}").value)
     }
   }
 
   private mutating func lexCharacterPropertyKeyValue(
-  ) -> (key: String?, value: String) {
-    func atPossibleEnding(_ src: inout Source) -> Bool {
-      guard let next = src.peek() else { return true }
+  ) -> (key: Located<String>?, value: Located<String>) {
+    func atPossibleEnding(_ p: inout Self) -> Bool {
+      guard let next = p.peek() else { return true }
       switch next {
       case "=":
         // End of a key.
@@ -1339,21 +1405,21 @@ extension Source {
     // - 'x=y' where 'x' is a property key, and 'y' is a value.
     // - 'y' where 'y' is a value (or a bool key with an inferred value of true)
     //   and its key is inferred.
-    let lhs = lexUntil(atPossibleEnding).value
+    let lhs = lexUntil(atPossibleEnding)
     if tryEat("=") {
-      let rhs = lexUntil(atPossibleEnding).value
+      let rhs = lexUntil(atPossibleEnding)
       return (lhs, rhs)
     }
     return (nil, lhs)
   }
 
-  private static func classifyCharacterPropertyContents(
-    key: String?, value: String
-  ) throws -> AST.Atom.CharacterProperty.Kind {
+  private mutating func classifyCharacterPropertyContents(
+    key: Located<String>?, value: Located<String>
+  ) -> AST.Atom.CharacterProperty.Kind {
     if let key = key {
-      return try classifyCharacterProperty(key: key, value: value)
+      return classifyCharacterProperty(key: key, value: value)
     }
-    return try classifyCharacterPropertyValueOnly(value)
+    return classifyCharacterPropertyValueOnly(value)
   }
 
   /// Try to consume a character property.
@@ -1362,17 +1428,18 @@ extension Source {
   ///     Prop -> [\s\w-]+
   ///
   private mutating func lexCharacterProperty(
-  ) throws -> Located<AST.Atom.CharacterProperty>? {
-    try recordLoc { src in
+  ) -> Located<AST.Atom.CharacterProperty>? {
+    recordLoc { p in
       // '\P{...}' is the inverted version of '\p{...}'
-      guard src.starts(with: "p{") || src.starts(with: "P{") else { return nil }
-      let isInverted = src.peek() == "P"
-      src.advance(2)
+      guard p.src.starts(with: "p{") || p.src.starts(with: "P{") else {
+        return nil
+      }
+      let isInverted = p.peek() == "P"
+      p.advance(2)
 
-      let (key, value) = src.lexCharacterPropertyKeyValue()
-      let prop = try Source.classifyCharacterPropertyContents(key: key,
-                                                              value: value)
-      try src.expect("}")
+      let (key, value) = p.lexCharacterPropertyKeyValue()
+      let prop = p.classifyCharacterPropertyContents(key: key, value: value)
+      p.expect("}")
       return .init(prop, isInverted: isInverted, isPOSIX: false)
     }
   }
@@ -1383,27 +1450,28 @@ extension Source {
   ///
   private mutating func lexNumberedReference(
     allowWholePatternRef: Bool = false, allowRecursionLevel: Bool = false
-  ) throws -> AST.Reference? {
-    let kind = try recordLoc { src -> AST.Reference.Kind? in
-      try src.tryEating { src in
+  ) -> AST.Reference? {
+    let kind = recordLoc { p -> AST.Reference.Kind? in
+      p.tryEating { p in
         // Note this logic should match canLexNumberedReference.
-        if src.tryEat("+"), let num = try src.lexNumber() {
-          return .relative(num.value)
+        if let plus = p.tryEatWithLoc("+"), let num = p.lexNumber() {
+          return .relative(.init(num.value, at: num.location.union(with: plus)))
         }
-        if src.tryEat("-"), let num = try src.lexNumber() {
-          return .relative(-num.value)
+        if let minus = p.tryEatWithLoc("-"), let num = p.lexNumber() {
+          let val = num.value.map { x in -x }
+          return .relative(.init(val, at: num.location.union(with: minus)))
         }
-        if let num = try src.lexNumber() {
-          return .absolute(num.value)
+        if let num = p.lexNumber() {
+          return .absolute(num)
         }
         return nil
       }
     }
     guard let kind = kind else { return nil }
-    guard allowWholePatternRef || kind.value != .recurseWholePattern else {
-      throw ParseError.cannotReferToWholePattern
+    if !allowWholePatternRef && kind.value.recursesWholePattern {
+      error(.cannotReferToWholePattern, at: kind.location)
     }
-    let recLevel = allowRecursionLevel ? try lexRecursionLevel() : nil
+    let recLevel = allowRecursionLevel ? lexRecursionLevel() : nil
     let loc = recLevel?.location.union(with: kind.location) ?? kind.location
     return .init(kind.value, recursionLevel: recLevel, innerLoc: loc)
   }
@@ -1413,19 +1481,21 @@ extension Source {
   ///     RecursionLevel -> '+' <Int> | '-' <Int>
   ///
   private mutating func lexRecursionLevel(
-  ) throws -> Located<Int>? {
-    try recordLoc { src in
-      if src.tryEat("+") { return try src.expectNumber().value }
-      if src.tryEat("-") { return try -src.expectNumber().value }
+  ) -> AST.Atom.Number? {
+    let value = recordLoc { p -> Int? in
+      if p.tryEat("+") { return p.expectNumber().value }
+      if p.tryEat("-") { return p.expectNumber().value.map { x in -x } }
       return nil
     }
+    guard let value = value else { return nil }
+    return .init(value.value, at: value.location)
   }
 
   /// Checks whether a numbered reference can be lexed.
-  private func canLexNumberedReference() -> Bool {
-    lookahead { src in
-      _ = src.tryEat(anyOf: "+", "-")
-      guard let next = src.peek() else { return false }
+  private mutating func canLexNumberedReference() -> Bool {
+    lookahead { p in
+      _ = p.tryEat(anyOf: "+", "-")
+      guard let next = p.peek() else { return false }
       return RadixKind.decimal.characterFilter(next)
     }
   }
@@ -1434,18 +1504,18 @@ extension Source {
   private mutating func expectNamedReference(
     endingWith end: String, eatEnding: Bool = true,
     allowRecursionLevel: Bool = false
-  ) throws -> AST.Reference {
+  ) -> AST.Reference {
     // Note we don't want to eat the ending as we may also want to parse a
     // recursion level.
-    let str = try expectIdentifier(
+    let str = expectIdentifier(
       .groupName, endingWith: end, eatEnding: false)
 
-    // If we're allowed to, try parse a recursion level.
-    let recLevel = allowRecursionLevel ? try lexRecursionLevel() : nil
+    // If we're allowed to, parse a recursion level.
+    let recLevel = allowRecursionLevel ? lexRecursionLevel() : nil
     let loc = recLevel?.location.union(with: str.location) ?? str.location
 
     if eatEnding {
-      try expect(sequence: end)
+      expect(sequence: end)
     }
     return .init(.named(str.value), recursionLevel: recLevel, innerLoc: loc)
   }
@@ -1456,8 +1526,8 @@ extension Source {
     endingWith end: String, eatEnding: Bool = true,
     allowRecursionLevel: Bool = false
   ) -> AST.Reference? {
-    tryEating { src in
-      try? src.expectNamedReference(
+    tryEating { p in
+      p.expectNamedReference(
         endingWith: end, eatEnding: eatEnding,
         allowRecursionLevel: allowRecursionLevel
       )
@@ -1471,32 +1541,34 @@ extension Source {
   private mutating func expectNamedOrNumberedReference(
     endingWith ending: String, eatEnding: Bool = true,
     allowWholePatternRef: Bool = false, allowRecursionLevel: Bool = false
-  ) throws -> AST.Reference {
-    let num = try lexNumberedReference(
+  ) -> AST.Reference {
+    let num = lexNumberedReference(
       allowWholePatternRef: allowWholePatternRef,
       allowRecursionLevel: allowRecursionLevel
     )
     if let num = num {
       if eatEnding {
-        try expect(sequence: ending)
+        expect(sequence: ending)
       }
       return num
     }
-    return try expectNamedReference(
+    return expectNamedReference(
       endingWith: ending, eatEnding: eatEnding,
       allowRecursionLevel: allowRecursionLevel
     )
   }
 
-  private static func getClosingDelimiter(
+  private mutating func getClosingDelimiter(
     for openChar: Character
   ) -> Character {
     switch openChar {
       // Identically-balanced delimiters.
-      case "'", "\"", "`", "^", "%", "#", "$": return openChar
-      case "<": return ">"
-      case "{": return "}"
-      default: fatalError("Not implemented")
+    case "'", "\"", "`", "^", "%", "#", "$": return openChar
+    case "<": return ">"
+    case "{": return "}"
+    default:
+      unreachable("Unhandled case")
+      return openChar
     }
   }
 
@@ -1511,58 +1583,54 @@ extension Source {
   ///                       | 'k{' <String> '}'
   ///                       | [1-9] [0-9]+
   ///
-  private mutating func lexEscapedReference(
-    context: ParsingContext
-  ) throws -> Located<AST.Atom.Kind>? {
-    try recordLoc { src in
-      try src.tryEating { src in
-        guard let firstChar = src.peek() else { return nil }
+  private mutating func lexEscapedReference() -> Located<AST.Atom.Kind>? {
+    recordLoc { p in
+      p.tryEating { p in
+        guard let firstChar = p.peek() else { return nil }
 
-        if src.tryEat("g") {
+        if p.tryEat("g") {
           // PCRE-style backreferences.
-          if src.tryEat("{") {
-            let ref = try src.expectNamedOrNumberedReference(endingWith: "}")
+          if p.tryEat("{") {
+            let ref = p.expectNamedOrNumberedReference(endingWith: "}")
             return .backreference(ref)
           }
 
           // Oniguruma-style subpatterns.
-          if let openChar = src.tryEat(anyOf: "<", "'") {
-            let closing = String(Source.getClosingDelimiter(for: openChar))
-            return .subpattern(try src.expectNamedOrNumberedReference(
+          if let openChar = p.tryEat(anyOf: "<", "'") {
+            let closing = String(p.getClosingDelimiter(for: openChar))
+            return .subpattern(p.expectNamedOrNumberedReference(
               endingWith: closing, allowWholePatternRef: true))
           }
 
           // PCRE allows \g followed by a bare numeric reference.
-          if let ref = try src.lexNumberedReference() {
+          if let ref = p.lexNumberedReference() {
             return .backreference(ref)
           }
           return nil
         }
 
-        if src.tryEat("k") {
+        if p.tryEat("k") {
           // Perl/.NET/Oniguruma-style backreferences.
-          if let openChar = src.tryEat(anyOf: "<", "'") {
-            let closing = String(Source.getClosingDelimiter(for: openChar))
+          if let openChar = p.tryEat(anyOf: "<", "'") {
+            let closing = String(p.getClosingDelimiter(for: openChar))
 
             // Perl only accept named references here, but Oniguruma and .NET
             // also accepts numbered references. This shouldn't be an ambiguity
             // as named references may not begin with a digit, '-', or '+'.
             // Oniguruma also allows a recursion level to be specified.
-            return .backreference(try src.expectNamedOrNumberedReference(
+            return .backreference(p.expectNamedOrNumberedReference(
               endingWith: closing, allowRecursionLevel: true))
           }
           // Perl/.NET also allow a named references with the '{' delimiter.
-          if src.tryEat("{") {
-            return .backreference(
-              try src.expectNamedReference(endingWith: "}"))
+          if p.tryEat("{") {
+            return .backreference(p.expectNamedReference(endingWith: "}"))
           }
           return nil
         }
 
         // Backslash followed by a non-0 digit character is a backreference.
-        if firstChar != "0", let numAndLoc = try src.lexNumber() {
-          return .backreference(.init(
-            .absolute(numAndLoc.value), innerLoc: numAndLoc.location))
+        if firstChar != "0", let num = p.lexNumber() {
+          return .backreference(.init(.absolute(num), innerLoc: num.location))
         }
         return nil
       }
@@ -1579,35 +1647,35 @@ extension Source {
   ///                             | NumberRef
   ///
   private mutating func lexGroupLikeReference(
-  ) throws -> Located<AST.Atom.Kind>? {
-    try recordLoc { src in
-      try src.tryEating { src in
-        guard src.tryEat(sequence: "(?") else { return nil }
+  ) -> Located<AST.Atom.Kind>? {
+    recordLoc { p in
+      p.tryEating { p in
+        guard p.tryEat(sequence: "(?") else { return nil }
 
         // Note the below should be covered by canLexGroupLikeReference.
 
         // Python-style references.
-        if src.tryEat(sequence: "P=") {
-          return .backreference(try src.expectNamedReference(endingWith: ")"))
+        if p.tryEat(sequence: "P=") {
+          return .backreference(p.expectNamedReference(endingWith: ")"))
         }
-        if src.tryEat(sequence: "P>") {
-          return .subpattern(try src.expectNamedReference(endingWith: ")"))
+        if p.tryEat(sequence: "P>") {
+          return .subpattern(p.expectNamedReference(endingWith: ")"))
         }
 
         // Perl-style subpatterns.
-        if src.tryEat("&") {
-          return .subpattern(try src.expectNamedReference(endingWith: ")"))
+        if p.tryEat("&") {
+          return .subpattern(p.expectNamedReference(endingWith: ")"))
         }
 
         // Whole-pattern recursion, which is equivalent to (?0).
-        if let loc = src.tryEatWithLoc("R") {
-          try src.expect(")")
-          return .subpattern(.init(.recurseWholePattern, innerLoc: loc))
+        if let loc = p.tryEatWithLoc("R") {
+          p.expect(")")
+          return .subpattern(.init(.recurseWholePattern(loc), innerLoc: loc))
         }
 
         // Numbered subpattern reference.
-        if let ref = try src.lexNumberedReference(allowWholePatternRef: true) {
-          try src.expect(")")
+        if let ref = p.lexNumberedReference(allowWholePatternRef: true) {
+          p.expect(")")
           return .subpattern(ref)
         }
         return nil
@@ -1616,53 +1684,51 @@ extension Source {
   }
 
   /// Whether we can lex a group-like reference after the specifier '(?'.
-  private func canLexGroupLikeReference() -> Bool {
-    lookahead { src in
-      if src.tryEat("P") {
-        return src.tryEat(anyOf: "=", ">") != nil
+  private mutating func canLexGroupLikeReference() -> Bool {
+    lookahead { p in
+      if p.tryEat("P") {
+        return p.tryEat(anyOf: "=", ">") != nil
       }
-      if src.tryEat(anyOf: "&", "R") != nil {
+      if p.tryEat(anyOf: "&", "R") != nil {
         return true
       }
-      return src.canLexNumberedReference()
+      return p.canLexNumberedReference()
     }
   }
 
-  private func canLexMatchingOptionsAsAtom(context: ParsingContext) -> Bool {
-    lookahead { src in
+  private mutating func canLexMatchingOptionsAsAtom() -> Bool {
+    lookahead { p in
       // See if we can lex a matching option sequence that terminates in ')'.
-      // Such a sequence is an atom. If an error is thrown, there are invalid
-      // elements of the matching option sequence. In such a case, we can lex as
-      // a group and diagnose the invalid group kind.
-      guard (try? src.lexMatchingOptionSequence(context: context)) != nil else {
+      // Such a sequence is an atom.
+      guard p.lexMatchingOptionSequence() != nil else {
         return false
       }
-      return src.tryEat(")")
+      return p.tryEat(")")
     }
   }
 
   /// Whether a group specifier should be lexed as an atom instead of a group.
-  private func shouldLexGroupLikeAtom(context: ParsingContext) -> Bool {
-    lookahead { src in
-      guard src.tryEat("(") else { return false }
+  private mutating func shouldLexGroupLikeAtom() -> Bool {
+    lookahead { p in
+      guard p.tryEat("(") else { return false }
 
-      if src.tryEat("?") {
+      if p.tryEat("?") {
         // The start of a reference '(?P=', '(?R', ...
-        if src.canLexGroupLikeReference() { return true }
+        if p.canLexGroupLikeReference() { return true }
 
         // The start of a PCRE callout.
-        if src.tryEat("C") { return true }
+        if p.tryEat("C") { return true }
 
         // The start of an Oniguruma 'of-contents' callout.
-        if src.tryEat("{") { return true }
+        if p.tryEat("{") { return true }
 
         // A matching option atom (?x), (?i), ...
-        if src.canLexMatchingOptionsAsAtom(context: context) { return true }
+        if p.canLexMatchingOptionsAsAtom() { return true }
 
         return false
       }
       // The start of a backreference directive or Oniguruma named callout.
-      if src.tryEat("*") { return true }
+      if p.tryEat("*") { return true }
 
       return false
     }
@@ -1674,47 +1740,50 @@ extension Source {
   ///                       | UniScalar | Property | NamedCharacter
   ///                       | EscapedReference
   ///
-  mutating func expectEscaped(
-    context: ParsingContext
-  ) throws -> Located<AST.Atom.Kind> {
-    try recordLoc { src in
-      let ccc = context.isInCustomCharacterClass
+  mutating func expectEscaped() -> Located<AST.Atom.Kind> {
+    recordLoc { p in
+      let ccc = p.context.isInCustomCharacterClass
 
       // Keyboard control/meta
-      if src.tryEat("c") || src.tryEat(sequence: "C-") {
-        return .keyboardControl(try src.expectASCII().value)
+      if p.tryEat("c") || p.tryEat(sequence: "C-") {
+        guard let ascii = p.expectASCII() else { return .invalid }
+        return .keyboardControl(ascii.value)
       }
-      if src.tryEat(sequence: "M-\\C-") {
-        return .keyboardMetaControl(try src.expectASCII().value)
+      if p.tryEat(sequence: "M-\\C-") {
+        guard let ascii = p.expectASCII() else { return .invalid }
+        return .keyboardMetaControl(ascii.value)
       }
-      if src.tryEat(sequence: "M-") {
-        return .keyboardMeta(try src.expectASCII().value)
+      if p.tryEat(sequence: "M-") {
+        guard let ascii = p.expectASCII() else { return .invalid }
+        return .keyboardMeta(ascii.value)
       }
 
       // Named character '\N{...}'.
-      if let char = try src.lexNamedCharacter() {
+      if let char = p.lexNamedCharacter() {
         return char.value
       }
 
       // Character property \p{...} \P{...}.
-      if let prop = try src.lexCharacterProperty() {
+      if let prop = p.lexCharacterProperty() {
         return .property(prop.value)
       }
 
       // References using escape syntax, e.g \1, \g{1}, \k<...>, ...
       // These are not valid inside custom character classes.
-      if !ccc, let ref = try src.lexEscapedReference(context: context)?.value {
+      if !ccc, let ref = p.lexEscapedReference()?.value {
         return ref
       }
 
       // Hexadecimal and octal unicode scalars.
-      if let scalar = try src.lexUnicodeScalar() {
+      if let scalar = p.lexUnicodeScalar() {
         return scalar
       }
 
-      guard let char = src.tryEat() else {
-        throw ParseError.expectedEscape
+      guard let charLoc = p.tryEatWithLoc() else {
+        p.errorAtCurrentPosition(.expectedEscape)
+        return .invalid
       }
+      let char = charLoc.value
 
       // Single-character builtins.
       if let builtin = AST.Atom.EscapedBuiltin(
@@ -1726,10 +1795,9 @@ extension Source {
       // We only allow unknown escape sequences for non-letter non-number ASCII,
       // and non-ASCII whitespace.
       // TODO: Once we have fix-its, suggest a `0` prefix for octal `[\7]`.
-      guard (char.isASCII && !char.isLetter && !char.isNumber) ||
-              (!char.isASCII && char.isWhitespace)
-      else {
-        throw ParseError.invalidEscape(char)
+      if (char.isASCII && (char.isLetter || char.isNumber)) ||
+          (!char.isASCII && !char.isWhitespace) {
+        p.error(.invalidEscape(char), at: charLoc.location)
       }
       return .char(char)
     }
@@ -1748,32 +1816,34 @@ extension Source {
   ///                      | '$' <String> '$'
   ///                      | '{' <String> '}'
   ///
-  mutating func lexPCRECallout() throws -> AST.Atom.Callout? {
+  mutating func lexPCRECallout() -> AST.Atom.Callout? {
     guard tryEat(sequence: "(?C") else { return nil }
-    let arg = try recordLoc { src -> AST.Atom.Callout.PCRE.Argument in
+    let arg = recordLoc { p -> AST.Atom.Callout.PCRE.Argument in
       // Parse '(?C' followed by a number.
-      if let num = try src.lexNumber() {
-        return .number(num.value)
+      if let num = p.lexNumber() {
+        return .number(num)
       }
       // '(?C)' is implicitly '(?C0)'.
-      if src.peek() == ")" {
-        return .number(0)
+      if p.peek() == ")" {
+        return .number(.init(0, at: p.loc(p.src.currentPosition)))
       }
       // Parse '(C?' followed by a set of balanced delimiters as defined by
       // http://pcre.org/current/doc/html/pcre2pattern.html#SEC28
-      if let open = src.tryEat(anyOf: "`", "'", "\"", "^", "%", "#", "$", "{") {
-        let closing = String(Source.getClosingDelimiter(for: open))
-        return .string(try src.expectQuoted(endingWith: closing).value)
+      if let open = p.tryEat(anyOf: "`", "'", "\"", "^", "%", "#", "$", "{") {
+        let closing = String(p.getClosingDelimiter(for: open))
+        return .string(p.expectQuoted(endingWith: closing).value)
       }
       // If we don't know what this syntax is, consume up to the ending ')' and
       // emit an error.
-      let remaining = src.lexUntil { $0.isEmpty || $0.tryEat(")") }.value
-      if remaining.isEmpty {
-        throw ParseError.expected(")")
+      let remaining = p.lexUntil { $0.src.isEmpty || $0.peek() == ")" }
+      if p.src.isEmpty && remaining.value.isEmpty {
+        p.errorAtCurrentPosition(.expected(")"))
+      } else {
+        p.error(.unknownCalloutKind("(?C\(remaining.value))"), at: remaining.location)
       }
-      throw ParseError.unknownCalloutKind("(?C\(remaining))")
+      return .string(remaining.value)
     }
-    try expect(")")
+    expect(")")
     return .pcre(.init(arg))
   }
 
@@ -1784,22 +1854,24 @@ extension Source {
   ///
   mutating func expectOnigurumaCalloutArgList(
     leftBrace: SourceLocation
-  ) throws -> AST.Atom.Callout.OnigurumaNamed.ArgList {
+  ) -> AST.Atom.Callout.OnigurumaNamed.ArgList {
     var args: [Located<String>] = []
     while true {
-      let arg = try recordLoc { src -> String in
+      let arg = recordLoc { p -> String? in
         // TODO: Warn about whitespace being included?
-        guard let arg = src.tryEatPrefix({ $0 != "," && $0 != "}" }) else {
-          throw ParseError.expectedCalloutArgument
+        guard let arg = p.tryEatPrefix({ $0 != "," && $0 != "}" }) else {
+          p.errorAtCurrentPosition(.expectedCalloutArgument)
+          return nil
         }
-        return arg.string
+        return arg.value
       }
-      args.append(arg)
-
-      if peek() == "}" { break }
-      try expect(",")
+      if let arg = arg {
+        args.append(arg)
+      }
+      if src.isEmpty || peek() == "}" { break }
+      expect(",")
     }
-    let rightBrace = try expect("}")
+    let rightBrace = expectWithLoc("}").location
     return .init(leftBrace, args,  rightBrace)
   }
 
@@ -1808,12 +1880,12 @@ extension Source {
   ///     OnigurumaTag -> '[' Identifier ']'
   ///
   mutating func lexOnigurumaCalloutTag(
-  ) throws -> AST.Atom.Callout.OnigurumaTag? {
+  ) -> AST.Atom.Callout.OnigurumaTag? {
     guard let leftBracket = tryEatWithLoc("[") else { return nil }
-    let name = try expectIdentifier(
+    let name = expectIdentifier(
       .onigurumaCalloutTag, endingWith: "]", eatEnding: false
     )
-    let rightBracket = try expect("]")
+    let rightBracket = expectWithLoc("]").location
     return .init(leftBracket, name, rightBracket)
   }
 
@@ -1822,19 +1894,18 @@ extension Source {
   ///     OnigurumaNamedCallout -> '(*' Identifier OnigurumaTag? Args? ')'
   ///     Args                  -> '{' OnigurumaCalloutArgList '}'
   ///
-  mutating func lexOnigurumaNamedCallout() throws -> AST.Atom.Callout? {
-    try tryEating { src in
-      guard src.tryEat(sequence: "(*") else { return nil }
-      guard let name = src.lexIdentifier(
+  mutating func lexOnigurumaNamedCallout() -> AST.Atom.Callout? {
+    tryEating { p in
+      guard p.tryEat(sequence: "(*") else { return nil }
+      let name = p.expectIdentifier(
         .onigurumaCalloutName, endingWith: ")", eatEnding: false)
-      else { return nil }
 
-      let tag = try src.lexOnigurumaCalloutTag()
+      let tag = p.lexOnigurumaCalloutTag()
 
-      let args = try src.tryEatWithLoc("{").map {
-        try src.expectOnigurumaCalloutArgList(leftBrace: $0)
+      let args = p.tryEatWithLoc("{").map {
+        p.expectOnigurumaCalloutArgList(leftBrace: $0)
       }
-      try src.expect(")")
+      p.expect(")")
       return .onigurumaNamed(.init(name, tag: tag, args: args))
     }
   }
@@ -1845,32 +1916,33 @@ extension Source {
   ///     Contents                   -> <String>
   ///     Direction                  -> 'X' | '<' | '>'
   ///
-  mutating func lexOnigurumaCalloutOfContents() throws -> AST.Atom.Callout? {
-    try tryEating { src in
-      guard src.tryEat(sequence: "(?"),
-            let openBraces = src.tryEatPrefix({ $0 == "{" })
+  mutating func lexOnigurumaCalloutOfContents() -> AST.Atom.Callout? {
+    tryEating { p in
+      guard p.tryEat(sequence: "(?"),
+            let openBraces = p.tryEatPrefix({ $0 == "{" })
       else { return nil }
 
-      let contents = try src.expectQuoted(
-        endingWith: "}", count: openBraces.count)
+      let contents = p.expectQuoted(
+        endingWith: "}", count: openBraces.value.count)
       let closeBraces = SourceLocation(
-        contents.location.end ..< src.currentPosition)
+        contents.location.end ..< p.src.currentPosition)
 
-      let tag = try src.lexOnigurumaCalloutTag()
+      let tag = p.lexOnigurumaCalloutTag()
 
       typealias Direction = AST.Atom.Callout.OnigurumaOfContents.Direction
-      let direction = src.recordLoc { src -> Direction in
-        if src.tryEat(">") { return .inProgress }
-        if src.tryEat("<") { return .inRetraction }
-        if src.tryEat("X") { return .both }
+      let direction = p.recordLoc { p -> Direction in
+        if p.tryEat(">") { return .inProgress }
+        if p.tryEat("<") { return .inRetraction }
+        if p.tryEat("X") { return .both }
         // The default is in-progress.
         return .inProgress
       }
-      try src.expect(")")
+      p.expect(")")
 
-      let openBracesLoc = SourceLocation(from: openBraces)
       return .onigurumaOfContents(.init(
-        openBracesLoc, contents, closeBraces, tag: tag, direction: direction))
+        openBraces.location, contents, closeBraces, tag: tag,
+        direction: direction
+      ))
     }
   }
 
@@ -1881,94 +1953,93 @@ extension Source {
   ///                                | 'COMMIT' | 'PRUNE' | 'SKIP' | 'THEN'
   ///
   mutating func lexBacktrackingDirective(
-  ) throws -> AST.Atom.BacktrackingDirective? {
-    try tryEating { src in
-      guard src.tryEat(sequence: "(*") else { return nil }
-      let kind = src.recordLoc { src -> AST.Atom.BacktrackingDirective.Kind? in
-        if src.tryEat(sequence: "ACCEPT") { return .accept }
-        if src.tryEat(sequence: "FAIL") || src.tryEat("F") { return .fail }
-        if src.tryEat(sequence: "MARK") || src.peek() == ":" { return .mark }
-        if src.tryEat(sequence: "COMMIT") { return .commit }
-        if src.tryEat(sequence: "PRUNE") { return .prune }
-        if src.tryEat(sequence: "SKIP") { return .skip }
-        if src.tryEat(sequence: "THEN") { return .then }
+  ) -> AST.Atom.BacktrackingDirective? {
+    tryEating { p in
+      guard p.tryEat(sequence: "(*") else { return nil }
+      let kind = p.recordLoc { p -> AST.Atom.BacktrackingDirective.Kind? in
+        if p.tryEat(sequence: "ACCEPT") { return .accept }
+        if p.tryEat(sequence: "FAIL") || p.tryEat("F") { return .fail }
+        if p.tryEat(sequence: "MARK") || p.peek() == ":" { return .mark }
+        if p.tryEat(sequence: "COMMIT") { return .commit }
+        if p.tryEat(sequence: "PRUNE") { return .prune }
+        if p.tryEat(sequence: "SKIP") { return .skip }
+        if p.tryEat(sequence: "THEN") { return .then }
         return nil
       }
       guard let kind = kind else { return nil }
       var name: Located<String>?
-      if src.tryEat(":") {
+      if p.tryEat(":") {
         // TODO: PCRE allows escaped delimiters or '\Q...\E' sequences in the
         // name under PCRE2_ALT_VERBNAMES. It also allows whitespace under (?x).
-        name = try src.expectQuoted(endingWith: ")", eatEnding: false)
+        name = p.expectQuoted(endingWith: ")", eatEnding: false)
       }
-      try src.expect(")")
+      p.expect(")")
 
       // MARK directives must be named.
       if name == nil && kind.value == .mark {
-        throw ParseError.backtrackingDirectiveMustHaveName(
-          String(src[kind.location.range]))
+        let kindStr = String(p.src[kind.location.range])
+        p.error(.backtrackingDirectiveMustHaveName(kindStr), at: kind.location)
       }
       return .init(kind, name: name)
     }
   }
 
-  /// Consume a group-like atom, throwing an error if an atom could not be
+  /// Consume a group-like atom, diagnosing an error if an atom could not be
   /// produced.
   ///
   ///     GroupLikeAtom -> GroupLikeReference | Callout | BacktrackingDirective
   ///
-  mutating func expectGroupLikeAtom(
-    context: ParsingContext
-  ) throws -> AST.Atom.Kind {
-    try recordLoc { src in
-      // References that look like groups, e.g (?R), (?1), ...
-      if let ref = try src.lexGroupLikeReference() {
-        return ref.value
-      }
+  mutating func expectGroupLikeAtom() -> AST.Atom.Kind {
+    // References that look like groups, e.g (?R), (?1), ...
+    if let ref = lexGroupLikeReference() {
+      return ref.value
+    }
 
-      // Change matching options atom (?i), (?x-i), ...
-      if let seq = try src.lexChangeMatchingOptionAtom(context: context) {
-        return .changeMatchingOptions(seq)
-      }
+    // Change matching options atom (?i), (?x-i), ...
+    if let seq = lexChangeMatchingOptionAtom() {
+      return .changeMatchingOptions(seq)
+    }
 
-      // (*ACCEPT), (*FAIL), (*MARK), ...
-      if let b = try src.lexBacktrackingDirective() {
-        return .backtrackingDirective(b)
-      }
+    // (*ACCEPT), (*FAIL), (*MARK), ...
+    if let b = lexBacktrackingDirective() {
+      return .backtrackingDirective(b)
+    }
 
-      // Global matching options can only appear at the very start.
-      if let opt = try src.lexGlobalMatchingOption() {
-        throw ParseError.globalMatchingOptionNotAtStart(
-          String(src[opt.location.range]))
-      }
+    // Global matching options can only appear at the very start.
+    if let opt = lexGlobalMatchingOption() {
+      let optStr = String(src[opt.location.range])
+      error(.globalMatchingOptionNotAtStart(optStr), at: opt.location)
+      return .invalid
+    }
 
-      // (?C)
-      if let callout = try src.lexPCRECallout() {
-        return .callout(callout)
-      }
+    // (?C)
+    if let callout = lexPCRECallout() {
+      return .callout(callout)
+    }
 
-      // Try to consume an Oniguruma named callout '(*name)', which should be
-      // done after backtracking directives and global options.
-      if let callout = try src.lexOnigurumaNamedCallout() {
-        return .callout(callout)
-      }
+    // Try to consume an Oniguruma named callout '(*name)', which should be
+    // done after backtracking directives and global options.
+    if let callout = lexOnigurumaNamedCallout() {
+      return .callout(callout)
+    }
 
-      // (?{...})
-      if let callout = try src.lexOnigurumaCalloutOfContents() {
-        return .callout(callout)
-      }
+    // (?{...})
+    if let callout = lexOnigurumaCalloutOfContents() {
+      return .callout(callout)
+    }
 
-      // If we didn't produce an atom, consume up until a reasonable end-point
-      // and throw an error.
-      try src.expect("(")
-      let remaining = src.lexUntil {
-        $0.isEmpty || $0.tryEat(anyOf: ":", ")") != nil
-      }.value
-      if remaining.isEmpty {
-        throw ParseError.expected(")")
-      }
-      throw ParseError.unknownGroupKind(remaining)
-    }.value
+    // If we didn't produce an atom, consume up until a reasonable end-point
+    // and diagnose an error.
+    expect("(")
+    let remaining = lexUntil {
+      $0.src.isEmpty || $0.tryEat(anyOf: ":", ")") != nil
+    }
+    if remaining.value.isEmpty {
+      error(.expected(")"), at: remaining.location)
+    } else {
+      error(.unknownGroupKind(remaining.value), at: remaining.location)
+    }
+    return .invalid
   }
 
 
@@ -1983,51 +2054,57 @@ extension Source {
   ///
   ///     ExpGroupStart -> '(_:'
   ///
-  mutating func lexAtom(context: ParsingContext) throws -> AST.Atom? {
+  mutating func lexAtom() -> AST.Atom? {
     let customCC = context.isInCustomCharacterClass
-    let kind: Located<AST.Atom.Kind>? = try recordLoc { src in
+    let kind = recordLoc { p -> AST.Atom.Kind? in
       // Check for not-an-atom, e.g. parser recursion termination
-      if src.isEmpty { return nil }
-      if !customCC && (src.peek() == ")" || src.peek() == "|") { return nil }
+      if p.src.isEmpty { return nil }
+      if !customCC && (p.peek() == ")" || p.peek() == "|") { return nil }
       // TODO: Store customCC in the atom, if that's useful
 
       // POSIX character property. Like \p{...} this is also allowed outside of
       // a custom character class.
-      if let prop = try src.lexPOSIXCharacterProperty()?.value {
+      if let prop = p.lexPOSIXCharacterProperty()?.value {
         return .property(prop)
       }
 
       // If we have group syntax that was skipped over in lexGroupStart, we
-      // need to handle it as an atom, or throw an error.
-      if !customCC && src.shouldLexGroupLikeAtom(context: context) {
-        return try src.expectGroupLikeAtom(context: context)
+      // need to handle it as an atom, or diagnose an error.
+      if !customCC && p.shouldLexGroupLikeAtom() {
+        return p.expectGroupLikeAtom()
       }
 
       // A quantifier here is invalid.
-      if !customCC,
-         let q = try src.recordLoc({ try $0.lexQuantifier(context: context) }) {
-        throw ParseError.quantifierRequiresOperand(
-          String(src[q.location.range]))
+      if !customCC, let q = p.recordLoc({ $0.lexQuantifier() }) {
+        let str = String(p.src[q.location.range])
+        p.error(.quantifierRequiresOperand(str), at: q.location)
+        return .invalid
       }
 
-      let char = src.eat()
+      guard let charLoc = p.tryEatWithLoc() else {
+        // We check at the beginning of the function for `isEmpty`, so we should
+        // not be at the end of the input here.
+        p.unreachable("Unexpected end of input")
+        return nil
+      }
+      let char = charLoc.value
       switch char {
       case ")", "|":
         if customCC {
           return .char(char)
         }
-        throw Unreachable("TODO: reason")
+        p.unreachable("Is as a termination condition")
 
       case "(" where !customCC:
-        throw Unreachable("Should have lexed a group or group-like atom")
+        p.unreachable("Should have lexed a group or group-like atom")
 
       // (sometimes) special metacharacters
-      case ".": return customCC ? .char(".") : .any
-      case "^": return customCC ? .char("^") : .startOfLine
-      case "$": return customCC ? .char("$") : .endOfLine
+      case ".": return customCC ? .char(".") : .dot
+      case "^": return customCC ? .char("^") : .caretAnchor
+      case "$": return customCC ? .char("$") : .dollarAnchor
 
       // Escaped
-      case "\\": return try src.expectEscaped(context: context).value
+      case "\\": return p.expectEscaped().value
 
       case "]":
         assert(!customCC, "parser should have prevented this")
@@ -2038,10 +2115,8 @@ extension Source {
         // multiple scalars. These may be confusable for metacharacters, e.g
         // `[\u{301}]` wouldn't be interpreted as a custom character class due
         // to the combining accent (assuming it is literal, not `\u{...}`).
-        let scalars = char.unicodeScalars
-        if scalars.count > 1 && scalars.first!.isASCII && char != "\r\n" &&
-            !char.isLetter && !char.isNumber {
-          throw ParseError.confusableCharacter(char)
+        if char.isConfusable {
+          p.error(.confusableCharacter(char), at: charLoc.location)
         }
         break
       }
@@ -2063,7 +2138,7 @@ extension Source {
   ///     NewlineSequenceKind -> 'BSR_ANYCRLF' | 'BSR_UNICODE'
   ///
   private mutating func lexNewlineSequenceMatchingOption(
-  ) throws -> AST.GlobalMatchingOption.NewlineSequenceMatching? {
+  ) -> AST.GlobalMatchingOption.NewlineSequenceMatching? {
     if tryEat(sequence: "BSR_ANYCRLF") { return .anyCarriageReturnOrLinefeed }
     if tryEat(sequence: "BSR_UNICODE") { return .anyUnicode }
     return nil
@@ -2074,7 +2149,7 @@ extension Source {
   ///     NewlineKind -> 'CRLF' | 'CR' | 'ANYCRLF' | 'ANY' | 'LF' | 'NUL'
   ///
   private mutating func lexNewlineMatchingOption(
-  ) throws -> AST.GlobalMatchingOption.NewlineMatching? {
+  ) -> AST.GlobalMatchingOption.NewlineMatching? {
     // The ordering here is important: CRLF needs to precede CR, and ANYCRLF
     // needs to precede ANY to ensure we don't short circuit on the wrong one.
     if tryEat(sequence: "CRLF") { return .carriageAndLinefeedOnly }
@@ -2100,38 +2175,38 @@ extension Source {
   ///                               | 'LIMIT_MATCH'
   ///
   private mutating func lexGlobalMatchingOptionKind(
-  ) throws -> Located<AST.GlobalMatchingOption.Kind>? {
-    try recordLoc { src in
-      if let opt = try src.lexNewlineSequenceMatchingOption() {
+  ) -> Located<AST.GlobalMatchingOption.Kind>? {
+    recordLoc { p in
+      if let opt = p.lexNewlineSequenceMatchingOption() {
         return .newlineSequenceMatching(opt)
       }
-      if let opt = try src.lexNewlineMatchingOption() {
+      if let opt = p.lexNewlineMatchingOption() {
         return .newlineMatching(opt)
       }
-      if src.tryEat(sequence: "LIMIT_DEPTH") {
-        try src.expect("=")
-        return .limitDepth(try src.expectNumber())
+      if p.tryEat(sequence: "LIMIT_DEPTH") {
+        p.expect("=")
+        return .limitDepth(p.expectNumber())
       }
-      if src.tryEat(sequence: "LIMIT_HEAP") {
-        try src.expect("=")
-        return .limitHeap(try src.expectNumber())
+      if p.tryEat(sequence: "LIMIT_HEAP") {
+        p.expect("=")
+        return .limitHeap(p.expectNumber())
       }
-      if src.tryEat(sequence: "LIMIT_MATCH") {
-        try src.expect("=")
-        return .limitMatch(try src.expectNumber())
+      if p.tryEat(sequence: "LIMIT_MATCH") {
+        p.expect("=")
+        return .limitMatch(p.expectNumber())
       }
 
       // The ordering here is important: NOTEMPTY_ATSTART needs to precede
       // NOTEMPTY to ensure we don't short circuit on the wrong one.
-      if src.tryEat(sequence: "NOTEMPTY_ATSTART") { return .notEmptyAtStart }
-      if src.tryEat(sequence: "NOTEMPTY") { return .notEmpty }
+      if p.tryEat(sequence: "NOTEMPTY_ATSTART") { return .notEmptyAtStart }
+      if p.tryEat(sequence: "NOTEMPTY") { return .notEmpty }
 
-      if src.tryEat(sequence: "NO_AUTO_POSSESS") { return .noAutoPossess }
-      if src.tryEat(sequence: "NO_DOTSTAR_ANCHOR") { return .noDotStarAnchor }
-      if src.tryEat(sequence: "NO_JIT") { return .noJIT }
-      if src.tryEat(sequence: "NO_START_OPT") { return .noStartOpt }
-      if src.tryEat(sequence: "UTF") { return .utfMode }
-      if src.tryEat(sequence: "UCP") { return .unicodeProperties }
+      if p.tryEat(sequence: "NO_AUTO_POSSESS") { return .noAutoPossess }
+      if p.tryEat(sequence: "NO_DOTSTAR_ANCHOR") { return .noDotStarAnchor }
+      if p.tryEat(sequence: "NO_JIT") { return .noJIT }
+      if p.tryEat(sequence: "NO_START_OPT") { return .noStartOpt }
+      if p.tryEat(sequence: "UTF") { return .utfMode }
+      if p.tryEat(sequence: "UCP") { return .unicodeProperties }
       return nil
     }
   }
@@ -2141,13 +2216,13 @@ extension Source {
   ///     GlobalMatchingOption -> '(*' GlobalMatchingOptionKind ')'
   ///
   mutating func lexGlobalMatchingOption(
-  ) throws -> AST.GlobalMatchingOption? {
-    let kind = try recordLoc { src -> AST.GlobalMatchingOption.Kind? in
-      try src.tryEating { src in
-        guard src.tryEat(sequence: "(*"),
-              let kind = try src.lexGlobalMatchingOptionKind()?.value
+  ) -> AST.GlobalMatchingOption? {
+    let kind = recordLoc { p -> AST.GlobalMatchingOption.Kind? in
+      p.tryEating { p in
+        guard p.tryEat(sequence: "(*"),
+              let kind = p.lexGlobalMatchingOptionKind()?.value
         else { return nil }
-        try src.expect(")")
+        p.expect(")")
         return kind
       }
     }
@@ -2160,9 +2235,9 @@ extension Source {
   ///     GlobalMatchingOptionSequence -> GlobalMatchingOption+
   ///
   mutating func lexGlobalMatchingOptionSequence(
-  ) throws -> AST.GlobalMatchingOptionSequence? {
+  ) -> AST.GlobalMatchingOptionSequence? {
     var opts: [AST.GlobalMatchingOption] = []
-    while let opt = try lexGlobalMatchingOption() {
+    while let opt = lexGlobalMatchingOption() {
       opts.append(opt)
     }
     return .init(opts)

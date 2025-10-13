@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 import _StringProcessing
 import Foundation
 
@@ -10,7 +21,10 @@ extension BenchmarkRunner {
     notFound.register(&self)
 
     let anchoredNotFound = CrossBenchmark(
-      baseName: "AnchoredNotFound", regex: "^ +a", input: input)
+      baseName: "AnchoredNotFound",
+      regex: "^ +a",
+      input: input,
+      includeFirst: true)
     anchoredNotFound.register(&self)
   }
 }

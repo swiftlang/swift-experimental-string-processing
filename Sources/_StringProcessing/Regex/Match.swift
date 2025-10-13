@@ -9,9 +9,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
+
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// The result of matching a regex against a string.
+  /// The result of matching a regular expression against a string.
   ///
   /// A `Match` forwards API to the `Output` generic parameter,
   /// providing direct access to captures.
@@ -38,7 +40,12 @@ extension Regex.Match {
     let typeErasedMatch = anyRegexOutput.existentialOutput(
       from: anyRegexOutput.input
     )
-    return typeErasedMatch as! Output
+    guard let output = typeErasedMatch as? Output else {
+      print(typeErasedMatch)
+      print(Output.self)
+      fatalError("Internal error: existential cast failed")
+    }
+    return output
   }
 
   /// Accesses a capture by its name or number.
@@ -56,11 +63,12 @@ extension Regex.Match {
   /// Accesses a capture using the `.0` syntax, even when the match isn't a tuple.
   @_disfavoredOverload
   public subscript(
-    dynamicMember keyPath: KeyPath<(Output, _doNotUse: ()), Output>
+    dynamicMember _keyPath: KeyPath<(Output, _doNotUse: ()), Output>
   ) -> Output {
     output
   }
 
+  // Helper for `subscript(_: Reference<Capture>)`, defined in RegexBuilder.
   @_spi(RegexBuilder)
   public subscript<Capture>(_ id: ReferenceID) -> Capture {
     guard let element = anyRegexOutput.first(
@@ -76,115 +84,243 @@ extension Regex.Match {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// Matches a string in its entirety.
+  /// Returns a match if this regex matches the given string in its entirety.
   ///
-  /// - Parameter s: The string to match this regular expression against.
-  /// - Returns: The match, or `nil` if no match was found.
-  public func wholeMatch(in s: String) throws -> Regex<Output>.Match? {
-    try _match(s, in: s.startIndex..<s.endIndex, mode: .wholeString)
-  }
-
-  /// Matches part of a string, starting at its beginning.
+  /// Call this method if you want the regular expression to succeed only when
+  /// it matches the entire string you pass as `string`. The following example
+  /// shows matching a regular expression that only matches digits, with
+  /// different candidate strings.
   ///
-  /// - Parameter s: The string to match this regular expression against.
-  /// - Returns: The match, or `nil` if no match was found.
-  public func prefixMatch(in s: String) throws -> Regex<Output>.Match? {
-    try _match(s, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
-  }
-
-  /// Finds the first match in a string.
+  ///     let digits = /[0-9]+/
   ///
-  /// - Parameter s: The string to match this regular expression against.
-  /// - Returns: The match, or `nil` if no match was found.
-  public func firstMatch(in s: String) throws -> Regex<Output>.Match? {
-    try _firstMatch(s, in: s.startIndex..<s.endIndex)
-  }
-
-  /// Matches a substring in its entirety.
+  ///     if let digitsMatch = try digits.wholeMatch(in: "2022") {
+  ///         print(digitsMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "2022"
   ///
-  /// - Parameter s: The substring to match this regular expression against.
-  /// - Returns: The match, or `nil` if no match was found.
-  public func wholeMatch(in s: Substring) throws -> Regex<Output>.Match? {
-    try _match(s.base, in: s.startIndex..<s.endIndex, mode: .wholeString)
-  }
-
-  /// Matches part of a substring, starting at its beginning.
+  ///     if let digitsMatch = try digits.wholeMatch(in: "The year is 2022.") {
+  ///         print(digitsMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "No match."
   ///
-  /// - Parameter s: The substring to match this regular expression against.
-  /// - Returns: The match, or `nil` if no match was found.
-  public func prefixMatch(in s: Substring) throws -> Regex<Output>.Match? {
-    try _match(s.base, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
-  }
-
-  /// Finds the first match in a substring.
+  /// The `wholeMatch(in:)` method can throw an error if this regex includes
+  /// a transformation closure that throws an error.
   ///
-  /// - Parameter s: The substring to match this regular expression against.
-  /// - Returns: The match, or `nil` if no match was found.
-  public func firstMatch(in s: Substring) throws -> Regex<Output>.Match? {
-    try _firstMatch(s.base, in: s.startIndex..<s.endIndex)
+  /// - Parameter string: The string to match this regular expression against.
+  /// - Returns: The match, if this regex matches the entirety of `string`;
+  ///   otherwise, `nil`.
+  public func wholeMatch(in string: String) throws -> Regex<Output>.Match? {
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.wholeMatch(
+      program.loweredProgram,
+      string,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 
-  func _match(
-    _ input: String,
-    in subjectBounds: Range<String.Index>,
-    mode: MatchMode = .wholeString
-  ) throws -> Regex<Output>.Match? {
-    let executor = Executor(program: regex.program.loweredProgram)
-    return try executor.match(input, in: subjectBounds, mode)
+  /// Returns a match if this regex matches the given string at its start.
+  ///
+  /// Call this method if you want the regular expression to succeed only when
+  /// it matches only at the start of the given string. This example uses
+  /// `prefixMatch(in:)` and a regex that matches a title-case word to search
+  /// for such a word at the start of different strings:
+  ///
+  ///     let titleCaseWord = /[A-Z][A-Za-z]+/
+  ///
+  ///     if let wordMatch = try titleCaseWord.prefixMatch(in: "Searching in a Regex") {
+  ///         print(wordMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "Searching"
+  ///
+  ///     if let wordMatch = try titleCaseWord.prefixMatch(in: "title case word at the End") {
+  ///         print(wordMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "No match."
+  ///
+  /// The `prefixMatch(in:)` method can throw an error if this regex includes
+  /// a transformation closure that throws an error.
+  ///
+  /// - Parameter string: The string to match this regular expression against.
+  /// - Returns: The match, if this regex matches at the start of `string`;
+  ///   otherwise, `nil`.
+  public func prefixMatch(in string: String) throws -> Regex<Output>.Match? {
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.prefixMatch(
+      program.loweredProgram,
+      string,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 
-  func _firstMatch(
-    _ input: String,
-    in subjectBounds: Range<String.Index>
-  ) throws -> Regex<Output>.Match? {
-    try _firstMatch(input, subjectBounds: subjectBounds, searchBounds: subjectBounds)
+  /// Returns the first match for this regex found in the given string.
+  ///
+  /// Use the `firstMatch(in:)` method to search for the first occurrence of
+  /// this regular expression in `string`. This example searches for the first
+  /// sequence of digits that occurs in a string:
+  ///
+  ///     let digits = /[0-9]+/
+  ///
+  ///     if let digitsMatch = try digits.firstMatch(in: "The year is 2022; last year was 2021.") {
+  ///         print(digitsMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "2022"
+  ///
+  /// The `firstMatch(in:)` method can throw an error if this regex includes
+  /// a transformation closure that throws an error.
+  ///
+  /// - Parameter string: The string to match this regular expression against.
+  /// - Returns: The match, if one is found; otherwise, `nil`.
+  public func firstMatch(in string: String) throws -> Regex<Output>.Match? {
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.firstMatch(
+      self.program.loweredProgram,
+      string,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 
-  func _firstMatch(
-    _ input: String,
-    subjectBounds: Range<String.Index>,
-    searchBounds: Range<String.Index>
-  ) throws -> Regex<Output>.Match? {
-    let executor = Executor(program: regex.program.loweredProgram)
-    let graphemeSemantic = regex.initialOptions.semanticLevel == .graphemeCluster
-    return try executor.firstMatch(
-      input,
-      subjectBounds: subjectBounds,
-      searchBounds: searchBounds,
-      graphemeSemantic: graphemeSemantic)
+  /// Returns a match if this regex matches the given substring in its entirety.
+  ///
+  /// Call this method if you want the regular expression to succeed only when
+  /// it matches the entire string you pass as `string`. The following example
+  /// shows matching a regular expression that only matches digits, with
+  /// different candidate strings.
+  ///
+  ///     let digits = /[0-9]+/
+  ///
+  ///     if let digitsMatch = try digits.wholeMatch(in: "2022") {
+  ///         print(digitsMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "2022"
+  ///
+  ///     if let digitsMatch = try digits.wholeMatch(in: "The year is 2022.") {
+  ///         print(digitsMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "No match."
+  ///
+  /// The `wholeMatch(in:)` method can throw an error if this regex includes
+  /// a transformation closure that throws an error.
+  ///
+  /// - Parameter string: The substring to match this regular expression
+  ///   against.
+  /// - Returns: The match, if this regex matches the entirety of `string`;
+  ///   otherwise, `nil`.
+  public func wholeMatch(in string: Substring) throws -> Regex<Output>.Match? {
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.wholeMatch(
+      program.loweredProgram,
+      string.base,
+      subjectBounds: bounds,
+      searchBounds: bounds)
+  }
+
+  /// Returns a match if this regex matches the given substring at its start.
+  ///
+  /// Call this method if you want the regular expression to succeed only when
+  /// it matches only at the start of the given string. This example uses
+  /// `prefixMatch(in:)` and a regex that matches a title-case word to search
+  /// for such a word at the start of different strings:
+  ///
+  ///     let titleCaseWord = /[A-Z][A-Za-z]+/
+  ///
+  ///     if let wordMatch = try titleCaseWord.prefixMatch(in: "Searching in a Regex") {
+  ///         print(wordMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "Searching"
+  ///
+  ///     if let wordMatch = try titleCaseWord.prefixMatch(in: "title case word at the End") {
+  ///         print(wordMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "No match."
+  ///
+  /// The `prefixMatch(in:)` method can throw an error if this regex includes
+  /// a transformation closure that throws an error.
+  ///
+  /// - Parameter string: The substring to match this regular expression
+  ///   against.
+  /// - Returns: The match, if this regex matches at the start of `string`;
+  ///   otherwise, `nil`.
+  public func prefixMatch(in string: Substring) throws -> Regex<Output>.Match? {
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.prefixMatch(
+      program.loweredProgram,
+      string.base,
+      subjectBounds: bounds,
+      searchBounds: bounds)
+  }
+
+  /// Returns the first match for this regex found in the given substring.
+  ///
+  /// Use the `firstMatch(in:)` method to search for the first occurrence of
+  /// this regular expression in `string`. This example searches for the first
+  /// sequence of digits that occurs in a string:
+  ///
+  ///     let digits = /[0-9]+/
+  ///
+  ///     if let digitsMatch = try digits.firstMatch(in: "The year is 2022; last year was 2021.") {
+  ///         print(digitsMatch.0)
+  ///     } else {
+  ///         print("No match.")
+  ///     }
+  ///     // Prints "2022"
+  ///
+  /// The `firstMatch(in:)` method can throw an error if this regex includes
+  /// a transformation closure that throws an error.
+  ///
+  /// - Parameter string: The substring to match this regular expression
+  ///   against.
+  /// - Returns: The match, if one is found; otherwise, `nil`.
+  public func firstMatch(in string: Substring) throws -> Regex<Output>.Match? {
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.firstMatch(
+      self.program.loweredProgram,
+      string.base,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension BidirectionalCollection where SubSequence == Substring {
-  /// Checks for a match against the string in its entirety.
+  /// Returns a match if this string is matched by the given regex in its entirety.
   ///
-  /// - Parameter r: The regular expression being matched.
-  /// - Returns: The match, or `nil` if no match was found.
+  /// - Parameter regex: The regular expression to match.
+  /// - Returns: The match, if one is found. If there is no match, or a
+  ///   transformation in `regex` throws an error, this method returns `nil`.
+  @inlinable
   public func wholeMatch<R: RegexComponent>(
-    of r: R
+    of regex: R
   ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.wholeMatch(in: self[...])
+    try? regex.regex.wholeMatch(in: self[...])
   }
 
-  /// Checks for a match against the string, starting at its beginning.
+  /// Returns a match if this string is matched by the given regex at its start.
   ///
-  /// - Parameter r: The regular expression being matched.
-  /// - Returns: The match, or `nil` if no match was found.
+  /// - Parameter regex: The regular expression to match.
+  /// - Returns: The match, if one is found. If there is no match, or a
+  ///   transformation in `regex` throws an error, this method returns `nil`.
+  @inlinable
   public func prefixMatch<R: RegexComponent>(
-    of r: R
+    of regex: R
   ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.prefixMatch(in: self[...])
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension RegexComponent {
-  public static func ~=(regex: Self, input: String) -> Bool {
-    input.wholeMatch(of: regex) != nil
-  }
-
-  public static func ~=(regex: Self, input: Substring) -> Bool {
-    input.wholeMatch(of: regex) != nil
+    try? regex.regex.prefixMatch(in: self[...])
   }
 }

@@ -17,9 +17,19 @@ public let currentRegexLiteralFormatVersion = 1
 
 @_spi(CompilerInterface)
 public struct CompilerLexError: Error {
+  var underlyingLocation: UnsafeSourceLocation
+
   public var message: String
-  public var location: UnsafeRawPointer
+  public var location: UnsafeRawPointer { return underlyingLocation.ptr }
   public var completelyErroneous: Bool
+
+  init(
+    message: String, location: UnsafeRawPointer, completelyErroneous: Bool
+  ) {
+    self.message = message
+    self.underlyingLocation = UnsafeSourceLocation(location)
+    self.completelyErroneous = completelyErroneous
+  }
 }
 
 /// Interface for the Swift compiler.
@@ -96,7 +106,7 @@ public func swiftCompilerParseRegexLiteral(
   _ input: String, captureBufferOut: UnsafeMutableRawBufferPointer
 ) throws -> (regexToEmit: String, version: Int) {
   do {
-    let ast = try parseWithDelimiters(input, .semantic)
+    let ast = try parseWithDelimiters(input)
     // Serialize the capture structure for later type inference.
     assert(captureBufferOut.count >= input.utf8.count)
     ast.captureStructure.encode(to: captureBufferOut)

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 /*
 
@@ -37,7 +37,7 @@ extension Processor {
     var value: Any? = nil
 
     // An in-progress capture start
-    fileprivate var currentCaptureBegin: Position? = nil
+    var currentCaptureBegin: Position? = nil
 
     fileprivate func _invariantCheck() {
       if range == nil {
@@ -76,34 +76,11 @@ extension Processor {
       currentCaptureBegin = nil
     }
 
-    mutating func registerValue(
-      _ value: Any,
-      overwriteInitial: SavePoint? = nil
-    ) {
+    mutating func registerValue(_ value: Any) {
       _invariantCheck()
       defer { _invariantCheck() }
 
       self.value = value
-    }
-  }
-}
-
-extension Processor._StoredCapture: CustomStringConvertible {
-  var description: String {
-    return String(describing: self)
-  }
-}
-
-struct MECaptureList {
-  var values: Array<Processor._StoredCapture>
-  var referencedCaptureOffsets: [ReferenceID: Int]
-
-  func latestUntyped(from input: String) -> Array<Substring?> {
-    values.map {
-      guard let range = $0.range else {
-        return nil
-      }
-      return input[range]
     }
   }
 }

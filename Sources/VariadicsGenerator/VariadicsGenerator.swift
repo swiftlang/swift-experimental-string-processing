@@ -14,10 +14,12 @@
 import ArgumentParser
 #if os(macOS)
 import Darwin
-#elseif os(Linux)
+#elseif canImport(Glibc)
 import Glibc
 #elseif os(Windows)
 import CRT
+#elseif canImport(Bionic)
+import Bionic
 #endif
 
 // (T), (T)
@@ -71,6 +73,10 @@ func captureTypeList(
 
 func output(_ content: String) {
   print(content, terminator: "")
+}
+
+func outputMark(_ content: String) {
+  print("// MARK: - \(content)\n")
 }
 
 func outputForEach<C: Collection>(
@@ -132,7 +138,7 @@ struct VariadicsGenerator: ParsableCommand {
       //
       // This source file is part of the Swift.org open source project
       //
-      // Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+      // Copyright (c) 2021-2023 Apple Inc. and the Swift project authors
       // Licensed under Apache License v2.0 with Runtime Library Exception
       //
       // See https://swift.org/LICENSE.txt for license information
@@ -148,13 +154,15 @@ struct VariadicsGenerator: ParsableCommand {
 
     log("Generating concatenation overloads...")
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
-      guard rightArity != 0 else {
+      if rightArity == 0 {
+        outputMark("Partial block (left arity \(leftArity))")
         continue
       }
       log("  Left arity: \(leftArity)  Right arity: \(rightArity)")
       emitConcatenation(leftArity: leftArity, rightArity: rightArity)
     }
 
+    outputMark("Partial block (empty)")
     for arity in 0...maxArity {
       emitConcatenationWithEmpty(leftArity: arity)
     }
@@ -163,6 +171,7 @@ struct VariadicsGenerator: ParsableCommand {
 
     log("Generating quantifiers...")
     for arity in 0...maxArity {
+      outputMark("Quantifiers (arity \(arity))")
       log("  Arity \(arity): ", terminator: "")
       for kind in QuantifierKind.allCases {
         log("\(kind.rawValue) ", terminator: "")
@@ -174,6 +183,7 @@ struct VariadicsGenerator: ParsableCommand {
     }
 
     log("Generating atomic groups...")
+    outputMark("Atomic groups")
     for arity in 0...maxArity {
       log("  Arity \(arity): ", terminator: "")
       emitAtomicGroup(arity: arity)
@@ -182,11 +192,15 @@ struct VariadicsGenerator: ParsableCommand {
 
     log("Generating alternation overloads...")
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
+      if rightArity == 0 {
+        outputMark("Alternation builder (arity \(leftArity))")
+      }
       log("  Left arity: \(leftArity)  Right arity: \(rightArity)")
       emitAlternation(leftArity: leftArity, rightArity: rightArity)
     }
 
     log("Generating 'AlternationBuilder.buildBlock(_:)' overloads...")
+    outputMark("Alternation builder buildBlock")
     for arity in 1...maxArity {
       log("  Capture arity: \(arity)")
       emitUnaryAlternationBuildBlock(arity: arity)
@@ -217,31 +231,16 @@ struct VariadicsGenerator: ParsableCommand {
     let genericParams: String = {
       var result = "W0, W1, "
       result += captureTypeList(leftArity+rightArity)
-      result += ", R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)"
       return result
     }()
 
     // Emit concatenation type declaration.
-
-    let whereClause: String = {
-      var result = " where R0.\(outputAssociatedTypeName) == "
-      if leftArity == 0 {
-        result += "W0"
-      } else {
-        result += "(W0, "
-        result += captureTypeList(leftArity)
-        result += ")"
-      }
-      result += ", R1.\(outputAssociatedTypeName) == "
-      if rightArity == 0 {
-        result += "W1"
-      } else {
-        result += "(W1, "
-        result += captureTypeList(leftArity+rightArity, lowerBound: leftArity)
-        result += ")"
-      }
-      return result
-    }()
+    let leftOutputType = leftArity == 0
+      ? "W0"
+      : "(W0, \(captureTypeList(leftArity)))"
+    let rightOutputType = rightArity == 0
+      ? "W1"
+      : "(W1, \(captureTypeList(leftArity+rightArity, lowerBound: leftArity)))"
 
     let matchType: String = {
       if leftArity+rightArity == 0 {
@@ -257,10 +256,26 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(concatBuilderName) {
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(
-          accumulated: R0, next: R1
-        ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-          .init(node: accumulated.regex.root.appending(next.regex.root))
+          accumulated: some RegexComponent<\(leftOutputType)>,
+          next: some RegexComponent<\(rightOutputType)>
+        ) -> \(regexTypeName)<\(matchType)> {
+          let factory = makeFactory()
+      
+      """)
+    if leftArity == 0 {
+      output("""
+          return factory.accumulate(ignoringOutputTypeOf: accumulated, next)
+      
+      """)
+    } else {
+      output("""
+          return factory.accumulate(accumulated, next)
+      
+      """)
+    }
+    output("""
         }
       }
 
@@ -272,15 +287,28 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(concatBuilderName) {
-        \(defaultAvailableAttr)
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<W0
       """)
     outputForEach(0..<leftArity) {
       ", C\($0)"
     }
     output("""
-      , R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)>(
-          accumulated: R0, next: R1
+      >(
+          accumulated: some \(regexComponentProtocolName)<
+      """)
+    if leftArity == 0 {
+      output("W0")
+    } else {
+      output("(W0")
+      outputForEach(0..<leftArity) {
+        ", C\($0)"
+      }
+      output(")")
+    }
+    output("""
+      >,
+          next: some \(regexComponentProtocolName)
         ) -> \(regexTypeName)<
       """)
     if leftArity == 0 {
@@ -292,19 +320,23 @@ struct VariadicsGenerator: ParsableCommand {
       }
       output(")")
     }
-    output("> where R0.\(outputAssociatedTypeName) == ")
+    output("""
+      > {
+          let factory = makeFactory()
+      
+      """)
     if leftArity == 0 {
-      output("W0")
+      output("""
+          return factory.accumulate(ignoringOutputTypeOf: accumulated, andAlso: next)
+      
+      """)
     } else {
-      output("(W0")
-      outputForEach(0..<leftArity) {
-        ", C\($0)"
-      }
-      output(")")
+      output("""
+          return factory.accumulate(accumulated, ignoringOutputTypeOf: next)
+      
+      """)
     }
     output("""
-        {
-          .init(node: accumulated.regex.root.appending(next.regex.root))
         }
       }
 
@@ -331,33 +363,45 @@ struct VariadicsGenerator: ParsableCommand {
       case .oneOrMore: return "oneOrMore"
       }
     }
+    
+    var commentAbstract: String {
+      switch self {
+      case .zeroOrOne: return """
+          /// Creates a regex component that matches the given component
+          /// zero or one times.
+        """
+      case .zeroOrMore: return """
+          /// Creates a regex component that matches the given component
+          /// zero or more times.
+        """
+      case .oneOrMore: return """
+          /// Creates a regex component that matches the given component
+          /// one or more times.
+        """
+      }
+    }
   }
   
   struct QuantifierParameters {
+    var arity: Int
     var disfavored: String
     var genericParams: String
     var whereClauseForInit: String
-    var whereClause: String
     var quantifiedCaptures: String
     var matchType: String
     
-    var repeatingWhereClause: String {
-      whereClauseForInit.isEmpty
-        ? "where R.Bound == Int"
-        : whereClauseForInit + ", R.Bound == Int"
-    }
-    
     init(kind: QuantifierKind, arity: Int) {
+      self.arity = arity
       self.disfavored = arity == 0 ? "  @_disfavoredOverload\n" : ""
       self.genericParams = {
         var result = ""
         if arity > 0 {
           result += "W, "
           result += captureTypeList(arity)
-          result += ", "
         }
-        result += "Component: \(regexComponentProtocolName)"
-        return result
+        return result.isEmpty
+          ? ""
+          : "<\(result)>"
       }()
 
       let capturesJoined = captureTypeList(arity)
@@ -372,10 +416,11 @@ struct VariadicsGenerator: ParsableCommand {
       self.matchType = arity == 0
         ? baseMatchTypeName
         : "(\(baseMatchTypeName), \(quantifiedCaptures))"
-      self.whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)" +
-        (arity == 0 ? "" : ", Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))")
-      self.whereClause = arity == 0 ? "" :
-        "where Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))"
+      self.whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)"
+    }
+    
+    var primaryAssociatedType: String {
+      arity == 0 ? "" : "<(W, \(captureTypeList(arity)))>"
     }
   }
 
@@ -385,25 +430,46 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
+      \(kind.commentAbstract)
+        ///
+        /// - Parameters:
+        ///   - component: The regex component.
+        ///   - behavior: The repetition behavior to use when repeating
+        ///     `component` in the match. If `behavior` is `nil`, the default
+        ///     repetition behavior is used, which can be changed from
+        ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+        ///     `Regex`.
       \(params.disfavored)\
-        public init<\(params.genericParams)>(
-          _ component: Component,
+        @_alwaysEmitIntoClient
+        public init\(params.genericParams)(
+          _ component: some RegexComponent\(params.primaryAssociatedType),
           _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.whereClauseForInit) {
-          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-          self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component.regex.root))
+          let factory = makeFactory()
+          self.init(factory.\(kind.astQuantifierAmount)(component, behavior))
         }
       }
 
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
+      \(kind.commentAbstract)
+        ///
+        /// - Parameters:
+        ///   - behavior: The repetition behavior to use when repeating
+        ///     `component` in the match. If `behavior` is `nil`, the default
+        ///     repetition behavior is used, which can be changed from
+        ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+        ///     `Regex`.
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component.
       \(params.disfavored)\
-        public init<\(params.genericParams)>(
+        @_alwaysEmitIntoClient
+        public init\(params.genericParams)(
           _ behavior: RegexRepetitionBehavior? = nil,
-          @\(concatBuilderName) _ component: () -> Component
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent\(params.primaryAssociatedType)
         ) \(params.whereClauseForInit) {
-          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-          self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component().regex.root))
+          let factory = makeFactory()
+          self.init(factory.\(kind.astQuantifierAmount)(componentBuilder(), behavior))
         }
       }
 
@@ -411,10 +477,12 @@ struct VariadicsGenerator: ParsableCommand {
         """
         \(defaultAvailableAttr)
         extension \(concatBuilderName) {
-          public static func buildLimitedAvailability<\(params.genericParams)>(
-            _ component: Component
-          ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-            .init(node: .quantification(.\(kind.astQuantifierAmount), .default, component.regex.root))
+          @_alwaysEmitIntoClient
+          public static func buildLimitedAvailability\(params.genericParams)(
+            _ component: some RegexComponent\(params.primaryAssociatedType)
+          ) -> \(regexTypeName)<\(params.matchType)> {
+            let factory = makeFactory()
+            return factory.\(kind.astQuantifierAmount)(component, nil)
           }
         }
         """ : "")
@@ -428,9 +496,7 @@ struct VariadicsGenerator: ParsableCommand {
     let groupName = "Local"
     func node(builder: Bool) -> String {
       """
-      .nonCapturingGroup(.atomicNonCapturing, component\(
-        builder ? "()" : ""
-      ).regex.root)
+      component\(builder ? "Builder()" : "")
       """
     }
 
@@ -438,40 +504,50 @@ struct VariadicsGenerator: ParsableCommand {
     let genericParams: String = {
       var result = ""
       if arity > 0 {
-        result += "W, "
+        result += "<W, "
         result += captureTypeList(arity)
-        result += ", "
+        result += ">"
       }
-      result += "Component: \(regexComponentProtocolName)"
       return result
     }()
     let capturesJoined = captureTypeList(arity)
     let matchType = arity == 0
       ? baseMatchTypeName
       : "(\(baseMatchTypeName), \(capturesJoined))"
-    let whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)" +
-      (arity == 0 ? "" : ", Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))")
+    let whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)"
 
     output("""
       \(defaultAvailableAttr)
       extension \(groupName) {
+        /// Creates an atomic group with the given regex component.
+        ///
+        /// - Parameter component: The regex component to wrap in an atomic
+        ///   group.
         \(defaultAvailableAttr)
       \(disfavored)\
-        public init<\(genericParams)>(
-          _ component: Component
+        @_alwaysEmitIntoClient
+        public init\(genericParams)(
+          _ component: some RegexComponent\(arity == 0 ? "" : "<(W, \(capturesJoined))>")
         ) \(whereClauseForInit) {
-          self.init(node: \(node(builder: false)))
+          let factory = makeFactory()
+          self.init(factory.atomicNonCapturing(\(node(builder: false))))
         }
       }
 
       \(defaultAvailableAttr)
       extension \(groupName) {
+        /// Creates an atomic group with the given regex component.
+        ///
+        /// - Parameter componentBuilder: A builder closure that generates a
+        ///   regex component to wrap in an atomic group.
         \(defaultAvailableAttr)
       \(disfavored)\
-        public init<\(genericParams)>(
-          @\(concatBuilderName) _ component: () -> Component
+        @_alwaysEmitIntoClient
+        public init\(genericParams)(
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent\(arity == 0 ? "" : "<(W, \(capturesJoined))>")
         ) \(whereClauseForInit) {
-          self.init(node: \(node(builder: true)))
+          let factory = makeFactory()
+          self.init(factory.atomicNonCapturing(\(node(builder: true))))
         }
       }
 
@@ -489,42 +565,88 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension Repeat {
+        /// Creates a regex component that matches the given component repeated
+        /// the specified number of times.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to repeat.
+        ///   - count: The number of times to repeat `component`. `count` must
+        ///     be greater than or equal to zero.
       \(params.disfavored)\
-        public init<\(params.genericParams)>(
-          _ component: Component,
+        @_alwaysEmitIntoClient
+        public init\(params.genericParams)(
+          _ component: some RegexComponent\(params.primaryAssociatedType),
           count: Int
         ) \(params.whereClauseForInit) {
-          assert(count > 0, "Must specify a positive count")
-          // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(count), .default, component.regex.root))
+          precondition(count >= 0, "Must specify a positive count")
+          let factory = makeFactory()
+          self.init(factory.exactly(count, component))
         }
 
+        /// Creates a regex component that matches the given component repeated
+        /// the specified number of times.
+        ///
+        /// - Parameters:
+        ///   - count: The number of times to repeat `component`. `count` must
+        ///     be greater than or equal to zero.
+        ///   - componentBuilder: A builder closure that creates the regex
+        ///     component to repeat.
       \(params.disfavored)\
-        public init<\(params.genericParams)>(
+        @_alwaysEmitIntoClient
+        public init\(params.genericParams)(
           count: Int,
-          @\(concatBuilderName) _ component: () -> Component
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent\(params.primaryAssociatedType)
         ) \(params.whereClauseForInit) {
-          assert(count > 0, "Must specify a positive count")
-          // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(count), .default, component().regex.root))
+          precondition(count >= 0, "Must specify a positive count")
+          let factory = makeFactory()
+          self.init(factory.exactly(count, componentBuilder()))
         }
 
+        /// Creates a regex component that matches the given component repeated
+        /// a number of times specified by the given range expression.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to repeat.
+        ///   - expression: A range expression specifying the number of times
+        ///     that `component` can repeat.
+        ///   - behavior: The repetition behavior to use when repeating
+        ///     `component` in the match. If `behavior` is `nil`, the default
+        ///     repetition behavior is used, which can be changed from
+        ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+        ///     `Regex`.
       \(params.disfavored)\
-        public init<\(params.genericParams), R: RangeExpression>(
-          _ component: Component,
-          _ expression: R,
+        @_alwaysEmitIntoClient
+        public init\(params.genericParams)(
+          _ component: some RegexComponent\(params.primaryAssociatedType),
+          _ expression: some RangeExpression<Int>,
           _ behavior: RegexRepetitionBehavior? = nil
-        ) \(params.repeatingWhereClause) {
-          self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+        ) \(params.whereClauseForInit) {
+          let factory = makeFactory()
+          self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
         }
 
+        /// Creates a regex component that matches the given component repeated
+        /// a number of times specified by the given range expression.
+        ///
+        /// - Parameters:
+        ///   - expression: A range expression specifying the number of times
+        ///     that `component` can repeat.
+        ///   - behavior: The repetition behavior to use when repeating
+        ///     `component` in the match. If `behavior` is `nil`, the default
+        ///     repetition behavior is used, which can be changed from
+        ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+        ///     `Regex`.
+        ///   - componentBuilder: A builder closure that creates the regex
+        ///     component to repeat.
       \(params.disfavored)\
-        public init<\(params.genericParams), R: RangeExpression>(
-          _ expression: R,
+        @_alwaysEmitIntoClient
+        public init\(params.genericParams)(
+          _ expression: some RangeExpression<Int>,
           _ behavior: RegexRepetitionBehavior? = nil,
-          @\(concatBuilderName) _ component: () -> Component
-        ) \(params.repeatingWhereClause) {
-          self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent\(params.primaryAssociatedType)
+        ) \(params.whereClauseForInit) {
+          let factory = makeFactory()
+          self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, componentBuilder()))
         }
       }
       
@@ -532,35 +654,27 @@ struct VariadicsGenerator: ParsableCommand {
   }
 
   func emitAlternation(leftArity: Int, rightArity: Int) {
-    let leftGenParams: String = {
-      if leftArity == 0 {
-        return "R0"
-      }
-      return "R0, W0, " + (0..<leftArity).map { "C\($0)" }.joined(separator: ", ")
-    }()
-    let rightGenParams: String = {
-      if rightArity == 0 {
-        return "R1"
-      }
-      return "R1, W1, " + (leftArity..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")
-    }()
-    let genericParams = leftGenParams + ", " + rightGenParams
-    let whereClause: String = {
-      var result = "where R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)"
-      if leftArity > 0 {
-        result += ", R0.\(outputAssociatedTypeName) == (W0, \((0..<leftArity).map { "C\($0)" }.joined(separator: ", ")))"
-      }
-      if rightArity > 0 {
-        result += ", R1.\(outputAssociatedTypeName) == (W1, \((leftArity..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")))"
-      }
-      return result
-    }()
+    let leftCaptureTypes = captureTypeList(leftArity)
+    let rightCaptureTypes = captureTypeList(leftArity + rightArity, lowerBound: leftArity)
+    let leftGenParams = leftArity == 0
+      ? ""
+      : "W0, " + leftCaptureTypes
+    let rightGenParams = rightArity == 0
+      ? ""
+      : "W1, " + rightCaptureTypes
+    let _bothParams = [leftGenParams, rightGenParams]
+      .filter { !$0.isEmpty }
+      .joined(separator: ", ")
+    let genericParams = _bothParams.isEmpty
+      ? ""
+      : "<\(_bothParams)>"
+    
     let resultCaptures: String = {
-      var result = (0..<leftArity).map { "C\($0)" }.joined(separator: ", ")
+      var result = leftCaptureTypes
       if leftArity > 0, rightArity > 0 {
         result += ", "
       }
-      result += (leftArity..<leftArity+rightArity).map { "C\($0)?" }.joined(separator: ", ")
+      result += captureTypeList(leftArity + rightArity, lowerBound: leftArity, optional: true)
       return result
     }()
     let matchType: String = {
@@ -572,10 +686,13 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
-        public static func buildPartialBlock<\(genericParams)>(
-          accumulated: R0, next: R1
-        ) -> ChoiceOf<\(matchType)> \(whereClause) {
-          .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
+        @_alwaysEmitIntoClient
+        public static func buildPartialBlock\(genericParams)(
+          accumulated: some RegexComponent\(leftGenParams.isEmpty ? "" : "<(\(leftGenParams))>"),
+          next: some RegexComponent\(rightGenParams.isEmpty ? "" : "<(\(rightGenParams))>")
+        ) -> ChoiceOf<\(matchType)> {
+          let factory = makeFactory()
+          return .init(factory.accumulateAlternation(accumulated, next))
         }
       }
 
@@ -599,8 +716,10 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(first regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
-          .init(node: .orderedChoice([regex.regex.root]))
+          let factory = makeFactory()
+          return .init(factory.orderedChoice(regex))
         }
       }
       
@@ -610,8 +729,8 @@ struct VariadicsGenerator: ParsableCommand {
   func emitCapture(arity: Int) {
     let disfavored = arity == 0 ? "  @_disfavoredOverload\n" : ""
     let genericParams = arity == 0
-      ? "R: \(regexComponentProtocolName), W"
-      : "R: \(regexComponentProtocolName), W, " + captureTypeList(arity)
+      ? "W"
+      : "W, " + captureTypeList(arity)
     let matchType = arity == 0
       ? "W"
       : "(W, " + captureTypeList(arity) + ")"
@@ -622,141 +741,254 @@ struct VariadicsGenerator: ParsableCommand {
     }
     let rawNewMatchType = newMatchType(newCaptureType: "W")
     let transformedNewMatchType = newMatchType(newCaptureType: "NewCapture")
-    let whereClauseRaw = "where \(outputAssociatedTypeName) == \(rawNewMatchType), R.\(outputAssociatedTypeName) == \(matchType)"
-    let whereClauseTransformed = "where \(outputAssociatedTypeName) == \(transformedNewMatchType), R.\(outputAssociatedTypeName) == \(matchType)"
+    let whereClauseRaw = "where \(outputAssociatedTypeName) == \(rawNewMatchType)"
+    let whereClauseTransformed = "where \(outputAssociatedTypeName) == \(transformedNewMatchType)"
+    outputMark("Non-builder capture (arity \(arity))")
     output("""
-      // MARK: - Non-builder capture arity \(arity)
-
       \(defaultAvailableAttr)
       extension Capture {
+        /// Creates a capture for the given component.
+        ///
+        /// - Parameter component: The regex component to capture.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
-          _ component: R
+          _ component: some RegexComponent<\(matchType)>
         ) \(whereClauseRaw) {
-          self.init(node: .capture(component.regex.root))
+          let factory = makeFactory()
+          self.init(factory.capture(component))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
-          _ component: R, as reference: Reference<W>
+          _ component: some RegexComponent<\(matchType)>,
+          as reference: Reference<W>
         ) \(whereClauseRaw) {
-          self.init(node: .capture(reference: reference.id, component.regex.root))
+          let factory = makeFactory()
+          self.init(factory.capture(component, reference._raw))
         }
 
+        /// Creates a capture for the given component, transforming with the
+        /// given closure.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          _ component: R,
+          _ component: some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component.regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.capture(component, nil, transform))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference, transforming with the given closure.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          _ component: R,
+          _ component: some RegexComponent<\(matchType)>,
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component.regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.capture(component, reference._raw, transform))
         }
       }
 
       \(defaultAvailableAttr)
       extension TryCapture {
+        /// Creates a capture for the given component, attempting to transform
+        /// with the given closure.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture, or `nil` if
+        ///     matching should proceed, backtracking if allowed. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          _ component: R,
+          _ component: some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-          component.regex.root,
-          CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component, nil, transform))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference, attempting to transform with the given closure.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture, or `nil` if
+        ///     matching should proceed, backtracking if allowed. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          _ component: R,
+          _ component: some RegexComponent<\(matchType)>,
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component.regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component, reference._raw, transform))
         }
       }
-
-      // MARK: - Builder capture arity \(arity)
-
+      
+      """)
+      outputMark("Builder capture (arity \(arity))")
+      output("""
       \(defaultAvailableAttr)
       extension Capture {
+        /// Creates a capture for the given component.
+        ///
+        /// - Parameter componentBuilder: A builder closure that generates a
+        ///   regex component to capture.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
-          @\(concatBuilderName) _ component: () -> R
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>
         ) \(whereClauseRaw) {
-          self.init(node: .capture(component().regex.root))
+          let factory = makeFactory()
+          self.init(factory.capture(componentBuilder()))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference.
+        ///
+        /// - Parameters:
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           as reference: Reference<W>,
-          @\(concatBuilderName) _ component: () -> R
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>
         ) \(whereClauseRaw) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component().regex.root))
+          let factory = makeFactory()
+          self.init(factory.capture(componentBuilder(), reference._raw))
         }
 
+        /// Creates a capture for the given component, transforming with the
+        /// given closure.
+        ///
+        /// - Parameters:
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          @\(concatBuilderName) _ component: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component().regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.capture(componentBuilder(), nil, transform))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference, transforming with the given closure.
+        ///
+        /// - Parameters:
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
-          @\(concatBuilderName) _ component: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component().regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.capture(componentBuilder(), reference._raw, transform))
         }
       }
 
       \(defaultAvailableAttr)
       extension TryCapture {
+        /// Creates a capture for the given component, attempting to transform
+        /// with the given closure.
+        ///
+        /// - Parameters:
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture, or `nil` if
+        ///     matching should proceed, backtracking if allowed. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          @\(concatBuilderName) _ component: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component().regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(componentBuilder(), nil, transform))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference, attempting to transform with the given closure.
+        ///
+        /// - Parameters:
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture, or `nil` if
+        ///     matching should proceed, backtracking if allowed. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
-          @\(concatBuilderName) _ component: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component().regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(componentBuilder(), reference._raw, transform))
         }
       }
 

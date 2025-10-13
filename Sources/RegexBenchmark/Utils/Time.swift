@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 // Taken from swift-collections-benchmark
 
 import Foundation
@@ -66,6 +77,11 @@ extension Time {
 }
 
 extension Time: CustomStringConvertible {
+  /// Normalize our time to fractions of a second for CSV output
+  public var asCSVSeconds: String {
+    return String(format: "%.3g", seconds)
+  }
+
   public var description: String {
     if self.seconds == 0 { return "0" }
     if self.abs() < .attosecond { return String(format: "%.3gas", seconds * 1e18) }

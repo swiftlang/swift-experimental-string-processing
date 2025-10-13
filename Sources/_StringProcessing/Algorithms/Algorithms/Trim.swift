@@ -41,68 +41,10 @@ extension RangeReplaceableCollection {
   }
 }
 
-extension BidirectionalCollection {
-  func _trimmingSuffix<Consumer: BidirectionalCollectionConsumer>(
-    _ consumer: Consumer
-  ) -> SubSequence
-    where Consumer.Consumed == Self
-  {
-    let end = consumer.consumingBack(self) ?? endIndex
-    return self[..<end]
-  }
-  
-  func _trimming<Consumer: BidirectionalCollectionConsumer>(
-    _ consumer: Consumer
-  ) -> SubSequence where Consumer.Consumed == Self {
-    // NOTE: Might give different results than trimming the suffix before
-    // trimming the prefix
-    let start = consumer.consuming(self) ?? startIndex
-    let end = consumer.consumingBack(self) ?? endIndex
-    let actualEnd = end < start ? start : end
-    return self[start..<actualEnd]
-  }
-}
-
-extension BidirectionalCollection where SubSequence == Self {
-  mutating func _trimSuffix<Consumer: BidirectionalCollectionConsumer>(
-    _ consumer: Consumer
-  ) where Consumer.Consumed == SubSequence
-  {
-    _ = consumer.consumeBack(&self)
-  }
-
-  mutating func _trim<Consumer: BidirectionalCollectionConsumer>(
-    _ consumer: Consumer
-  ) where Consumer.Consumed == Self {
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
-  }
-}
-
-extension RangeReplaceableCollection where Self: BidirectionalCollection {
-  @_disfavoredOverload
-  mutating func _trimSuffix<Consumer: BidirectionalCollectionConsumer>(
-    _ consumer: Consumer
-  ) where Consumer.Consumed == Self
-  {
-    if let end = consumer.consumingBack(self) {
-      removeSubrange(end...)
-    }
-  }
-  
-  @_disfavoredOverload
-  mutating func _trim<Consumer: BidirectionalCollectionConsumer>(
-    _ consumer: Consumer
-  ) where Consumer.Consumed == Self {
-    _trimSuffix(consumer)
-    _trimPrefix(consumer)
-  }
-}
-
 // MARK: Predicate algorithms
 
 extension Collection {
-  fileprivate func endOfPrefix(while predicate: (Element) throws -> Bool) rethrows -> Index {
+  fileprivate func _endOfPrefix(while predicate: (Element) throws -> Bool) rethrows -> Index {
     try firstIndex(where: { try !predicate($0) }) ?? endIndex
   }
 
@@ -110,7 +52,7 @@ extension Collection {
   public func trimmingPrefix(
     while predicate: (Element) throws -> Bool
   ) rethrows -> SubSequence {
-    let end = try endOfPrefix(while: predicate)
+    let end = try _endOfPrefix(while: predicate)
     return self[end...]
   }
 }
@@ -120,7 +62,7 @@ extension Collection where SubSequence == Self {
   public mutating func trimPrefix(
     while predicate: (Element) throws -> Bool
   ) throws {
-    let end = try endOfPrefix(while: predicate)
+    let end = try _endOfPrefix(while: predicate)
     self = self[end...]
   }
 }
@@ -131,68 +73,19 @@ extension RangeReplaceableCollection {
   public mutating func trimPrefix(
     while predicate: (Element) throws -> Bool
   ) rethrows {
-    let end = try endOfPrefix(while: predicate)
+    let end = try _endOfPrefix(while: predicate)
     removeSubrange(startIndex..<end)
-  }
-}
-
-extension BidirectionalCollection {
-  func _trimmingSuffix(
-    while predicate: @escaping (Element) -> Bool
-  ) -> SubSequence {
-    _trimmingSuffix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
-  }
-  
-  func _trimming(
-    while predicate: @escaping (Element) -> Bool
-  ) -> SubSequence {
-    _trimming(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
-  }
-}
-
-extension BidirectionalCollection where SubSequence == Self {
-  mutating func _trimSuffix(
-    while predicate: @escaping (Element) -> Bool
-  ) {
-    _trimSuffix(ManyConsumer(
-      base: PredicateConsumer<SubSequence>(predicate: predicate)))
-  }
-
-  mutating func _trim(while predicate: @escaping (Element) -> Bool) {
-    let consumer = ManyConsumer(
-      base: PredicateConsumer<SubSequence>(predicate: predicate))
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
-  }
-}
-
-extension RangeReplaceableCollection where Self: BidirectionalCollection {
-  @_disfavoredOverload
-  mutating func _trimSuffix(
-    while predicate: @escaping (Element) -> Bool
-  ) {
-    _trimSuffix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
-  }
-  
-  @_disfavoredOverload
-  mutating func _trim(while predicate: @escaping (Element) -> Bool) {
-    let consumer = ManyConsumer(
-      base: PredicateConsumer<Self>(predicate: predicate))
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
   }
 }
 
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
-  /// Returns a new collection of the same type by removing initial elements
-  /// that satisfy the given predicate from the start.
-  /// - Parameter predicate: A closure that takes an element of the sequence
-  /// as its argument and returns a Boolean value indicating whether the
-  /// element should be removed from the collection.
+  /// Returns a new collection of the same type by removing `prefix` from the start
+  /// of the collection.
+  /// - Parameter prefix: The collection to remove from this collection.
   /// - Returns: A collection containing the elements of the collection that are
-  ///  not removed by `predicate`.
+  ///  not removed by `prefix`.
   @available(SwiftStdlib 5.7, *)
   public func trimmingPrefix<Prefix: Sequence>(
     _ prefix: Prefix
@@ -202,11 +95,8 @@ extension Collection where Element: Equatable {
 }
 
 extension Collection where SubSequence == Self, Element: Equatable {
-  /// Removes the initial elements that satisfy the given predicate from the
-  /// start of the sequence.
-  /// - Parameter predicate: A closure that takes an element of the sequence
-  /// as its argument and returns a Boolean value indicating whether the
-  /// element should be removed from the collection.
+  /// Removes `prefix` from the start of the collection.
+  /// - Parameter prefix: The collection to remove from this collection.
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix<Prefix: Sequence>(
     _ prefix: Prefix
@@ -216,11 +106,8 @@ extension Collection where SubSequence == Self, Element: Equatable {
 }
 
 extension RangeReplaceableCollection where Element: Equatable {
-  /// Removes the initial elements that satisfy the given predicate from the
-  /// start of the sequence.
-  /// - Parameter predicate: A closure that takes an element of the sequence
-  /// as its argument and returns a Boolean value indicating whether the
-  /// element should be removed from the collection.
+  /// Removes `prefix` from the start of the collection.
+  /// - Parameter prefix: The collection to remove from this collection.
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix<Prefix: Sequence>(
     _ prefix: Prefix
@@ -229,80 +116,22 @@ extension RangeReplaceableCollection where Element: Equatable {
   }
 }
 
-extension BidirectionalCollection where Element: Equatable {
-  func _trimmingSuffix<Suffix: BidirectionalCollection>(
-    _ suffix: Suffix
-  ) -> SubSequence where Suffix.Element == Element {
-    _trimmingSuffix(FixedPatternConsumer(pattern: suffix))
-  }
-  
-  func _trimming<Pattern: BidirectionalCollection>(
-    _ pattern: Pattern
-  ) -> SubSequence where Pattern.Element == Element {
-    _trimming(FixedPatternConsumer(pattern: pattern))
-  }
-}
-
-extension BidirectionalCollection
-  where SubSequence == Self, Element: Equatable
-{
-  mutating func _trimSuffix<Suffix: BidirectionalCollection>(
-    _ suffix: Suffix
-  ) where Suffix.Element == Element {
-    _trimSuffix(FixedPatternConsumer<SubSequence, Suffix>(pattern: suffix))
-  }
-  
-  mutating func _trim<Pattern: BidirectionalCollection>(
-    _ pattern: Pattern
-  ) where Pattern.Element == Element {
-    let consumer = FixedPatternConsumer<SubSequence, Pattern>(pattern: pattern)
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
-  }
-}
-
-extension RangeReplaceableCollection
-  where Self: BidirectionalCollection, Element: Equatable
-{
-  @_disfavoredOverload
-  mutating func _trimSuffix<Suffix: BidirectionalCollection>(
-    _ prefix: Suffix
-  ) where Suffix.Element == Element {
-    _trimSuffix(FixedPatternConsumer(pattern: prefix))
-  }
-  
-  @_disfavoredOverload
-  mutating func _trim<Pattern: BidirectionalCollection>(
-    _ pattern: Pattern
-  ) where Pattern.Element == Element {
-    let consumer = FixedPatternConsumer<Self, Pattern>(pattern: pattern)
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
-  }
-}
-
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  /// Returns a new collection of the same type by removing `prefix` from the
-  /// start.
-  /// - Parameter prefix: The collection to remove from this collection.
+  /// Returns a new collection of the same type by removing the initial elements
+  /// that matches the given regex.
+  /// - Parameter regex: The regex to remove from this collection.
   /// - Returns: A collection containing the elements that does not match
-  /// `prefix` from the start.
+  /// `regex` from the start.
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func trimmingPrefix(_ regex: some RegexComponent) -> SubSequence {
-    _trimmingPrefix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func _trimmingSuffix<R: RegexComponent>(_ regex: R) -> SubSequence {
-    _trimmingSuffix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func _trimming<R: RegexComponent>(_ regex: R) -> SubSequence {
-    _trimming(RegexConsumer(regex))
+    let s = self[...]
+    guard let prefix = try? regex.regex.prefixMatch(in: s) else {
+      return s
+    }
+    return s[prefix.range.upperBound...]
   }
 }
 
@@ -314,37 +143,11 @@ extension RangeReplaceableCollection
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(_ regex: some RegexComponent) {
-    _trimPrefix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trimSuffix<R: RegexComponent>(_ regex: R) {
-    _trimSuffix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trim<R: RegexComponent>(_ regex: R) {
-    let consumer = RegexConsumer<R, Self>(regex)
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
+    let s = self[...]
+    guard let prefix = try? regex.regex.prefixMatch(in: s) else {
+      return
+    }
+    self.removeSubrange(prefix.range)
   }
 }
 
-extension Substring {
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trimPrefix<R: RegexComponent>(_ regex: R) {
-    _trimPrefix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trimSuffix<R: RegexComponent>(_ regex: R) {
-    _trimSuffix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trim<R: RegexComponent>(_ regex: R) {
-    let consumer = RegexConsumer<R, Self>(regex)
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
-  }
-}

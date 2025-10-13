@@ -261,6 +261,7 @@ extension RegexDSLTests {
 
 #endif
 
+@available(SwiftStdlib 5.7, *)
 extension RegexDSLTests {
   func testProposalExample() {
     let statement = """

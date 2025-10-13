@@ -9,89 +9,229 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
-struct Executor {
-  // TODO: consider let, for now lets us toggle tracing
-  var engine: Engine
-
-  init(program: MEProgram, enablesTracing: Bool = false) {
-    self.engine = Engine(program, enableTracing: enablesTracing)
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func firstMatch<Output>(
+/// `Executor` encapsulates the execution of the regex engine post-compilation.
+/// It doesn't know anything about the `Regex` type or how to compile a regex.
+@available(SwiftStdlib 5.7, *)
+enum Executor<Output> {
+  static func prefixMatch(
+    _ program: MEProgram,
     _ input: String,
     subjectBounds: Range<String.Index>,
-    searchBounds: Range<String.Index>,
-    graphemeSemantic: Bool
+    searchBounds: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
-    var cpu = engine.makeFirstMatchProcessor(
+    try Executor._run(
+      program,
+      input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      mode: .partialFromFront)
+  }
+
+  static func wholeMatch(
+    _ program: MEProgram,
+    _ input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>
+  ) throws -> Regex<Output>.Match? {
+    try Executor._run(
+      program,
+      input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      mode: .wholeString)
+  }
+
+  static func firstMatch(
+    _ program: MEProgram,
+    _ input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>
+  ) throws -> Regex<Output>.Match? {
+    var cpu = Processor(
+      program: program,
       input: input,
       subjectBounds: subjectBounds,
-      searchBounds: searchBounds)
+      searchBounds: searchBounds,
+      matchMode: .partialFromFront)
+    return try Executor._firstMatch(
+      program,
+      using: &cpu)
+  }
 
-    var low = searchBounds.lowerBound
-    let high = searchBounds.upperBound
+  static func _firstMatch(
+    _ program: MEProgram,
+    using cpu: inout Processor
+  ) throws -> Regex<Output>.Match? {
+    let isGraphemeSemantic = program.initialOptions.semanticLevel == .graphemeCluster
+
+    var low = cpu.searchBounds.lowerBound
+    let high = cpu.searchBounds.upperBound
     while true {
-      if let m: Regex<Output>.Match = try _match(
-        input, from: low, using: &cpu
-      ) {
+      if let m = try Executor._run(program, &cpu) {
         return m
       }
-      if low >= high { return nil }
-      if graphemeSemantic {
-        input.formIndex(after: &low)
-      } else {
-        input.unicodeScalars.formIndex(after: &low)
+      // Fast-path for start-anchored regex
+      if program.canOnlyMatchAtStart {
+        return nil
       }
-      cpu.reset(currentPosition: low)
+      if low == high { return nil }
+      if isGraphemeSemantic {
+        cpu.input.formIndex(after: &low)
+      } else {
+        cpu.input.unicodeScalars.formIndex(after: &low)
+      }
+      guard low <= high else {
+        return nil
+      }
+      cpu.reset(currentPosition: low, searchBounds: cpu.searchBounds)
+    }
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Executor {
+  struct Matches: Sequence {
+    var program: MEProgram
+    var input: String
+    var subjectBounds: Range<String.Index>
+    var searchBounds: Range<String.Index>
+
+    struct Iterator: IteratorProtocol {
+      var program: MEProgram
+      var processor: Processor
+      var finished = false
+    }
+
+    func makeIterator() -> Iterator {
+      Iterator(
+        program: program,
+        processor: Processor(
+          program: program,
+          input: input,
+          subjectBounds: subjectBounds,
+          searchBounds: searchBounds,
+          matchMode: .partialFromFront))
+    }
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Executor.Matches.Iterator {
+  func nextSearchIndex(
+    after range: Range<String.Index>
+  ) -> String.Index? {
+    if !range.isEmpty {
+      return range.upperBound
+    }
+
+    // If the last match was an empty match, advance by one position and
+    // run again, unless at the end of `input`.
+    guard range.lowerBound < processor.subjectBounds.upperBound else {
+      return nil
+    }
+
+    switch program.initialOptions.semanticLevel {
+    case .graphemeCluster:
+      return processor.input.index(after: range.upperBound)
+    case .unicodeScalar:
+      return processor.input.unicodeScalars.index(after: range.upperBound)
     }
   }
 
-  @available(SwiftStdlib 5.7, *)
-  func match<Output>(
+  mutating func next() -> Regex<Output>.Match? {
+    if finished {
+      return nil
+    }
+    guard let match = try? Executor._firstMatch(
+      program, using: &processor
+    ) else {
+      return nil
+    }
+
+    // If there's more input to process, advance our position
+    // and search bounds. Otherwise, set to fail fast.
+    if let currentPosition = nextSearchIndex(after: match.range) {
+      processor.reset(
+        currentPosition: currentPosition,
+        searchBounds: currentPosition..<processor.searchBounds.upperBound)
+    } else {
+      finished = true
+    }
+    return match
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Executor {
+  static func _run(
+    _ program: MEProgram,
     _ input: String,
-    in subjectBounds: Range<String.Index>,
-    _ mode: MatchMode
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>,
+    mode: MatchMode
   ) throws -> Regex<Output>.Match? {
-    var cpu = engine.makeProcessor(
-      input: input, bounds: subjectBounds, matchMode: mode)
-    return try _match(input, from: subjectBounds.lowerBound, using: &cpu)
+    var cpu = Processor(
+      program: program,
+      input: input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      matchMode: mode)
+    return try _run(program, &cpu)
   }
 
-  @available(SwiftStdlib 5.7, *)
-  func _match<Output>(
-    _ input: String,
-    from currentPosition: String.Index,
-    using cpu: inout Processor
+  static func _run(
+    _ program: MEProgram,
+    _ cpu: inout Processor
   ) throws -> Regex<Output>.Match? {
-    // FIXME: currentPosition is already encapsulated in cpu, don't pass in
-    // FIXME: cpu.consume() should return the matched range, not the upper bound
-    guard let endIdx = cpu.consume() else {
-      if let e = cpu.failureReason {
+
+    let startPosition = cpu.currentPosition
+    guard let endIdx = try cpu.run() else {
+      return nil
+    }
+    let range = startPosition..<endIdx
+
+    let wholeMatchValue: Any?
+    if let reg = program.wholeMatchValueRegister {
+      wholeMatchValue = cpu.registers[reg]
+    } else {
+      wholeMatchValue = nil
+    }
+    let aroElements = Executor.createExistentialElements(
+      program,
+      matchRange: startPosition..<endIdx,
+      storedCaptures: cpu.storedCaptures,
+      wholeMatchValue: wholeMatchValue)
+
+    let anyRegexOutput = AnyRegexOutput(
+      input: cpu.input, elements: aroElements)
+    return .init(anyRegexOutput: anyRegexOutput, range: range)
+  }}
+
+extension Processor {
+  fileprivate mutating func run() throws -> Input.Index? {
+#if PROCESSOR_MEASUREMENTS_ENABLED
+    defer { if metrics.shouldMeasureMetrics { printMetrics() } }
+#endif
+    if self.state == .fail {
+      if let e = failureReason {
         throw e
       }
       return nil
     }
-
-    let capList = MECaptureList(
-      values: cpu.storedCaptures,
-      referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
-
-    let range = currentPosition..<endIdx
-    let caps = engine.program.captureList.createElements(capList)
-
-    let anyRegexOutput = AnyRegexOutput(input: input, elements: caps)
-    return .init(anyRegexOutput: anyRegexOutput, range: range)
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func dynamicMatch(
-    _ input: String,
-    in subjectBounds: Range<String.Index>,
-    _ mode: MatchMode
-  ) throws -> Regex<AnyRegexOutput>.Match? {
-    try match(input, in: subjectBounds, mode)
+    assert(isReset())
+    while true {
+      switch self.state {
+      case .accept:
+        return self.currentPosition
+      case .fail:
+        if let e = failureReason {
+          throw e
+        }
+        return nil
+      case .inProgress: self.cycle()
+      }
+    }
   }
 }

@@ -9,10 +9,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 @available(SwiftStdlib 5.7, *)
-extension RegexComponent {
+extension Regex {
   /// Returns a regular expression that ignores case when matching.
   ///
   /// - Parameter ignoresCase: A Boolean value indicating whether to ignore case.
@@ -65,11 +65,11 @@ extension RegexComponent {
   /// - Parameter wordBoundaryKind: The algorithm to use for determining word boundaries.
   /// - Returns: The modified regular expression.
   public func wordBoundaryKind(_ wordBoundaryKind: RegexWordBoundaryKind) -> Regex<RegexOutput> {
-    wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .unicodeLevel2)
+    wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .default)
   }
   
-  /// Returns a regular expression where the start and end of input
-  /// anchors (`^` and `$`) also match against the start and end of a line.
+  /// Returns a regular expression where the "any" metacharacter (`.`)
+  /// also matches against the start and end of a line.
   ///
   /// - Parameter dotMatchesNewlines: A Boolean value indicating whether `.`
   ///   should match a newline character.
@@ -83,8 +83,8 @@ extension RegexComponent {
   ///
   /// This method corresponds to applying the `m` option in regex syntax. For
   /// this behavior in the `RegexBuilder` syntax, see
-  /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfInput``,
-  /// and ``Anchor.endOfInput``.
+  /// `Anchor.startOfLine`, `Anchor.endOfLine`, `Anchor.startOfSubject`,
+  /// and `Anchor.endOfSubject`.
   ///
   /// - Parameter matchLineEndings: A Boolean value indicating whether `^` and
   ///   `$` should match the start and end of lines, respectively.
@@ -159,10 +159,27 @@ extension RegexComponent {
       return wrapInOption(.unicodeScalarSemantics, addingIf: true)
     }
   }
+  
+  /// Returns a regular expression that uses an NSRegularExpression
+  /// compatibility mode.
+  ///
+  /// This mode includes using Unicode scalar semantics and treating a `dot`
+  /// as matching newline sequences (when in the unrelated dot-matches-newlines
+  /// mode).
+  @_spi(Foundation)
+  public var _nsreCompatibility: Regex<RegexOutput> {
+    wrapInOption(.nsreCompatibleDot, addingIf: true)
+      .wrapInOption(.unicodeScalarSemantics, addingIf: true)
+  }
 }
 
-@available(SwiftStdlib 5.7, *)
 /// A semantic level to use during regex matching.
+///
+/// The semantic level determines whether a regex matches with the same
+/// character-based semantics as string comparisons or by matching individual
+/// Unicode scalar values. See ``Regex/matchingSemantics(_:)`` for more about
+/// changing the semantic level for all or part of a regex.
+@available(SwiftStdlib 5.7, *)
 public struct RegexSemanticLevel: Hashable {
   internal enum Representation {
     case graphemeCluster
@@ -181,15 +198,18 @@ public struct RegexSemanticLevel: Hashable {
   
   /// Match at the Unicode scalar level.
   ///
-  /// At this semantic level, the string's `UnicodeScalarView` is used for matching,
-  /// and each matched element is a `UnicodeScalar` value.
+  /// At this semantic level, the string's `UnicodeScalarView` is used for
+  /// matching, and each matched element is a `UnicodeScalar` value.
   public static var unicodeScalar: RegexSemanticLevel {
     .init(base: .unicodeScalar)
   }
 }
 
-@available(SwiftStdlib 5.7, *)
 /// A word boundary algorithm to use during regex matching.
+///
+/// See ``Regex/wordBoundaryKind(_:)`` for information about specifying the
+/// word boundary kind for all or part of a regex.
+@available(SwiftStdlib 5.7, *)
 public struct RegexWordBoundaryKind: Hashable {
   internal enum Representation {
     case unicodeLevel1
@@ -205,7 +225,7 @@ public struct RegexWordBoundaryKind: Hashable {
   /// that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
   /// and a `\w` character. Word boundaries therefore depend on the option-
   /// defined behavior of `\w`.
-  public static var unicodeLevel1: Self {
+  public static var simple: Self {
     .init(base: .unicodeLevel1)
   }
 
@@ -215,12 +235,15 @@ public struct RegexWordBoundaryKind: Hashable {
   /// Default word boundaries use a Unicode algorithm that handles some cases
   /// better than simple word boundaries, such as words with internal
   /// punctuation, changes in script, and Emoji.
-  public static var unicodeLevel2: Self {
+  public static var `default`: Self {
     .init(base: .unicodeLevel2)
   }
 }
 
 /// Specifies how much to attempt to match when using a quantifier.
+///
+/// See ``Regex/repetitionBehavior(_:)`` for more about specifying the default
+/// matching behavior for all or part of a regex.
 @available(SwiftStdlib 5.7, *)
 public struct RegexRepetitionBehavior: Hashable {
   internal enum Kind {

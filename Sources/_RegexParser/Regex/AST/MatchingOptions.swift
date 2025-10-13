@@ -44,6 +44,9 @@ extension AST {
       
       // Swift-only default possessive quantifier
       case possessiveByDefault      // t.b.d.
+      
+      // NSRegularExpression compatibility special-case
+      case nsreCompatibleDot        // no AST representation
     }
     
     public var kind: Kind
@@ -175,13 +178,13 @@ extension AST {
     }
     public enum Kind: Hashable {
       /// (*LIMIT_DEPTH=d)
-      case limitDepth(Located<Int>)
+      case limitDepth(AST.Atom.Number)
 
       /// (*LIMIT_HEAP=d)
-      case limitHeap(Located<Int>)
+      case limitHeap(AST.Atom.Number)
 
       /// (*LIMIT_MATCH=d)
-      case limitMatch(Located<Int>)
+      case limitMatch(AST.Atom.Number)
 
       /// (*NOTEMPTY)
       case notEmpty

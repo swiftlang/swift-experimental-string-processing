@@ -1,215 +1,285 @@
-import Foundation
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
 
-public struct BenchmarkRunner {
+import Foundation
+@_spi(RegexBenchmark) import _StringProcessing
+
+/// The number of times to re-run the benchmark if results are too varying
+private var rerunCount: Int { 3 }
+
+extension Benchmark.MatchType {
+  fileprivate var nameSuffix: String {
+    switch self {
+    case .whole: return "_Whole"
+    case .first: return "_First"
+    case .allMatches: return "_All"
+    }
+  }
+}
+
+struct BenchmarkRunner {
   let suiteName: String
   var suite: [any RegexBenchmark] = []
   
   let samples: Int
   var results: SuiteResult = SuiteResult()
+  let quiet: Bool
+  let enableTracing: Bool
+  let enableMetrics: Bool
   
-  // Outputting
-  let startTime = Date()
-  let outputPath: String
-  
-  public init(_ suiteName: String, _ n: Int, _ outputPath: String) {
-    self.suiteName = suiteName
-    self.samples = n
-    self.outputPath = outputPath
+  // Forcibly include firstMatch benchmarks for all CrossBenchmarks
+  let includeFirstOverride: Bool
+
+  // Register a cross-benchmark
+  mutating func registerCrossBenchmark(
+    nameBase: String,
+    input: String,
+    pattern: String,
+    _ type: Benchmark.MatchType,
+    alsoRunScalarSemantic: Bool = true,
+    alsoRunSimpleWordBoundaries: Bool
+  ) {
+    let swiftRegex = try! Regex(pattern)
+    let nsRegex: NSRegularExpression
+    if type == .whole {
+      nsRegex = try! NSRegularExpression(pattern: "^" + pattern + "$")
+    } else {
+      nsRegex = try! NSRegularExpression(pattern: pattern)
+    }
+    let nameSuffix = type.nameSuffix
+
+    register(
+      Benchmark(
+        name: nameBase + nameSuffix,
+        regex: swiftRegex,
+        pattern: pattern,
+        type: type,
+        target: input))
+    register(
+      NSBenchmark(
+        name: nameBase + nameSuffix + CrossBenchmark.nsSuffix,
+        regex: nsRegex,
+        type: .init(type),
+        target: input))
+
+    if alsoRunSimpleWordBoundaries {
+      register(
+        Benchmark(
+          name: nameBase + nameSuffix + "_SimpleWordBoundaries",
+          regex: swiftRegex.wordBoundaryKind(.simple),
+          pattern: pattern,
+          type: type,
+          target: input))
+    }
+
+    if alsoRunScalarSemantic {
+      register(
+        Benchmark(
+          name: nameBase + nameSuffix + "_Scalar",
+          regex: swiftRegex.matchingSemantics(.unicodeScalar),
+          pattern: pattern,
+          type: type,
+          target: input))
+      register(
+        NSBenchmark(
+          name: nameBase + nameSuffix + "_Scalar" + CrossBenchmark.nsSuffix,
+          regex: nsRegex,
+          type: .init(type),
+          target: input))
+    }
+  }
+
+  // Register a cross-benchmark list
+  mutating func registerCrossBenchmark(
+    name: String,
+    inputList: [String],
+    pattern: String,
+    alsoRunScalarSemantic: Bool = true
+  ) {
+    let swiftRegex = try! Regex(pattern)
+    register(InputListBenchmark(
+      name: name,
+      regex: swiftRegex,
+      pattern: pattern,
+      targets: inputList
+    ))
+    register(InputListNSBenchmark(
+      name: name + CrossBenchmark.nsSuffix,
+      regex: pattern,
+      targets: inputList
+    ))
+
+    if alsoRunScalarSemantic {
+      register(InputListBenchmark(
+        name: name + "_Scalar",
+        regex: swiftRegex.matchingSemantics(.unicodeScalar),
+        pattern: pattern,
+        targets: inputList
+      ))
+      register(InputListNSBenchmark(
+        name: name + "_Scalar" + CrossBenchmark.nsSuffix,
+        regex: pattern,
+        targets: inputList
+      ))
+    }
+
+  }
+
+  // Register a swift-only benchmark
+  mutating func register(
+    nameBase: String,
+    input: String,
+    pattern: String,
+    _ swiftRegex: Regex<AnyRegexOutput>,
+    _ type: Benchmark.MatchType,
+    alsoRunScalarSemantic: Bool = true
+  ) {
+    let nameSuffix = type.nameSuffix
+
+    register(
+      Benchmark(
+        name: nameBase + nameSuffix,
+        regex: swiftRegex,
+        pattern: pattern,
+        type: type,
+        target: input))
+
+    if alsoRunScalarSemantic {
+      register(
+        Benchmark(
+          name: nameBase + nameSuffix + "_Scalar",
+          regex: swiftRegex,
+          pattern: pattern,
+          type: type,
+          target: input))
+    }
   }
   
-  public mutating func register(_ new: some RegexBenchmark) {
-    suite.append(new)
+  private mutating func register(_ benchmark: NSBenchmark) {
+    suite.append(benchmark)
   }
   
-  mutating func measure(benchmark: some RegexBenchmark) -> Time {
+  private mutating func register(_ benchmark: Benchmark) {
+    var benchmark = benchmark
+    if enableTracing {
+      benchmark.enableTracing()
+    }
+    if enableMetrics {
+      benchmark.enableMetrics()
+    }
+    suite.append(benchmark)
+  }
+
+  private mutating func register(_ benchmark: InputListNSBenchmark) {
+    suite.append(benchmark)
+  }
+
+  private mutating func register(_ benchmark: InputListBenchmark) {
+    var benchmark = benchmark
+    if enableTracing {
+      benchmark.enableTracing()
+    }
+    if enableMetrics {
+      benchmark.enableMetrics()
+    }
+    suite.append(benchmark)
+  }
+  
+  func medianMeasure(
+    samples: Int,
+    closure: () -> Void
+  ) -> Measurement {
+    // FIXME: use suspendingclock?
     var times: [Time] = []
-    
-    // initial run to make sure the regex has been compiled
-    // todo: measure compile times, or at least how much this first run
-    //       differs from the later ones
-    benchmark.run()
-    
-    // fixme: use suspendingclock?
     for _ in 0..<samples {
       let start = Tick.now
-      benchmark.run()
+      closure()
       let end = Tick.now
       let time = end.elapsedTime(since: start)
       times.append(time)
     }
-    // todo: compute stdev and warn if it's too large
-    
-    // return median time
-    times.sort()
-    let median = times[samples/2]
-    self.results.add(name: benchmark.name, time: median)
-    return median
+    return Measurement(results: times)
   }
   
-  public mutating func run() {
+  func measure(
+    benchmark: some RegexBenchmark,
+    samples: Int
+  ) -> BenchmarkResult {
+    // Initial run to make sure the regex has been compiled
+    benchmark.run()
+
+    // Measure compilataion time for Swift regex
+    let compileTime: Measurement?
+    let parseTime: Measurement?
+    if benchmark is SwiftRegexBenchmark {
+      var benchmark = benchmark as! SwiftRegexBenchmark
+      compileTime = medianMeasure(samples: samples) { benchmark.compile() }
+      // Can't parse if we don't have an input string (ie a builder regex)
+      if benchmark.pattern != nil {
+        parseTime = medianMeasure(samples: samples) { let _ = benchmark.parse() }
+      } else {
+        parseTime = nil
+      }
+      
+    } else {
+      compileTime = nil
+      parseTime = nil
+    }
+    
+    let runtime = medianMeasure(samples: samples) { benchmark.run() }
+    return BenchmarkResult(
+      runtime: runtime,
+      compileTime: compileTime,
+      parseTime: parseTime)
+  }
+  
+  mutating func run() {
     print("Running")
     for b in suite {
-      print("- \(b.name) \(measure(benchmark: b))")
+      var result = measure(benchmark: b, samples: samples)
+      if result.runtimeIsTooVariant {
+        for _ in 0..<rerunCount {
+          print("Warning: Standard deviation > \(Stats.maxAllowedStdev*100)% for \(b.name)")
+          print(result.runtime)
+          print("Rerunning \(b.name)")
+          result = measure(benchmark: b, samples: result.runtime.samples*2)
+          print(result.runtime)
+          if !result.runtimeIsTooVariant {
+            break
+          }
+        }
+        if result.runtimeIsTooVariant {
+          fatalError("Benchmark \(b.name) is too variant")
+        }
+      }
+      if result.compileTime?.median ?? .zero > Time.millisecond {
+        print("Warning: Abnormally high compilation time, what happened?")
+      }
+      
+      if result.parseTime?.median ?? .zero > Time.millisecond {
+        print("Warning: Abnormally high parse time, what happened?")
+      }
+      if !quiet {
+        print("- \(b.name)\n\(result)")
+      }
+      self.results.add(name: b.name, result: result)
     }
   }
-  
-  public func profile() {
-    print("Starting")
-    for b in suite {
-      print("- \(b.name)")
-      b.run()
-      print("- done")
-    }
-  }
-  
-  public mutating func debug() {
+    
+  mutating func debug() {
     print("Debugging")
     print("========================")
     for b in suite {
-      print("- \(b.name) \(measure(benchmark: b))")
       b.debug()
       print("========================")
     }
-  }
-}
-
-extension BenchmarkRunner {
-  
-#if _runtime(_ObjC)
-  var dateStyle: Date.ISO8601FormatStyle { Date.ISO8601FormatStyle() }
-
-  func format(_ date: Date) -> String {
-    return dateStyle.format(date)
-  }
-#else
-  func format(_ date: Date) -> String {
-    return date.description
-  }
-#endif
-  
-  var outputFolderUrl: URL {
-    let url = URL(fileURLWithPath: outputPath, isDirectory: true)
-    if !FileManager.default.fileExists(atPath: url.path) {
-      try! FileManager.default.createDirectory(atPath: url.path, withIntermediateDirectories: true)
-    }
-    return url
-  }
-  
-  public func save() throws {
-    let now = format(startTime)
-    let resultJsonUrl = outputFolderUrl.appendingPathComponent(now + "-result.json")
-    print("Saving result to \(resultJsonUrl.path)")
-    try results.save(to: resultJsonUrl)
-  }
-  
-  func fetchLatestResult() throws -> (String, SuiteResult) {
-#if _runtime(_ObjC)
-    var pastResults: [Date: (String, SuiteResult)] = [:]
-    for resultFile in try FileManager.default.contentsOfDirectory(
-      at: outputFolderUrl,
-      includingPropertiesForKeys: nil
-    ) {
-      do {
-        let dateString = resultFile.lastPathComponent.replacingOccurrences(
-          of: "-result.json",
-          with: "")
-        let date = try dateStyle.parse(dateString)
-        let result = try SuiteResult.load(from: resultFile)
-        pastResults.updateValue((resultFile.lastPathComponent, result), forKey: date)
-      } catch {
-        print("Warning: Found invalid result file \(resultFile.lastPathComponent) in results directory, skipping")
-      }
-    }
-
-    let sorted = pastResults
-      .sorted(by: {(kv1,kv2) in kv1.0 > kv2.0})
-    return sorted[0].1
-#else
-    // corelibs-foundation lacks Date.FormatStyle entirely, so we don't have
-    // any way of parsing the dates. So use the filename sorting to pick out the
-    // latest one... this sucks
-    let items = try FileManager.default.contentsOfDirectory(
-      at: outputFolderUrl,
-      includingPropertiesForKeys: nil
-    )
-    let resultFile = items[items.count - 1]
-    let pastResult = try SuiteResult.load(from: resultFile)
-    return (resultFile.lastPathComponent, pastResult)
-#endif
-  }
-
-  public func compare(against: String?) throws {
-    let compareFile: String
-    let compareResult: SuiteResult
-    
-    if let compareFilePath = against {
-      let compareFileURL = URL(fileURLWithPath: compareFilePath)
-      compareResult = try SuiteResult.load(from: compareFileURL)
-      compareFile = compareFileURL.lastPathComponent
-    } else {
-      (compareFile, compareResult) = try fetchLatestResult()
-    }
-    
-    let diff = results
-      .compare(with: compareResult)
-      .filter({(name, _) in !name.contains("_NS")})
-      .sorted(by: {(a,b) in a.1 < b.1})
-    let regressions = diff.filter({(_, change) in change.seconds > 0})
-    let improvements = diff.filter({(_, change) in change.seconds < 0})
-    
-    print("Comparing against benchmark result file \(compareFile)")
-    print("=== Regressions ======================================================================")
-    func printComparison(name: String, diff: Time) {
-      let oldVal = compareResult.results[name]!
-      let newVal = results.results[name]!
-      let percentage = (1000 * diff.seconds / oldVal.seconds).rounded()/10
-      let len = max(40 - name.count, 1)
-      let nameSpacing = String(repeating: " ", count: len)
-      print("- \(name)\(nameSpacing)\(newVal)\t\(oldVal)\t\(diff)\t\t\(percentage)%")
-    }
-    
-    for item in regressions {
-      printComparison(name: item.key, diff: item.value)
-    }
-    
-    print("=== Improvements =====================================================================")
-    for item in improvements {
-      printComparison(name: item.key, diff: item.value)
-    }
-  }
-}
-
-struct SuiteResult {
-  var results: [String: Time] = [:]
-  
-  public mutating func add(name: String, time: Time) {
-    results.updateValue(time, forKey: name)
-  }
-  
-  public func compare(with other: SuiteResult) -> [String: Time] {
-    var output: [String: Time] = [:]
-    for item in results {
-      if let otherVal = other.results[item.key] {
-        let diff = item.value - otherVal
-        if abs(100 * diff.seconds / otherVal.seconds) > 0.5 {
-          output.updateValue(diff, forKey: item.key)
-        }
-      }
-    }
-    return output
-  }
-}
-
-extension SuiteResult: Codable {
-  public func save(to url: URL) throws {
-    let encoder = JSONEncoder()
-    let data = try encoder.encode(self)
-    try data.write(to: url, options: .atomic)
-  }
-  
-  public static func load(from url: URL) throws -> SuiteResult {
-    let decoder = JSONDecoder()
-    let data = try Data(contentsOf: url)
-    return try decoder.decode(SuiteResult.self, from: data)
   }
 }

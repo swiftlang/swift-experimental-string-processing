@@ -9,17 +9,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser // For errors
+internal import _RegexParser // For errors
 
 extension MEProgram {
   struct Builder {
     var instructions: [Instruction] = []
+    
+    // Tracing
+    var enableTracing = false
+    var enableMetrics = false
 
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
-    var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
+    var utf8Contents = TypedSetVector<[UInt8], _UTF8Register>()
 
+    var asciiBitsets: [DSLTree.CustomCharacterClass.AsciiBitset] = []
     var consumeFunctions: [ConsumeFunction] = []
-    var assertionFunctions: [AssertionFunction] = []
     var transformFunctions: [TransformFunction] = []
     var matcherFunctions: [MatcherFunction] = []
 
@@ -29,8 +33,17 @@ extension MEProgram {
 
     // Registers
     var nextIntRegister = IntRegister(0)
-    var nextCaptureRegister = CaptureRegister(0)
     var nextValueRegister = ValueRegister(0)
+    var nextPositionRegister = PositionRegister(0)
+
+    // Set to non-nil when a value register holds the whole-match
+    // value (i.e. when a regex consists entirely of a custom matcher)
+    var wholeMatchValue: ValueRegister? = nil
+
+    // Note: Capture 0 (i.e. whole-match) is handled specially
+    // by the engine, so `n` here refers to the regex AST's `n+1`
+    // capture
+    var nextCaptureRegister = CaptureRegister(0)
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
@@ -38,6 +51,9 @@ extension MEProgram {
     var captureList = CaptureList()
     var initialOptions = MatchingOptions()
 
+    // Starting constraint
+    var canOnlyMatchAtStart = false
+    
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
@@ -62,6 +78,24 @@ extension MEProgram.Builder {
       self.second = b
     }
   }
+
+  // Maps the AST's named capture offset to a capture register
+  func captureRegister(named name: String) throws -> CaptureRegister {
+    guard let index = captureList.indexOfCapture(named: name) else {
+      throw RegexCompilationError.uncapturedReference
+    }
+    return .init(index - 1)
+  }
+
+  // Map an AST's backreference number to a capture register
+  func captureRegister(forBackreference i: Int) -> CaptureRegister {
+    .init(i - 1)
+  }
+
+  mutating func denoteCurrentValueIsWholeMatchValue() {
+    assert(wholeMatchValue == nil)
+    wholeMatchValue = nextValueRegister
+  }
 }
 
 extension MEProgram.Builder {
@@ -74,6 +108,10 @@ extension MEProgram.Builder {
 
   var lastInstructionAddress: InstructionAddress {
     .init(instructions.endIndex - 1)
+  }
+
+  mutating func buildFatalError() {
+    instructions.append(.init(.invalid))
   }
 
   mutating func buildMoveImmediate(
@@ -104,6 +142,14 @@ extension MEProgram.Builder {
     fixup(to: t)
   }
 
+  mutating func buildCondBranch(
+    to t: AddressToken,
+    ifSamePositionAs r: PositionRegister
+  ) {
+    instructions.append(.init(.condBranchSamePosition, .init(position: r)))
+    fixup(to: t)
+  }
+
   mutating func buildSave(_ t: AddressToken) {
     instructions.append(.init(.save))
     fixup(to: t)
@@ -126,25 +172,63 @@ extension MEProgram.Builder {
     instructions.append(.init(.clearThrough))
     fixup(to: t)
   }
-  mutating func buildFail() {
-    instructions.append(.init(.fail))
+  mutating func buildFail(preservingCaptures: Bool = false) {
+    instructions.append(.init(.fail, .init(bool: preservingCaptures)))
   }
 
   mutating func buildAdvance(_ n: Distance) {
     instructions.append(.init(.advance, .init(distance: n)))
   }
-
-  mutating func buildMatch(_ e: Character) {
-    instructions.append(.init(
-      .match, .init(element: elements.store(e))))
+  
+  mutating func buildAdvanceUnicodeScalar(_ n: Distance) {
+    instructions.append(
+      .init(.advance, .init(distance: n, isScalarDistance: true)))
+  }
+  
+  mutating func buildConsumeNonNewline() {
+    instructions.append(.init(.matchAnyNonNewline, .init(isScalar: false)))
+  }
+                        
+  mutating func buildConsumeScalarNonNewline() {
+    instructions.append(.init(.matchAnyNonNewline, .init(isScalar: true)))
   }
 
-  mutating func buildMatchSequence<S: Sequence>(
-    _ s: S
-  ) where S.Element == Character {
+  mutating func buildMatch(_ e: Character, isCaseInsensitive: Bool) {
     instructions.append(.init(
-      .matchSequence,
-      .init(sequence: sequences.store(.init(s)))))
+      .match, .init(element: elements.store(e), isCaseInsensitive: isCaseInsensitive)))
+  }
+
+  mutating func buildMatchUTF8(_ utf8: Array<UInt8>, boundaryCheck: Bool) {
+    instructions.append(.init(.matchUTF8, .init(
+      utf8: utf8Contents.store(utf8), boundaryCheck: boundaryCheck)))
+  }
+
+  mutating func buildMatchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) {
+    instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: false, boundaryCheck: boundaryCheck)))
+  }
+  
+  mutating func buildMatchScalarCaseInsensitive(_ s: Unicode.Scalar, boundaryCheck: Bool) {
+    instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: true, boundaryCheck: boundaryCheck)))
+  }
+
+
+  mutating func buildMatchAsciiBitset(
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset
+  ) {
+    instructions.append(.init(
+      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: false)))
+  }
+
+  mutating func buildScalarMatchAsciiBitset(
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset
+  ) {
+    instructions.append(.init(
+      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: true)))
+  }
+  
+  mutating func buildMatchBuiltin(model: _CharacterClassModel) {
+    instructions.append(.init(
+      .matchBuiltin, .init(model)))
   }
 
   mutating func buildConsume(
@@ -155,10 +239,69 @@ extension MEProgram.Builder {
   }
 
   mutating func buildAssert(
-    by p: @escaping MEProgram.AssertionFunction
+    by kind: DSLTree.Atom.Assertion,
+    _ anchorsMatchNewlines: Bool,
+    _ usesSimpleUnicodeBoundaries: Bool,
+    _ usesASCIIWord: Bool,
+    _ semanticLevel: MatchingOptions.SemanticLevel
+  ) {
+    let payload = AssertionPayload.init(
+      kind,
+      anchorsMatchNewlines,
+      usesSimpleUnicodeBoundaries,
+      usesASCIIWord,
+      semanticLevel)
+    instructions.append(.init(
+      .assertBy,
+      .init(assertion: payload)))
+  }
+
+  mutating func buildQuantify(
+    bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     instructions.append(.init(
-      .assertBy, .init(assertion: makeAssertionFunction(p))))
+      .quantify,
+      .init(quantify: .init(bitset: makeAsciiBitset(bitset), kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
+  }
+
+  mutating func buildQuantify(
+    asciiChar: UInt8,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(asciiChar: asciiChar, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
+  }
+
+  mutating func buildQuantifyAny(
+    matchesNewlines: Bool,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(matchesNewlines: matchesNewlines, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
+  }
+
+  mutating func buildQuantify(
+    model: _CharacterClassModel,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(model: model,kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildAccept() {
@@ -203,23 +346,30 @@ extension MEProgram.Builder {
       .init(value: value, capture: capture)))
   }
 
-  mutating func buildBackreference(
-    _ cap: CaptureRegister
-  ) {
-    instructions.append(
-      .init(.backreference, .init(capture: cap)))
+  mutating func buildMoveCurrentPosition(into r: PositionRegister) {
+    instructions.append(.init(.moveCurrentPosition, .init(position: r)))
   }
 
-  mutating func buildUnresolvedReference(id: ReferenceID) {
-    buildBackreference(.init(0))
+  mutating func buildRestorePosition(from r: PositionRegister) {
+    instructions.append(.init(.restorePosition, .init(position: r)))
+  }
+
+  mutating func buildBackreference(
+    _ cap: CaptureRegister,
+    isScalarMode: Bool
+  ) {
+    instructions.append(
+      .init(.backreference, .init(capture: cap, isScalarMode: isScalarMode)))
+  }
+
+  mutating func buildUnresolvedReference(id: ReferenceID, isScalarMode: Bool) {
+    buildBackreference(.init(0), isScalarMode: isScalarMode)
     unresolvedReferences[id, default: []].append(lastInstructionAddress)
   }
 
-  mutating func buildNamedReference(_ name: String) throws {
-    guard let index = captureList.indexOfCapture(named: name) else {
-      throw RegexCompilationError.uncapturedReference
-    }
-    buildBackreference(.init(index))
+  mutating func buildNamedReference(_ name: String, isScalarMode: Bool) throws {
+    let cap = try captureRegister(named: name)
+    buildBackreference(cap, isScalarMode: isScalarMode)
   }
 
   // TODO: Mutating because of fail address fixup, drop when
@@ -249,7 +399,8 @@ extension MEProgram.Builder {
       switch inst.opcode {
       case .condBranchZeroElseDecrement:
         payload = .init(addr: addr, int: inst.payload.int)
-
+      case .condBranchSamePosition:
+        payload = .init(addr: addr, position: inst.payload.position)
       case .branch, .save, .saveAddress, .clearThrough:
         payload = .init(addr: addr)
 
@@ -268,29 +419,33 @@ extension MEProgram.Builder {
         inst.opcode, payload)
     }
 
-    var regInfo = MEProgram.RegisterInfo()
-    regInfo.elements = elements.count
-    regInfo.sequences = sequences.count
-    regInfo.ints = nextIntRegister.rawValue
-    regInfo.values = nextValueRegister.rawValue
-    regInfo.consumeFunctions = consumeFunctions.count
-    regInfo.assertionFunctions = assertionFunctions.count
-    regInfo.transformFunctions = transformFunctions.count
-    regInfo.matcherFunctions = matcherFunctions.count
-    regInfo.captures = nextCaptureRegister.rawValue
+    let regs = Processor.Registers(
+      elements: elements.stored,
+      utf8Contents: utf8Contents.stored,
+      bitsets: asciiBitsets,
+      consumeFunctions: consumeFunctions,
+      transformFunctions: transformFunctions,
+      matcherFunctions: matcherFunctions,
+      numInts: nextIntRegister.rawValue,
+      numValues: nextValueRegister.rawValue,
+      numPositions: nextPositionRegister.rawValue
+    )
 
-    return MEProgram(
+    let storedCaps = Array(
+      repeating: Processor._StoredCapture(), count: nextCaptureRegister.rawValue)
+
+    let meProgram = MEProgram(
       instructions: InstructionList(instructions),
-      staticElements: elements.stored,
-      staticSequences: sequences.stored,
-      staticConsumeFunctions: consumeFunctions,
-      staticAssertionFunctions: assertionFunctions,
-      staticTransformFunctions: transformFunctions,
-      staticMatcherFunctions: matcherFunctions,
-      registerInfo: regInfo,
+      wholeMatchValueRegister: wholeMatchValue,
+      enableTracing: enableTracing,
+      enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
-      initialOptions: initialOptions)
+      initialOptions: initialOptions,
+      canOnlyMatchAtStart: canOnlyMatchAtStart,
+      registers: regs,
+      storedCaptures: storedCaps)
+    return meProgram
   }
 
   mutating func reset() { self = Self() }
@@ -366,8 +521,10 @@ fileprivate extension MEProgram.Builder {
         throw RegexCompilationError.uncapturedReference
       }
       for use in uses {
+        let (isScalarMode, _) = instructions[use.rawValue].payload.captureAndMode
         instructions[use.rawValue] =
-          Instruction(.backreference, .init(capture: .init(offset)))
+          Instruction(.backreference,
+            .init(capture: .init(offset), isScalarMode: isScalarMode))
       }
     }
   }
@@ -386,8 +543,8 @@ extension MEProgram.Builder {
       assert(preexistingValue == nil)
     }
     if let name = name {
-      let index = captureList.indexOfCapture(named: name)
-      assert(index == nextCaptureRegister.rawValue)
+      let cap = try? captureRegister(named: name)
+      assert(cap == nextCaptureRegister)
     }
     assert(nextCaptureRegister.rawValue < captureList.captures.count)
     return nextCaptureRegister
@@ -411,20 +568,27 @@ extension MEProgram.Builder {
     return r
   }
 
+  mutating func makePositionRegister() -> PositionRegister {
+    let r = nextPositionRegister
+    defer { nextPositionRegister.rawValue += 1 }
+    return r
+  }
+
   // TODO: A register-mapping helper struct, which could release
   // registers without monotonicity required
 
+  mutating func makeAsciiBitset(
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset
+  ) -> AsciiBitsetRegister {
+    defer { asciiBitsets.append(b) }
+    return AsciiBitsetRegister(asciiBitsets.count)
+  }
+  
   mutating func makeConsumeFunction(
     _ f: @escaping MEProgram.ConsumeFunction
   ) -> ConsumeFunctionRegister {
     defer { consumeFunctions.append(f) }
     return ConsumeFunctionRegister(consumeFunctions.count)
-  }
-  mutating func makeAssertionFunction(
-    _ f: @escaping MEProgram.AssertionFunction
-  ) -> AssertionFunctionRegister {
-    defer { assertionFunctions.append(f) }
-    return AssertionFunctionRegister(assertionFunctions.count)
   }
   mutating func makeTransformFunction(
     _ f: @escaping MEProgram.TransformFunction
