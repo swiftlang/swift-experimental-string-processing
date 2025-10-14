@@ -18,7 +18,7 @@ import Testing
   @Test(arguments: [#/a/#, #/a+/#, #/(?:a+)/#, #/(?:a)+/#, #/(?m)a+/#, #/ab?c/#, #/(?:a+)+$/#, #/(?:(?:a+b)+b)/#])
   func requiredFirstAtom(pattern: Regex<Substring>) throws {
     let list = DSLList(tree: pattern.program.tree)
-    let atom = list.requiredFirstAtom()
+    let atom = list.requiredFirstAtom(allowOptionsChanges: true)
     #expect(atom?.literalCharacterValue == "a", "Missing first character atom in '\(pattern._literalPattern!)'")
   }
   
@@ -26,12 +26,12 @@ import Testing
   @Test(arguments: [#/a?/#, #/(?:a|b)/#, #/[a]/#, #/a?bc/#])
   func noRequiredFirstAtom(pattern: Regex<Substring>) throws {
     let list = DSLList(tree: pattern.program.tree)
-    let atom = list.requiredFirstAtom()
+    let atom = list.requiredFirstAtom(allowOptionsChanges: true)
     #expect(atom == nil, "Unexpected required first atom in '\(pattern._literalPattern!)'")
   }
   
   @available(macOS 9999, *)
-  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#, #/(?:(?:a+b)+b)/#, #/\d+a/#])
+  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#, #/(?:(?:a+b)+b)/#, #/\d+a/#, #/a+A/#])
   func autoPossessify(pattern: Regex<Substring>) throws {
     var list = DSLList(tree: pattern.program.tree)
     list.autoPossessify()
@@ -47,7 +47,10 @@ import Testing
   }
 
   @available(macOS 9999, *)
-  @Test(arguments: [#/a?/#, #/a+a/#, #/(?:a|b)/#, #/(?:a+|b+)/#, #/[a]/#, #/a?a/#])
+  @Test(arguments: [
+    #/a?/#, #/a+a/#, #/a+(?:b|c)/#, #/(?:a+|b+)/#, #/[a]/#, #/a?a/#,
+    #/(?i)a+A/#, #/(?i:a+A)/#  // case insensitivity when checking exclusion
+  ])
   func noAutoPossessify(pattern: Regex<Substring>) throws {
     var list = DSLList(tree: pattern.program.tree)
     list.autoPossessify()

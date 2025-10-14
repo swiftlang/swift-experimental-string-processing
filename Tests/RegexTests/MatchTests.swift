@@ -737,6 +737,31 @@ extension RegexTests {
       ("baaaaabc", nil),
       ("baaaaaaaabc", nil))
 
+    // Auto-possessification tests:
+    // - case sensitive
+    firstMatchTests(
+      "a+A",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", nil),
+      ("aaAaa", "aaA"))
+    // - case insensitive
+    firstMatchTests(
+      "(?i:a+A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "(?i)a+A",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "a+(?i:A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "a+(?:(?i)A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+
     // XFAIL'd possessive tests
     firstMatchTests(
       "a?+a",

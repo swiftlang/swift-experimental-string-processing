@@ -1111,6 +1111,14 @@ extension DSLTree {
       internal var isNegativeLookahead: Bool {
         self.ast == .negativeLookahead
       }
+      
+      internal var isChangeMatchingOptions: Bool {
+        if case let .changeMatchingOptions = ast {
+          return true
+        } else {
+          return false
+        }
+      }
     }
 
     @_spi(RegexBuilder)
