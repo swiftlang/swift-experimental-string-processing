@@ -24,7 +24,6 @@ extension DSLList {
       switch atom {
       case .changeMatchingOptions(let seq):
         // Exit early if an atom changes the matching options.
-        // TODO: Allow some/all options changes.
         if allowOptionsChanges {
           options.apply(seq.ast)
           return nil
@@ -143,15 +142,17 @@ extension DSLList {
       let quantPosition = position
       position += 1
       
-      // Do a search within this quantification's contents
-      // FIXME: How to handle an inner quantification surfacing here?
-      var innerPosition = position
-      _ = autoPossessifyNextQuantification(&innerPosition, options: &options)
-      
-      switch _requiredAtomImpl(&position, options: &options, allowOptionsChanges: false) {
-      case .some(let atom?):
+      // Limit auto-possessification to a single quantified atom, to avoid
+      // issues of overlapped matches.
+      guard position < nodes.count else {
+        return nil
+      }
+      switch nodes[position] {
+      case .atom(let atom) where atom.isMatchable:
         return (quantPosition, atom)
-      case .none, .some(.none):
+      default:
+        var innerPosition = position
+        _ = autoPossessifyNextQuantification(&innerPosition, options: &options)
         return nil
       }
       

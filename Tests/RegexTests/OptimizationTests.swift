@@ -31,7 +31,7 @@ import Testing
   }
   
   @available(macOS 9999, *)
-  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#, #/(?:(?:a+b)+b)/#, #/\d+a/#, #/a+A/#])
+  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#, #/\d+a/#, #/a+A/#])
   func autoPossessify(pattern: Regex<Substring>) throws {
     var list = DSLList(tree: pattern.program.tree)
     list.autoPossessify()
@@ -49,7 +49,8 @@ import Testing
   @available(macOS 9999, *)
   @Test(arguments: [
     #/a?/#, #/a+a/#, #/a+(?:b|c)/#, #/(?:a+|b+)/#, #/[a]/#, #/a?a/#,
-    #/(?i)a+A/#, #/(?i:a+A)/#  // case insensitivity when checking exclusion
+    #/(?i)a+A/#, #/(?i:a+A)/#,  // case insensitivity when checking exclusion
+    #/(?:(?:ab)+b)/#,           // single atom quantifications only
   ])
   func noAutoPossessify(pattern: Regex<Substring>) throws {
     var list = DSLList(tree: pattern.program.tree)
