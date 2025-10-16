@@ -37,12 +37,15 @@ func _roundTripLiteral(
   return remadeRegex
 }
 
+// Validate that the given regex compiles to the same instructions whether
+// as a tree (original) or a list (new). We need to compile with optimizations
+// disabled, since new optimizations are primarily landing in list compilation.
 func _validateListCompilation<T>(
   _ regex: Regex<T>
 ) throws -> Bool {
-  let treeCompiler = Compiler(tree: regex.program.tree)
+  let treeCompiler = Compiler(tree: regex.program.tree, compileOptions: .disableOptimizations)
   let treeProgram = try treeCompiler.emitViaTree()
-  let listCompiler = Compiler(tree: regex.program.tree)
+  let listCompiler = Compiler(tree: regex.program.tree, compileOptions: .disableOptimizations)
   let listProgram = try listCompiler.emitViaList()
   return treeProgram.instructions == listProgram.instructions
 }
@@ -733,6 +736,31 @@ extension RegexTests {
       ("baaabc", nil),
       ("baaaaabc", nil),
       ("baaaaaaaabc", nil))
+
+    // Auto-possessification tests:
+    // - case sensitive
+    firstMatchTests(
+      "a+A",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", nil),
+      ("aaAaa", "aaA"))
+    // - case insensitive
+    firstMatchTests(
+      "(?i:a+A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "(?i)a+A",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "a+(?i:A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "a+(?:(?i)A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
 
     // XFAIL'd possessive tests
     firstMatchTests(

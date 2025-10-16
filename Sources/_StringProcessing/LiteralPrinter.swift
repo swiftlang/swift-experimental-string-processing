@@ -224,13 +224,16 @@ extension LiteralPrinter {
   }
   
   mutating func outputQuantificationKind(_ kind: DSLTree.QuantificationKind) {
-    switch kind {
-    case .`default`:
+    guard let astKind = kind.quantificationKind?.ast else {
       // We can treat this as if the current default had been given explicity.
       outputQuantificationKind(
         .explicit(.init(ast: options.defaultQuantificationKind)))
-    case let .explicit(kind):
-      switch kind.ast {
+      return
+    }
+    
+    if kind.isExplicit {
+      // Explicitly provided modifiers need to match the current option state.
+      switch astKind {
       case .eager:
         output(options.isReluctantByDefault ? "?" : "")
       case .reluctant:
@@ -242,9 +245,9 @@ extension LiteralPrinter {
         fatalError()
       #endif
       }
-    case let .syntax(kind):
+    } else {
       // Syntactically-specified quantification modifiers can stay as-is.
-      switch kind.ast {
+      switch astKind {
       case .eager:
         output("")
       case .reluctant:

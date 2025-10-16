@@ -506,15 +506,7 @@ extension Compiler.ByteCodeGen {
     _ kind: DSLTree.QuantificationKind,
     _ child: DSLTree.Node
   ) throws {
-    let updatedKind: AST.Quantification.Kind
-    switch kind {
-    case .explicit(let kind):
-      updatedKind = kind.ast
-    case .syntax(let kind):
-      updatedKind = kind.ast.applying(options)
-    case .default:
-      updatedKind = options.defaultQuantificationKind
-    }
+    let updatedKind = kind.applying(options: options)
 
     let (low, high) = amount.bounds
     guard let low = low else {

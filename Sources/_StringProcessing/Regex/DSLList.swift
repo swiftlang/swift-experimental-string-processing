@@ -94,3 +94,35 @@ extension DSLTree {
     })
   }
 }
+
+extension DSLList {
+  internal func skipNode(_ position: inout Int) {
+    guard position < nodes.count else {
+      return
+    }
+    switch nodes[position] {
+    case let .orderedChoice(children):
+      let n = children.count
+      for _ in 0..<n {
+        position += 1
+        skipNode(&position)
+      }
+      
+    case let .concatenation(children):
+      let n = children.count
+      for _ in 0..<n {
+        position += 1
+        skipNode(&position)
+      }
+      
+    case .capture, .nonCapturingGroup, .ignoreCapturesInTypedOutput,
+        .limitCaptureNesting, .quantification:
+      position += 1
+      skipNode(&position)
+      
+    case .customCharacterClass, .atom, .quotedLiteral, .matcher, .conditional,
+        .absentFunction, .consumer, .characterPredicate, .trivia, .empty:
+      break
+    }
+  }
+}
