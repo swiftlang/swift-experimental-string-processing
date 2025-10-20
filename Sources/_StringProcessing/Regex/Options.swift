@@ -294,7 +294,9 @@ extension RegexComponent {
     let sequence = shouldAdd
       ? AST.MatchingOptionSequence(adding: [.init(option, location: .fake)])
       : AST.MatchingOptionSequence(removing: [.init(option, location: .fake)])
-    return Regex(node: .nonCapturingGroup(
-      .init(ast: .changeMatchingOptions(sequence)), regex.root))
+    
+    var list = regex.program.tree
+    list.nodes.insert(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence)), TEMP_FAKE_NODE), at: 0)
+    return Regex(list: list)
   }
 }

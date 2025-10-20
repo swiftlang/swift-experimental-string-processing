@@ -12,21 +12,30 @@
 internal import _RegexParser
 
 class Compiler {
-  let tree: DSLTree
+  let tree: DSLList
 
   // TODO: Or are these stored on the tree?
   var options = MatchingOptions()
   private var compileOptions: _CompileOptions = .default
 
   init(ast: AST) {
-    self.tree = ast.dslTree
+    self.tree = DSLList(tree: ast.dslTree)
   }
 
   init(tree: DSLTree) {
-    self.tree = tree
+    self.tree = DSLList(tree: tree)
+  }
+
+  init(list: DSLList) {
+    self.tree = list
   }
 
   init(tree: DSLTree, compileOptions: _CompileOptions) {
+    self.tree = DSLList(tree: tree)
+    self.compileOptions = compileOptions
+  }
+
+  init(tree: DSLList, compileOptions: _CompileOptions) {
     self.tree = tree
     self.compileOptions = compileOptions
   }
@@ -42,18 +51,20 @@ class Compiler {
       compileOptions:
         compileOptions,
       captureList: tree.captureList)
-    return try codegen.emitRoot(tree.root)
+    fatalError()
+//    return try codegen.emitRoot(tree.root)
   }
   
   __consuming func emitViaList() throws -> MEProgram {
     // TODO: Handle global options
-    var dslList = DSLList(tree: tree)
+//    var dslList = DSLList(tree: tree)
     var codegen = ByteCodeGen(
       options: options,
       compileOptions:
         compileOptions,
       captureList: tree.captureList)
-    return try codegen.emitRoot(&dslList)
+    var tree = tree
+    return try codegen.emitRoot(&tree)
   }
 }
 
@@ -105,20 +116,22 @@ func _compileRegex(
   _ syntax: SyntaxOptions = .traditional,
   _ semanticLevel: RegexSemanticLevel? = nil
 ) throws -> MEProgram {
-  let ast = try parse(regex, syntax)
-  let dsl: DSLTree
+  var ast = try parse(regex, syntax)
+  let dsl: DSLList
 
   switch semanticLevel?.base {
   case .graphemeCluster:
     let sequence = AST.MatchingOptionSequence(adding: [.init(.graphemeClusterSemantics, location: .fake)])
-    dsl = DSLTree(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence)), ast.dslTree.root))
+    ast.root = AST.Node.group(AST.Group(.init(faking: .changeMatchingOptions(sequence)), ast.root, .fake))
+    dsl = DSLList(ast: ast)
   case .unicodeScalar:
     let sequence = AST.MatchingOptionSequence(adding: [.init(.unicodeScalarSemantics, location: .fake)])
-    dsl = DSLTree(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence)), ast.dslTree.root))
+    ast.root = AST.Node.group(AST.Group(.init(faking: .changeMatchingOptions(sequence)), ast.root, .fake))
+    dsl = DSLList(ast: ast)
   case .none:
-    dsl = ast.dslTree
+    dsl = DSLList(ast: ast)
   }
-  let program = try Compiler(tree: dsl).emit()
+  let program = try Compiler(list: dsl).emit()
   return program
 }
 

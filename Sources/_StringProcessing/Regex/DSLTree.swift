@@ -769,6 +769,91 @@ extension CaptureList.Builder {
     builder.addCaptures(of: dsl.root, optionalNesting: .init(canNest: true), visibleInTypedOutput: true)
     return builder.captures
   }
+
+  mutating func addCaptures(
+    in list: inout ArraySlice<DSLTree.Node>, optionalNesting nesting: OptionalNesting, visibleInTypedOutput: Bool
+  ) {
+    guard let node = list.popFirst() else { return }
+    switch node {
+    case let .orderedChoice(children):
+      for _ in 0..<children.count {
+        addCaptures(in: &list, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
+      }
+
+    case let .concatenation(children):
+      for _ in 0..<children.count {
+        addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      }
+
+    case let .capture(name, _, child, transform):
+      captures.append(.init(
+        name: name,
+        type: transform?.resultType ?? child.wholeMatchType,
+        optionalDepth: nesting.depth, visibleInTypedOutput: visibleInTypedOutput, .fake))
+      addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+
+    case let .nonCapturingGroup(kind, child):
+      assert(!kind.ast.isCapturing)
+      addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      
+    case let .ignoreCapturesInTypedOutput(child):
+      addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: false)
+
+    case let .limitCaptureNesting(child):
+      addCaptures(in: &list, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
+      
+    case let .conditional(cond, trueBranch, falseBranch):
+      switch cond.ast {
+      case .group(let g):
+        addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      default:
+        break
+      }
+
+      addCaptures(in: &list, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
+      addCaptures(in: &list, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
+
+    case let .quantification(amount, _, child):
+      var optNesting = nesting
+      if amount.ast.bounds.atLeast == 0 {
+        optNesting = optNesting.addingOptional
+      }
+      addCaptures(in: &list, optionalNesting: optNesting, visibleInTypedOutput: visibleInTypedOutput)
+
+    case let .absentFunction(abs):
+      switch abs.ast.kind {
+      case .expression(_, _, let child):
+        addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      case .clearer, .repeater, .stopper:
+        break
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
+      }
+
+//    case let .convertedRegexLiteral(n, _):
+//      // We disable nesting for converted AST trees, as literals do not nest
+//      // captures. This includes literals nested in a DSL.
+//      return addCaptures(of: n, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
+//
+    case .matcher:
+      break
+
+    case .customCharacterClass, .atom, .trivia, .empty,
+        .quotedLiteral, .consumer, .characterPredicate:
+      break
+    }
+  }
+
+  static func build(_ dsl: DSLList) -> CaptureList {
+    var builder = Self()
+    builder.captures.append(
+      .init(type: dsl.first.wholeMatchType, optionalDepth: 0, visibleInTypedOutput: true, .fake))
+    var nodes = dsl.nodes[...]
+    builder.addCaptures(in: &nodes, optionalNesting: .init(canNest: true), visibleInTypedOutput: true)
+    return builder.captures
+  }
 }
 
 extension DSLTree.Node {
@@ -795,6 +880,23 @@ extension DSLTree.Node {
       return children[0].outputDefiningNode
     }
     return self
+  }
+
+  /// Returns the type of the whole match, i.e. `.0` element type of the output.
+  var wholeMatchType: Any.Type {
+    if case .matcher(let type, _) = outputDefiningNode {
+      return type
+    }
+    return Substring.self
+  }
+}
+
+extension DSLList {
+
+  /// Returns the output-defining node, peering through any output-forwarding
+  /// nodes.
+  var outputDefiningNode: DSLTree.Node? {
+    nodes.first(where: { !$0.isOutputForwarding })
   }
 
   /// Returns the type of the whole match, i.e. `.0` element type of the output.

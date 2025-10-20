@@ -9,8 +9,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
+
 struct DSLList {
   var nodes: [DSLTree.Node]
+  
+  // experimental
+  var hasCapture: Bool = false
+  var hasChildren: Bool = false
+  var captureList: CaptureList {
+    .Builder.build(self)
+  }
   
   init(_ initial: DSLTree.Node) {
     self.nodes = [initial]
@@ -22,6 +31,33 @@ struct DSLList {
   
   init(tree: DSLTree) {
     self.nodes = Array(tree.depthFirst)
+  }
+  
+  init(ast: AST) {
+    self.nodes = []
+    try! ast.root.convert(into: &nodes)
+  }
+  
+  var first: DSLTree.Node {
+    nodes.first ?? .empty
+  }
+}
+
+extension DSLList {
+  mutating func append(_ node: DSLTree.Node) {
+    nodes.append(node)
+  }
+  
+  mutating func append(contentsOf other: some Sequence<DSLTree.Node>) {
+    nodes.append(contentsOf: other)
+  }
+  
+  mutating func prepend(_ node: DSLTree.Node) {
+    nodes.insert(node, at: 0)
+  }
+  
+  mutating func prepend(contentsOf other: some Collection<DSLTree.Node>) {
+    nodes.insert(contentsOf: other, at: 0)
   }
 }
 

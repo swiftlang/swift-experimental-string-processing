@@ -284,7 +284,7 @@ extension Regex where Output == AnyRegexOutput {
   /// - Parameter regex: A regular expression to convert to use a dynamic
   ///   capture list.
   public init<OtherOutput>(_ regex: Regex<OtherOutput>) {
-    self.init(node: regex.root)
+    self.init(list: regex.list)
   }
 }
 
@@ -331,7 +331,7 @@ extension Regex {
     _ regex: Regex<AnyRegexOutput>,
     as outputType: Output.Type = Output.self
   ) {
-    self.init(node: regex.root)
+    self.init(list: regex.list)
     
     guard _verifyType().0 else {
       return nil

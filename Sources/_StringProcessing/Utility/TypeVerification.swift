@@ -41,7 +41,7 @@ extension Regex {
     
     // If we have no captures, then our Regex must be Regex<Substring>.
     if tupleElements.count == 1 {
-      let wholeMatchType = program.tree.root.wholeMatchType
+      let wholeMatchType = program.tree.wholeMatchType
       return (Output.self == wholeMatchType, wholeMatchType)
     }
     

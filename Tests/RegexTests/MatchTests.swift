@@ -37,19 +37,6 @@ func _roundTripLiteral(
   return remadeRegex
 }
 
-// Validate that the given regex compiles to the same instructions whether
-// as a tree (original) or a list (new). We need to compile with optimizations
-// disabled, since new optimizations are primarily landing in list compilation.
-func _validateListCompilation<T>(
-  _ regex: Regex<T>
-) throws -> Bool {
-  let treeCompiler = Compiler(tree: regex.program.tree, compileOptions: .disableOptimizations)
-  let treeProgram = try treeCompiler.emitViaTree()
-  let listCompiler = Compiler(tree: regex.program.tree, compileOptions: .disableOptimizations)
-  let listProgram = try listCompiler.emitViaList()
-  return treeProgram.instructions == listProgram.instructions
-}
-
 func _firstMatch(
   _ regexStr: String,
   input: String,
@@ -61,12 +48,6 @@ func _firstMatch(
 ) throws -> (String, [String?])? {
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
-  
-  if try !_validateListCompilation(regex) {
-    XCTFail(
-      "List compilation failed for '\(regexStr)'",
-      file: file, line: line)
-  }
   
   func validateSubstring(_ substringInput: Substring) throws {
     // Sometimes the characters we add to a substring merge with existing
@@ -117,7 +98,7 @@ func _firstMatch(
       .substring
     switch (result?[0].substring, roundTripResult) {
     case let (match?, rtMatch?):
-      XCTAssertEqual(match, rtMatch)
+      XCTAssertEqual(match, rtMatch, file: file, line: line)
     case (nil, nil):
       break // okay
     case let (match?, _):
