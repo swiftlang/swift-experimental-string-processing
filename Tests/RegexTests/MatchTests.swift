@@ -26,14 +26,16 @@ struct MatchError: Error {
 @available(SwiftStdlib 6.0, *)
 func _roundTripLiteral(
   _ regexStr: String,
-  syntax: SyntaxOptions
+  syntax: SyntaxOptions,
+  file: StaticString = #file,
+  line: UInt = #line
 ) throws -> Regex<AnyRegexOutput>? {
   guard let pattern = try Regex(regexStr, syntax: syntax)._literalPattern else {
     return nil
   }
   
   let remadeRegex = try Regex(pattern)
-  XCTAssertEqual(pattern, remadeRegex._literalPattern)
+  XCTAssertEqual(pattern, remadeRegex._literalPattern, file: file, line: line)
   return remadeRegex
 }
 
@@ -91,7 +93,7 @@ func _firstMatch(
   }
 
   if #available(SwiftStdlib 6.0, *) {
-    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
+    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax, file: file, line: line)
     let roundTripResult = try? roundTripRegex?
       .matchingSemantics(semanticLevel)
       .firstMatch(in: input)?[0]
