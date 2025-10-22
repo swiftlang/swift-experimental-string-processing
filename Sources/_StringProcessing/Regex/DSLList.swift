@@ -34,7 +34,7 @@ struct DSLList {
   }
   
   init(ast: AST) {
-    self.nodes = []
+    self.nodes = [.limitCaptureNesting(TEMP_FAKE_NODE)]
     try! ast.root.convert(into: &nodes)
   }
   
