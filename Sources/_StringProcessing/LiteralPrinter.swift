@@ -609,7 +609,15 @@ extension String {
   }
   
   func escapingConfusableCharacters() -> String {
-    lazy.map(\.escapingConfusable).joined()
+    reduce(into: "") { result, ch in
+      for scalar in ch.unicodeScalars {
+        if scalar.isPrintableASCII {
+          result.append(Character(scalar))
+        } else {
+          result.append(scalar.escapedString)
+        }
+      }
+    }
   }
 }
 

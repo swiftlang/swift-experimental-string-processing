@@ -95,6 +95,27 @@ extension AST.Node {
       }
     }
     
+    func appendAtom(_ atom: AST.Atom, to str: inout String) -> Bool {
+      switch atom.kind {
+      case .char(let c):
+        str.append(c)
+        return true
+      case .scalar(let s):
+        str.append(Character(s.value))
+        return true
+      case .escaped(let c):
+        guard let value = c.scalarValue else { return false }
+        str.append(Character(value))
+        return true
+      case .scalarSequence(let seq):
+        str.append(contentsOf: seq.scalarValues.lazy.map(Character.init))
+        return true
+        
+      default:
+        return false
+      }
+    }
+    
     switch self {
     case .alternation(let v): return v.children
     case .concatenation(let v):
@@ -103,9 +124,7 @@ extension AST.Node {
         .coalescing(with: "", into: { AST.Node.quote(.init($0, .fake)) }) { str, node in
           switch node {
           case .atom(let a):
-            guard let c = a.literalCharacterValue else { return false }
-            str.append(c)
-            return true
+            return appendAtom(a, to: &str)
           case .quote(let q):
             str += q.literal
             return true
