@@ -93,10 +93,10 @@ public struct Regex<Output>: RegexComponent {
   let program: Program
 
   var hasCapture: Bool {
-    program.tree.hasCapture
+    program.list.hasCapture
   }
   var hasChildren: Bool {
-    program.tree.hasChildren
+    program.list.hasChildren
   }
 
   init(ast: AST) {
@@ -153,7 +153,7 @@ extension Regex {
     /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
     /// and we should have a separate type that handled both global options and,
     /// likely, compilation/caching.
-    var tree: DSLList
+    var list: DSLList
 
     /// OptionSet of compiler options for testing purposes
     fileprivate var compileOptions: _CompileOptions = .default
@@ -183,7 +183,7 @@ extension Regex {
       }
       
       // Compile the DSLTree into a lowered program and store it atomically.
-      let compiledProgram = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
+      let compiledProgram = try! Compiler(tree: list, compileOptions: compileOptions).emit()
       let storedNewProgram = _stdlib_atomicInitializeARCRef(
         object: _loweredProgramStoragePtr,
         desired: ProgramBox(compiledProgram))
@@ -196,15 +196,15 @@ extension Regex {
     }
 
     init(ast: AST) {
-      self.tree = DSLList(ast: ast)
+      self.list = DSLList(ast: ast)
     }
 
     init(tree: DSLTree) {
-      self.tree = DSLList(tree: tree)
+      self.list = DSLList(tree: tree)
     }
 
     init(list: DSLList) {
-      self.tree = list
+      self.list = list
     }
   }
   
@@ -228,7 +228,7 @@ extension Regex {
 //  }
 
   var list: DSLList {
-    program.tree
+    program.list
   }
   
   init(node: DSLTree.Node) {
@@ -240,19 +240,19 @@ extension Regex {
   }
   
   func appending<T>(_ node: DSLTree.Node) -> Regex<T> {
-    var list = program.tree
+    var list = program.list
     list.append(node)
     return Regex<T>(list: list)
   }
   
   func appending<T>(contentsOf node: some Collection<DSLTree.Node>) -> Regex<T> {
-    var list = program.tree
+    var list = program.list
     list.append(contentsOf: node)
     return Regex<T>(list: list)
   }
   
   func concatenating<T>(_ other: some Collection<DSLTree.Node>) -> Regex<T> {
-    var nodes = program.tree.nodes
+    var nodes = program.list.nodes
     switch nodes[0] {
     case .concatenation(let children):
       nodes[0] = .concatenation(Array(repeating: TEMP_FAKE_NODE, count: children.count + 1))
@@ -265,7 +265,7 @@ extension Regex {
   }
   
   func alternating<T>(with other: some Collection<DSLTree.Node>) -> Regex<T> {
-    var nodes = program.tree.nodes
+    var nodes = program.list.nodes
     switch nodes[0] {
     case .orderedChoice(let children):
       nodes[0] = .orderedChoice(Array(repeating: TEMP_FAKE_NODE, count: children.count + 1))
@@ -278,13 +278,13 @@ extension Regex {
   }
   
   func prepending<T>(_ node: DSLTree.Node) -> Regex<T> {
-    var list = program.tree
+    var list = program.list
     list.prepend(node)
     return Regex<T>(list: list)
   }
   
   func prepending<T>(contentsOf node: some Collection<DSLTree.Node>) -> Regex<T> {
-    var list = program.tree
+    var list = program.list
     list.prepend(contentsOf: node)
     return Regex<T>(list: list)
   }
@@ -309,7 +309,7 @@ extension Regex {
         return true
       case .recompile:
         let _ = try Compiler(
-          tree: program.tree,
+          tree: program.list,
           compileOptions: program.compileOptions).emit()
         return true
       }

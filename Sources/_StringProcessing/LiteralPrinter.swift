@@ -36,7 +36,7 @@ extension Regex {
   @available(SwiftStdlib 6.0, *)
   public var _literalPattern: String? {
     var gen = LiteralPrinter(options: MatchingOptions())
-    var list = self.program.tree.nodes[...]
+    var list = self.program.list.nodes[...]
     try? gen.outputList(&list)
     return gen.canonicalLiteralString
   }

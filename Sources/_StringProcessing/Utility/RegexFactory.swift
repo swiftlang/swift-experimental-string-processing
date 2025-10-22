@@ -28,7 +28,7 @@ public struct _RegexFactory {
     // Don't wrap `child` again if it's a leaf node.
     child.regex.list.hasChildren
       ? child.regex.prepending(.ignoreCapturesInTypedOutput(TEMP_FAKE_NODE)) as Regex<Substring>
-      : .init(list: child.regex.program.tree)
+      : .init(list: child.regex.program.list)
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -36,7 +36,7 @@ public struct _RegexFactory {
     _ left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
-    left.regex.concatenating(right.regex.program.tree.nodes)
+    left.regex.concatenating(right.regex.program.list.nodes)
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -44,7 +44,7 @@ public struct _RegexFactory {
     _ left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
-    left.regex.alternating(with: right.regex.program.tree.nodes)
+    left.regex.alternating(with: right.regex.program.list.nodes)
   }
   
   @_spi(RegexBuilder)
