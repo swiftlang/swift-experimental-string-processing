@@ -16,7 +16,10 @@ struct DSLList {
   
   // experimental
   var hasCapture: Bool = false
-  var hasChildren: Bool = false
+  var hasChildren: Bool {
+    (nodes.first?.directChildren ?? 0) > 0
+  }
+  
   var captureList: CaptureList {
     .Builder.build(self)
   }
