@@ -12,6 +12,7 @@
 /// An implementation of the Boyer-Moore-Horspool algorithm, for string-specific
 /// searching.
 struct SubstringSearcher: Sequence, IteratorProtocol {
+  typealias Element = Range<String.Index>
   struct State {
     let badCharacterOffsets: [Character: Int]
     let patternCount: Int
