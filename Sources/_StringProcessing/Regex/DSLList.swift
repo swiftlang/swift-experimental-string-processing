@@ -164,4 +164,58 @@ extension DSLList {
       break
     }
   }
+  
+  func indexOfCoalescableAtom(startingAt position: Int, findLast: Bool = false) -> Int? {
+    switch nodes[position] {
+    case .concatenation(let children):
+      var position = position + 1
+      if findLast {
+        for _ in 0..<(children.count - 1) {
+          skipNode(&position)
+          position += 1
+        }
+      }
+      return indexOfCoalescableAtom(startingAt: position, findLast: findLast)
+    case .ignoreCapturesInTypedOutput, .limitCaptureNesting:
+      return indexOfCoalescableAtom(startingAt: position + 1, findLast: findLast)
+    case .atom(let atom):
+      if atom.literalCharacterValue != nil {
+        return position
+      }
+    case .quotedLiteral:
+      return position
+    default:
+      break
+    }
+    return nil
+  }
+    
+  mutating func coalesce(withFirstAtomIn other: inout DSLList) {
+    // Find the last coalescable node in the LHS and the first in the RHS
+    guard let prefixIndex = indexOfCoalescableAtom(startingAt: 0, findLast: true),
+          let postfixIndex = other.indexOfCoalescableAtom(startingAt: 0),
+          let prefixValue = nodes[prefixIndex].literalStringValue,
+          let postfixValue = other.nodes[postfixIndex].literalStringValue
+    else { return }
+
+    // Replace the prefix node with a coalesced version of the two
+    nodes[prefixIndex] = .quotedLiteral(prefixValue + postfixValue)
+    
+    // Remove the postfix node and fix up any parent concatenations
+    other.nodes.remove(at: postfixIndex)
+    var i = postfixIndex - 1
+  Loop:
+    while i >= 0 {
+      switch other.nodes[i] {
+      case .concatenation(let children):
+        other.nodes[i] = .concatenation(.init(repeating: .empty, count: children.count - 1))
+        break Loop
+      case .limitCaptureNesting, .ignoreCapturesInTypedOutput:
+        other.nodes.remove(at: i)
+        i -= 1
+      default:
+        break Loop
+      }
+    }
+  }
 }

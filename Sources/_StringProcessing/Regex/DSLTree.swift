@@ -514,6 +514,16 @@ extension DSLTree.Atom {
   }
 }
 
+extension DSLTree.Node {
+  var literalStringValue: String? {
+    switch self {
+    case .atom(let a):   return a.literalCharacterValue.map(String.init)
+    case .quotedLiteral(let s): return s
+    default: return nil
+    }
+  }
+}
+
 extension DSLTree {
   struct Options {
     // TBD

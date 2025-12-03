@@ -36,7 +36,7 @@ public struct _RegexFactory {
     _ left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
-    left.regex.concatenating(right.regex.program.list.nodes)
+    left.regex.concatenating(right.regex.program.list)
   }
   
   @available(SwiftStdlib 5.7, *)

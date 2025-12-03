@@ -223,10 +223,6 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-//  var root: DSLTree.Node {
-//    program.tree.root
-//  }
-
   var list: DSLList {
     program.list
   }
@@ -245,23 +241,34 @@ extension Regex {
     return Regex<T>(list: list)
   }
   
-  func appending<T>(contentsOf node: some Collection<DSLTree.Node>) -> Regex<T> {
+  func appending<T>(contentsOf node: [DSLTree.Node]) -> Regex<T> {
     var list = program.list
     list.append(contentsOf: node)
     return Regex<T>(list: list)
   }
   
-  func concatenating<T>(_ other: some Collection<DSLTree.Node>) -> Regex<T> {
-    var nodes = program.list.nodes
-    switch nodes[0] {
-    case .concatenation(let children):
-      nodes[0] = .concatenation(Array(repeating: TEMP_FAKE_NODE, count: children.count + 1))
-      nodes.append(contentsOf: other)
-    default:
-      nodes.insert(.concatenation(Array(repeating: TEMP_FAKE_NODE, count: 2)), at: 0)
-      nodes.append(contentsOf: other)
+  func concatenating<T>(_ other: DSLList) -> Regex<T> {
+    // TODO: Quick check to see if these copies are necessary?
+    var list = program.list
+    var other = other
+    list.coalesce(withFirstAtomIn: &other)
+    
+    // Sometimes coalescing consumes all of `other`
+    guard !other.nodes.isEmpty else {
+      return Regex<T>(list: list)
     }
-    return Regex<T>(list: DSLList(nodes))
+    
+    // Use an existing concatenation if it's already the root;
+    // otherwise, embed self and other in a new concatenation root.
+    switch list.nodes[0] {
+    case .concatenation(let children):
+      list.nodes[0] = .concatenation(Array(repeating: TEMP_FAKE_NODE, count: children.count + 1))
+      list.nodes.append(contentsOf: other.nodes)
+    default:
+      list.nodes.insert(.concatenation(Array(repeating: TEMP_FAKE_NODE, count: 2)), at: 0)
+      list.nodes.append(contentsOf: other.nodes)
+    }
+    return Regex<T>(list: list)
   }
   
   func alternating<T>(with other: some Collection<DSLTree.Node>) -> Regex<T> {
