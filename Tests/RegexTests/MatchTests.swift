@@ -2952,4 +2952,11 @@ extension RegexTests {
       }
     }
   }
+  
+  func testIssue677() throws {
+    // Original report from https://github.com/swiftlang/swift-experimental-string-processing/issues/677
+    let regex = #/(?i)tests?/#
+    XCTAssertNotNil("testS".wholeMatch(of: regex))
+    XCTAssertNotNil("tesTs".wholeMatch(of: regex))
+  }
 }
