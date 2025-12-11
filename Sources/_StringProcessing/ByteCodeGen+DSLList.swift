@@ -351,6 +351,59 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
+  func _guaranteesForwardProgressImpl(_ list: ArraySlice<DSLTree.Node>, position: inout Int) -> Bool {
+    guard position < list.endIndex else { return false }
+    let node = list[position]
+    position += 1
+    switch node {
+    case .orderedChoice(let children):
+      return (0..<children.count).allSatisfy { _ in
+        _guaranteesForwardProgressImpl(list, position: &position)
+      }
+    case .concatenation(let children):
+      return (0..<children.count).contains { _ in
+        _guaranteesForwardProgressImpl(list, position: &position)
+      }
+    case .capture(_, _, _, _):
+      return _guaranteesForwardProgressImpl(list, position: &position)
+    case .nonCapturingGroup(let kind, _):
+      switch kind.ast {
+      case .lookahead, .negativeLookahead, .lookbehind, .negativeLookbehind:
+        return false
+      default:
+        return _guaranteesForwardProgressImpl(list, position: &position)
+      }
+    case .atom(let atom):
+      switch atom {
+      case .changeMatchingOptions, .assertion: return false
+        // Captures may be nil so backreferences may be zero length matches
+      case .backreference: return false
+      default: return true
+      }
+    case .trivia, .empty:
+      return false
+    case .quotedLiteral(let string):
+      return !string.isEmpty
+    case .consumer, .matcher:
+      // Allow zero width consumers and matchers
+      return false
+    case .customCharacterClass(let ccc):
+      return ccc.guaranteesForwardProgress
+    case .quantification(let amount, _, _):
+      let (atLeast, _) = amount.ast.bounds
+      guard let atLeast, atLeast > 0 else { return false }
+      return _guaranteesForwardProgressImpl(list, position: &position)
+    case .limitCaptureNesting, .ignoreCapturesInTypedOutput:
+      return _guaranteesForwardProgressImpl(list, position: &position)
+    default: return false
+    }
+  }
+  
+  func guaranteesForwardProgress(_ list: ArraySlice<DSLTree.Node>) -> Bool {
+    var pos = list.startIndex
+    return _guaranteesForwardProgressImpl(list, position: &pos)
+  }
+  
   mutating func emitQuantification(
     _ amount: AST.Quantification.Amount,
     _ kind: DSLTree.QuantificationKind,
@@ -526,8 +579,8 @@ fileprivate extension Compiler.ByteCodeGen {
     let startPosition: PositionRegister?
     // FIXME: forward progress check?!
     let emitPositionChecking =
-      (!optimizationsEnabled || (list.first?.guaranteesForwardProgress != true)) &&
-      maxExtraTrips == nil
+      (!optimizationsEnabled || !guaranteesForwardProgress(list))
+        && maxExtraTrips == nil
 
     if emitPositionChecking {
       startPosition = builder.makePositionRegister()
