@@ -13,9 +13,12 @@ import ArgumentParser
 import _RegexParser
 import _StringProcessing
 
-@main
 @available(SwiftStdlib 5.8, *)
-struct RegexTester: ParsableCommand {
+struct Tester: ParsableCommand {
+  static var configuration: CommandConfiguration {
+    .init(subcommands: [CompileOnceTest.self])
+  }
+  
   typealias MatchFunctionType = (String) throws -> Regex<AnyRegexOutput>.Match?
 
   @Argument(help: "The regex pattern to test.")

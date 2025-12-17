@@ -23,6 +23,7 @@ extension BenchmarkRunner {
     // self.addHTML() // Disabled due to \b being unusably slow
     self.addEmail()
     self.addCustomCharacterClasses()
+    self.addDna()
     self.addBuiltinCC()
     self.addUnicode()
     self.addLiteralSearch()
@@ -32,6 +33,10 @@ extension BenchmarkRunner {
 
     self.addURLWithWordBoundaries()
     self.addFSPathsRegex()
+
+    // Register community benchmarks
+    self.addCommunityBenchmark_sspringerURL()
+
     // -- end of registrations --
   }
 }
