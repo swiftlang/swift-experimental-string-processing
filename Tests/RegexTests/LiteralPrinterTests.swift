@@ -41,6 +41,9 @@ extension RegexTests {
   }
   
   func testUnicodeEscapes() throws {
+    let regex0 = #/[a]\u0301/#
+    _literalTest(regex0, expected: #"[a]\u0301"#)
+    
     let regex = #/\r\n\t cafe\u{301} \u{1D11E}/#
     _literalTest(regex, expected: #"\r\n\t cafe\u0301 \U0001D11E"#)
   }
