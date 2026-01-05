@@ -21,7 +21,7 @@ extension Regex {
     var tupleElements: [Any.Type] = []
     var labels = ""
     
-    for capture in program.list.captureList.captures {
+    for capture in program.tree.captureList.captures {
       var captureType = capture.type
       var i = capture.optionalDepth
       
@@ -41,7 +41,7 @@ extension Regex {
     
     // If we have no captures, then our Regex must be Regex<Substring>.
     if tupleElements.count == 1 {
-      let wholeMatchType = program.list.wholeMatchType
+      let wholeMatchType = program.tree.root.wholeMatchType
       return (Output.self == wholeMatchType, wholeMatchType)
     }
     

@@ -36,8 +36,7 @@ extension Regex {
   @available(SwiftStdlib 6.0, *)
   public var _literalPattern: String? {
     var gen = LiteralPrinter(options: MatchingOptions())
-    var list = self.program.list.nodes[...]
-    try? gen.outputList(&list)
+    gen.outputNode(self.program.tree.root)
     return gen.canonicalLiteralString
   }
 }
@@ -84,159 +83,6 @@ fileprivate struct LiteralPrinter {
   mutating func saveInconvertible(_ node: DSLTree.Node) {
     segments.append(.inconvertible(node))
   }
-  
-  mutating func inconvertible(_ node: DSLTree.Node) throws {
-    segments.append(.inconvertible(node))
-    throw Incovertible.error
-  }
-}
-
-extension LiteralPrinter {
-  enum Incovertible: Error {
-    case error
-  }
-  
-  mutating func outputList(_ list: inout ArraySlice<DSLTree.Node>) throws {
-    guard let node = list.popFirst() else {
-      return
-    }
-    
-    switch node {
-    case let .orderedChoice(children):
-      try outputAlternation(&list, count: children.count)
-    case let .concatenation(children):
-      try outputConcatenation(&list, count: children.count)
-      
-    case let .capture(name, nil, _, nil):
-      options.beginScope()
-      defer { options.endScope() }
-      try outputCapture(&list, name: name)
-    case .capture:
-      // Captures that use a reference or a transform are unsupported
-      try inconvertible(node)
-      return
-      
-    case let .nonCapturingGroup(kind, _):
-      guard let kindPattern = kind._patternString else {
-        try inconvertible(node)
-        return
-      }
-      options.beginScope()
-      defer { options.endScope() }
-      
-      output(kindPattern)
-      if case .changeMatchingOptions(let optionSequence) = kind.ast {
-        options.apply(optionSequence)
-      }
-      try outputList(&list)
-      output(")")
-      
-    case .ignoreCapturesInTypedOutput(_),
-      .limitCaptureNesting(_):
-      try outputList(&list)
-    case let .quantification(amount, kind, _):
-      try outputQuantification(&list, amount: amount, kind: kind)
-    case let .customCharacterClass(charClass):
-      outputCustomCharacterClass(charClass)
-    case let .atom(atom):
-      outputAtom(atom)
-    case let .quotedLiteral(literal):
-      output(prepareQuotedLiteral(literal))
-      
-    case .trivia(_):
-      // TODO: Include trivia?
-      return
-    case .empty:
-      return
-      
-    case .conditional, .absentFunction, .consumer, .matcher, .characterPredicate:
-      saveInconvertible(node)
-    }
-  }
-  
-  mutating func outputAlternation(_ list: inout ArraySlice<DSLTree.Node>, count: Int) throws {
-    for i in 0..<count {
-      if i != 0 {
-        output("|")
-      }
-      try outputList(&list)
-    }
-  }
-  
-  mutating func outputConcatenation(_ list: inout ArraySlice<DSLTree.Node>, count: Int) throws {
-    for _ in 0..<count {
-      try outputList(&list)
-    }
-  }
-  
-  mutating func outputCapture(_ list: inout ArraySlice<DSLTree.Node>, name: String?) throws {
-    if let name {
-      output("(?<\(name)>")
-    } else {
-      output("(")
-    }
-    try outputList(&list)
-    output(")")
-  }
-  
-  func requiresGrouping(_ list: ArraySlice<DSLTree.Node>) -> Bool {
-    guard let node = list.first else { return false } // malformed?
-    switch node {
-    case .concatenation(let children):
-      switch children.count {
-      case 0:
-        return false
-      case 1:
-        return requiresGrouping(list.dropFirst())
-      default:
-        return true
-      }
-      
-    case .quotedLiteral(let literal):
-      return prepareQuotedLiteral(literal).count > 1
-      
-    default:
-      return false
-    }
-  }
-
-  mutating func outputQuantification(
-    _ list: inout ArraySlice<DSLTree.Node>,
-    amount: DSLTree._AST.QuantificationAmount,
-    kind: DSLTree.QuantificationKind
-  ) throws {
-    // RegexBuilder regexes can have children that need
-    if requiresGrouping(list) {
-      output("(?:")
-      try outputList(&list)
-      output(")")
-    } else {
-      try outputList(&list)
-    }
-
-    switch amount.ast {
-    case .zeroOrMore:
-      output("*")
-    case .oneOrMore:
-      output("+")
-    case .zeroOrOne:
-      output("?")
-    case let .exactly(n):
-      output("{\(n.value!)}")
-    case let .nOrMore(n):
-      output("{\(n.value!),}")
-    case let .upToN(n):
-      output("{,\(n.value!)}")
-    case let .range(low, high):
-      output("{\(low.value!),\(high.value!)}")
-    #if RESILIENT_LIBRARIES
-    @unknown default:
-      fatalError()
-    #endif
-    }
-    
-    outputQuantificationKind(kind)
-  }
 }
 
 extension LiteralPrinter {
@@ -270,9 +116,11 @@ extension LiteralPrinter {
       outputNode(child)
       output(")")
       
-    case let .ignoreCapturesInTypedOutput(child),
-         let .limitCaptureNesting(child):
+    case let .ignoreCapturesInTypedOutput(child):
       outputNode(child)
+    case .convertedRegexLiteral(let node, _):
+      outputNode(node)
+
     case let .quantification(amount, kind, node):
       outputQuantification(amount, kind, node)
     case let .customCharacterClass(charClass):
@@ -378,16 +226,13 @@ extension LiteralPrinter {
   }
   
   mutating func outputQuantificationKind(_ kind: DSLTree.QuantificationKind) {
-    guard let astKind = kind.quantificationKind?.ast else {
+    switch kind {
+    case .`default`:
       // We can treat this as if the current default had been given explicity.
       outputQuantificationKind(
         .explicit(.init(ast: options.defaultQuantificationKind)))
-      return
-    }
-    
-    if kind.isExplicit {
-      // Explicitly provided modifiers need to match the current option state.
-      switch astKind {
+    case let .explicit(kind):
+      switch kind.ast {
       case .eager:
         output(options.isReluctantByDefault ? "?" : "")
       case .reluctant:
@@ -399,9 +244,9 @@ extension LiteralPrinter {
         fatalError()
       #endif
       }
-    } else {
+    case let .syntax(kind):
       // Syntactically-specified quantification modifiers can stay as-is.
-      switch astKind {
+      switch kind.ast {
       case .eager:
         output("")
       case .reluctant:
@@ -609,15 +454,7 @@ extension String {
   }
   
   func escapingConfusableCharacters() -> String {
-    reduce(into: "") { result, ch in
-      for scalar in ch.unicodeScalars {
-        if scalar.isPrintableASCII {
-          result.append(Character(scalar))
-        } else {
-          result.append(scalar.escapedString)
-        }
-      }
-    }
+    lazy.map(\.escapingConfusable).joined()
   }
 }
 

@@ -26,9 +26,9 @@ public struct _RegexFactory {
     _ child: some RegexComponent
   ) -> Regex<Substring> {
     // Don't wrap `child` again if it's a leaf node.
-    child.regex.list.hasChildren
-      ? child.regex.prepending(.ignoreCapturesInTypedOutput(TEMP_FAKE_NODE)) as Regex<Substring>
-      : .init(list: child.regex.program.list)
+    child.regex.root.hasChildNodes
+      ? .init(node: .ignoreCapturesInTypedOutput(child.regex.root))
+      : .init(node: child.regex.root)
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -36,7 +36,7 @@ public struct _RegexFactory {
     _ left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
-    left.regex.concatenating(right.regex.program.list)
+    .init(node: left.regex.root.appending(right.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -44,7 +44,7 @@ public struct _RegexFactory {
     _ left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
-    left.regex.alternating(with: right.regex.program.list.nodes)
+    .init(node: left.regex.root.appendingAlternationCase(right.regex.root))
   }
   
   @_spi(RegexBuilder)
@@ -107,7 +107,7 @@ public struct _RegexFactory {
     _ behavior: RegexRepetitionBehavior? = nil
   ) -> Regex<Output> {
     let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-    return component.regex.prepending(.quantification(.zeroOrOne, kind, TEMP_FAKE_NODE))
+    return .init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -116,7 +116,7 @@ public struct _RegexFactory {
     _ behavior: RegexRepetitionBehavior? = nil
   ) -> Regex<Output> {
     let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-    return component.regex.prepending(.quantification(.zeroOrMore, kind, TEMP_FAKE_NODE))
+    return .init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -125,7 +125,7 @@ public struct _RegexFactory {
     _ behavior: RegexRepetitionBehavior? = nil
   ) -> Regex<Output> {
     let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-    return component.regex.prepending(.quantification(.oneOrMore, kind, TEMP_FAKE_NODE))
+    return .init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -133,7 +133,7 @@ public struct _RegexFactory {
     _ count: Int,
     _ component: some RegexComponent
   ) -> Regex<Output> {
-    component.regex.prepending(.quantification(.exactly(count), .default, TEMP_FAKE_NODE))
+    .init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -142,14 +142,14 @@ public struct _RegexFactory {
     _ behavior: RegexRepetitionBehavior?,
     _ component: some RegexComponent
   ) -> Regex<Output> {
-    component.regex.prepending(.repeating(range, behavior, TEMP_FAKE_NODE))
+    .init(node: .repeating(range, behavior, component.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
   public func atomicNonCapturing<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
-    component.regex.prepending(.nonCapturingGroup(.atomicNonCapturing, TEMP_FAKE_NODE))
+    .init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
   }
   
   @_spi(RegexBuilder)
@@ -157,7 +157,7 @@ public struct _RegexFactory {
   public func lookaheadNonCapturing<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
-    component.regex.prepending(.nonCapturingGroup(.lookahead, TEMP_FAKE_NODE))
+    .init(node: .nonCapturingGroup(.lookahead, component.regex.root))
   }
   
   @_spi(RegexBuilder)
@@ -165,21 +165,21 @@ public struct _RegexFactory {
   public func negativeLookaheadNonCapturing<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
-    component.regex.prepending(.nonCapturingGroup(.negativeLookahead, TEMP_FAKE_NODE))
+    .init(node: .nonCapturingGroup(.negativeLookahead, component.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
   public func orderedChoice<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
-    component.regex.prepending(.orderedChoice([TEMP_FAKE_NODE]))
+    .init(node: .orderedChoice([component.regex.root]))
   }
   
   @available(SwiftStdlib 5.7, *)
   public func capture<Output>(
-    _ component: some RegexComponent
+    _ r: some RegexComponent
   ) -> Regex<Output> {
-    component.regex.prepending(.capture(TEMP_FAKE_NODE))
+    .init(node: .capture(r.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -187,7 +187,10 @@ public struct _RegexFactory {
     _ component: some RegexComponent,
     _ reference: Int
   ) -> Regex<Output> {
-    component.regex.prepending(.capture(reference: ReferenceID(reference), TEMP_FAKE_NODE))
+    .init(node: .capture(
+      reference: ReferenceID(reference),
+      component.regex.root
+    ))
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -196,12 +199,11 @@ public struct _RegexFactory {
     _ reference: Int? = nil,
     _ transform: @escaping (W) throws -> NewCapture
   ) -> Regex<Output> {
-    component.regex.prepending(
-      .capture(
-        reference: reference.map { ReferenceID($0) },
-        TEMP_FAKE_NODE,
-        CaptureTransform(transform)
-      ))
+    .init(node: .capture(
+      reference: reference.map { ReferenceID($0) },
+      component.regex.root,
+      CaptureTransform(transform)
+    ))
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -210,11 +212,10 @@ public struct _RegexFactory {
     _ reference: Int? = nil,
     _ transform: @escaping (W) throws -> NewCapture?
   ) -> Regex<Output> {
-    component.regex.prepending(
-      .capture(
-        reference: reference.map { ReferenceID($0) },
-        TEMP_FAKE_NODE,
-        CaptureTransform(transform)
-      ))
+    .init(node: .capture(
+      reference: reference.map { ReferenceID($0) },
+      component.regex.root,
+      CaptureTransform(transform)
+    ))
   }
 }
