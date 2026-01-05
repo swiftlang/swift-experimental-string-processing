@@ -265,7 +265,7 @@ extension Regex {
   /// - Parameter name: The name to look for among the regular expression's
   ///   capture groups. Capture group names are case sensitive.
   public func contains(captureNamed name: String) -> Bool {
-    program.list.captureList.captures.contains(where: {
+    program.tree.captureList.captures.contains(where: {
       $0.name == name
     })
   }
@@ -284,7 +284,7 @@ extension Regex where Output == AnyRegexOutput {
   /// - Parameter regex: A regular expression to convert to use a dynamic
   ///   capture list.
   public init<OtherOutput>(_ regex: Regex<OtherOutput>) {
-    self.init(list: regex.list)
+    self.init(node: regex.root)
   }
 }
 
@@ -331,7 +331,7 @@ extension Regex {
     _ regex: Regex<AnyRegexOutput>,
     as outputType: Output.Type = Output.self
   ) {
-    self.init(list: regex.list)
+    self.init(node: regex.root)
     
     guard _verifyType().0 else {
       return nil
