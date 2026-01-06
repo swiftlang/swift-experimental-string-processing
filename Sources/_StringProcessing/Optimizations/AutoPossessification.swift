@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
+
 extension DSLList {
   private func _requiredAtomImpl(
     _ position: inout Int,
