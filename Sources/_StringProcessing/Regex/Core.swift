@@ -11,6 +11,8 @@
 
 internal import _RegexParser
 
+let TEMP_FAKE_NODE = DSLTree.Node.empty
+
 /// A type that represents a regular expression.
 ///
 /// You can use types that conform to `RegexComponent` as parameters to string
@@ -91,7 +93,10 @@ public struct Regex<Output>: RegexComponent {
   let program: Program
 
   var hasCapture: Bool {
-    program.tree.hasCapture
+    program.list.hasCapture
+  }
+  var hasChildren: Bool {
+    program.list.hasChildren
   }
 
   init(ast: AST) {
@@ -148,7 +153,7 @@ extension Regex {
     /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
     /// and we should have a separate type that handled both global options and,
     /// likely, compilation/caching.
-    let tree: DSLTree
+    var list: DSLList
 
     /// OptionSet of compiler options for testing purposes
     fileprivate var compileOptions: _CompileOptions = .default
@@ -178,7 +183,7 @@ extension Regex {
       }
       
       // Compile the DSLTree into a lowered program and store it atomically.
-      let compiledProgram = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
+      let compiledProgram = try! Compiler(tree: list, compileOptions: compileOptions).emit()
       let storedNewProgram = _stdlib_atomicInitializeARCRef(
         object: _loweredProgramStoragePtr,
         desired: ProgramBox(compiledProgram))
@@ -191,11 +196,15 @@ extension Regex {
     }
 
     init(ast: AST) {
-      self.tree = ast.dslTree
+      self.list = DSLList(ast: ast)
     }
 
     init(tree: DSLTree) {
-      self.tree = tree
+      self.list = DSLList(tree: tree)
+    }
+
+    init(list: DSLList) {
+      self.list = list
     }
   }
   
@@ -214,12 +223,77 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  var root: DSLTree.Node {
-    program.tree.root
+  var list: DSLList {
+    program.list
+  }
+  
+  init(node: DSLTree.Node) {
+    self.program = Program(list: .init(node))
   }
 
-  init(node: DSLTree.Node) {
-    self.program = Program(tree: .init(node))
+  init(list: DSLList) {
+    self.program = Program(list: list)
+  }
+  
+  func appending<T>(_ node: DSLTree.Node) -> Regex<T> {
+    var list = program.list
+    list.append(node)
+    return Regex<T>(list: list)
+  }
+  
+  func appending<T>(contentsOf node: [DSLTree.Node]) -> Regex<T> {
+    var list = program.list
+    list.append(contentsOf: node)
+    return Regex<T>(list: list)
+  }
+  
+  func concatenating<T>(_ other: DSLList) -> Regex<T> {
+    // TODO: Quick check to see if these copies are necessary?
+    var list = program.list
+    var other = other
+    list.coalesce(withFirstAtomIn: &other)
+    
+    // Sometimes coalescing consumes all of `other`
+    guard !other.nodes.isEmpty else {
+      return Regex<T>(list: list)
+    }
+    
+    // Use an existing concatenation if it's already the root;
+    // otherwise, embed self and other in a new concatenation root.
+    switch list.nodes[0] {
+    case .concatenation(let children):
+      list.nodes[0] = .concatenation(Array(repeating: TEMP_FAKE_NODE, count: children.count + 1))
+      list.nodes.append(contentsOf: other.nodes)
+    default:
+      list.nodes.insert(.concatenation(Array(repeating: TEMP_FAKE_NODE, count: 2)), at: 0)
+      list.nodes.append(contentsOf: other.nodes)
+    }
+    return Regex<T>(list: list)
+  }
+  
+  func alternating<T>(with other: some Collection<DSLTree.Node>) -> Regex<T> {
+    var nodes = program.list.nodes
+    switch nodes[0] {
+    case .orderedChoice(let children):
+      nodes[0] = .orderedChoice(Array(repeating: TEMP_FAKE_NODE, count: children.count + 1))
+      nodes.append(contentsOf: other)
+    default:
+      nodes.insert(.orderedChoice(Array(repeating: TEMP_FAKE_NODE, count: 2)), at: 0)
+      nodes.append(contentsOf: other)
+    }
+    return Regex<T>(list: DSLList(nodes))
+  }
+  
+  func prepending<T>(_ node: DSLTree.Node) -> Regex<T> {
+    var list = program.list
+    list.prepend(node)
+    return Regex<T>(list: list)
+  }
+  
+  func prepending<T>(contentsOf node: some Collection<DSLTree.Node>) -> Regex<T> {
+    var list = program.list
+    list.prepend(contentsOf: node)
+    return Regex<T>(list: list)
   }
 }
 
@@ -242,7 +316,7 @@ extension Regex {
         return true
       case .recompile:
         let _ = try Compiler(
-          tree: program.tree,
+          tree: program.list,
           compileOptions: program.compileOptions).emit()
         return true
       }

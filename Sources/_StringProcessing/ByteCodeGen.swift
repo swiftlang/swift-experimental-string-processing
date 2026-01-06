@@ -23,7 +23,7 @@ extension Compiler {
     var hasEmittedFirstMatchableAtom = false
 
     private let compileOptions: _CompileOptions
-    fileprivate var optimizationsEnabled: Bool {
+    internal var optimizationsEnabled: Bool {
       !compileOptions.contains(.disableOptimizations)
     }
 
@@ -61,7 +61,7 @@ extension Compiler.ByteCodeGen {
   }
 }
 
-fileprivate extension Compiler.ByteCodeGen {
+extension Compiler.ByteCodeGen {
   mutating func emitAtom(_ a: DSLTree.Atom) throws {
     defer {
       if a.isMatchable {
@@ -506,15 +506,7 @@ fileprivate extension Compiler.ByteCodeGen {
     _ kind: DSLTree.QuantificationKind,
     _ child: DSLTree.Node
   ) throws {
-    let updatedKind: AST.Quantification.Kind
-    switch kind {
-    case .explicit(let kind):
-      updatedKind = kind.ast
-    case .syntax(let kind):
-      updatedKind = kind.ast.applying(options)
-    case .default:
-      updatedKind = options.defaultQuantificationKind
-    }
+    let updatedKind = kind.applying(options: options)
 
     let (low, high) = amount.bounds
     guard let low = low else {
@@ -809,7 +801,7 @@ fileprivate extension Compiler.ByteCodeGen {
       default:
         return false
       }
-    case .convertedRegexLiteral(let node, _):
+    case .limitCaptureNesting(let node):
       return tryEmitFastQuant(node, kind, minTrips, maxExtraTrips)
     case .nonCapturingGroup(let groupKind, let node):
       // .nonCapture nonCapturingGroups are ignored during compilation
@@ -1203,7 +1195,7 @@ fileprivate extension Compiler.ByteCodeGen {
       switch node {
       case .concatenation(let ch):
         return ch.flatMap(flatten)
-      case .convertedRegexLiteral(let n, _), .ignoreCapturesInTypedOutput(let n):
+      case .ignoreCapturesInTypedOutput(let n), .limitCaptureNesting(let n):
         return flatten(n)
       default:
         return [node]
@@ -1283,6 +1275,9 @@ fileprivate extension Compiler.ByteCodeGen {
     case let .ignoreCapturesInTypedOutput(child):
       try emitNode(child)
       
+    case let .limitCaptureNesting(child):
+      return try emitNode(child)
+      
     case .conditional:
       throw Unsupported("Conditionals")
 
@@ -1305,9 +1300,6 @@ fileprivate extension Compiler.ByteCodeGen {
 
     case let .quotedLiteral(s):
       emitQuotedLiteral(s)
-
-    case let .convertedRegexLiteral(n, _):
-      return try emitNode(n)
 
     case .absentFunction:
       throw Unsupported("absent function")
@@ -1359,8 +1351,6 @@ extension DSLTree.Node {
       return false
     case .quotedLiteral(let string):
       return !string.isEmpty
-    case .convertedRegexLiteral(let node, _):
-      return node.guaranteesForwardProgress
     case .consumer, .matcher:
       // Allow zero width consumers and matchers
      return false
@@ -1369,6 +1359,8 @@ extension DSLTree.Node {
     case .quantification(let amount, _, let child):
       let (atLeast, _) = amount.ast.bounds
       return atLeast ?? 0 > 0 && child.guaranteesForwardProgress
+    case .limitCaptureNesting(let node), .ignoreCapturesInTypedOutput(let node):
+      return node.guaranteesForwardProgress
     default: return false
     }
   }
