@@ -157,7 +157,7 @@ func captureTest(
   }
 
   // Ensure DSLTree preserves literal captures
-  var dslCapList = ast.dslTree.captureList
+  var dslCapList = DSLList(ast: ast).captureList
   // Peel off the whole match element.
   dslCapList.captures.removeFirst()
   guard dslCapList == capList else {

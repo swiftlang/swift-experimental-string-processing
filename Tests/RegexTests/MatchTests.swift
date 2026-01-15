@@ -26,14 +26,16 @@ struct MatchError: Error {
 @available(SwiftStdlib 6.0, *)
 func _roundTripLiteral(
   _ regexStr: String,
-  syntax: SyntaxOptions
+  syntax: SyntaxOptions,
+  file: StaticString = #file,
+  line: UInt = #line
 ) throws -> Regex<AnyRegexOutput>? {
   guard let pattern = try Regex(regexStr, syntax: syntax)._literalPattern else {
     return nil
   }
   
   let remadeRegex = try Regex(pattern)
-  XCTAssertEqual(pattern, remadeRegex._literalPattern)
+  XCTAssertEqual(pattern, remadeRegex._literalPattern, file: file, line: line)
   return remadeRegex
 }
 
@@ -42,11 +44,13 @@ func _firstMatch(
   input: String,
   validateOptimizations: Bool,
   semanticLevel: RegexSemanticLevel = .graphemeCluster,
-  syntax: SyntaxOptions = .traditional
+  syntax: SyntaxOptions = .traditional,
+  file: StaticString = #file,
+  line: UInt = #line
 ) throws -> (String, [String?])? {
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
-
+  
   func validateSubstring(_ substringInput: Substring) throws {
     // Sometimes the characters we add to a substring merge with existing
     // string members. This messes up cross-validation, so skip the test.
@@ -89,14 +93,14 @@ func _firstMatch(
   }
 
   if #available(SwiftStdlib 6.0, *) {
-    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
+    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax, file: file, line: line)
     let roundTripResult = try? roundTripRegex?
       .matchingSemantics(semanticLevel)
       .firstMatch(in: input)?[0]
       .substring
     switch (result?[0].substring, roundTripResult) {
     case let (match?, rtMatch?):
-      XCTAssertEqual(match, rtMatch)
+      XCTAssertEqual(match, rtMatch, file: file, line: line)
     case (nil, nil):
       break // okay
     case let (match?, _):
@@ -105,14 +109,18 @@ func _firstMatch(
         For input '\(input)'
         Original: '\(regexStr)'
         _literalPattern: '\(roundTripRegex?._literalPattern ?? "<no pattern>")'
-        """)
+        """,
+        file: file,
+        line: line)
     case let (_, rtMatch?):
       XCTFail("""
         Incorrectly matched as '\(rtMatch)'
         For input '\(input)'
         Original: '\(regexStr)'
         _literalPattern: '\(roundTripRegex!._literalPattern!)'
-        """)
+        """,
+        file: file,
+        line: line)
     }
   }
 
@@ -184,7 +192,8 @@ func flatCaptureTest(
         input: test,
         validateOptimizations: validateOptimizations,
         semanticLevel: semanticLevel,
-        syntax: syntax
+        syntax: syntax,
+        file: file, line: line
       ) else {
         if expect == nil {
           continue
@@ -303,7 +312,8 @@ func firstMatchTest(
       input: input,
       validateOptimizations: validateOptimizations,
       semanticLevel: semanticLevel,
-      syntax: syntax)?.0
+      syntax: syntax,
+      file: file, line: line)?.0
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
@@ -709,6 +719,31 @@ extension RegexTests {
       ("baaabc", nil),
       ("baaaaabc", nil),
       ("baaaaaaaabc", nil))
+
+    // Auto-possessification tests:
+    // - case sensitive
+    firstMatchTests(
+      "a+A",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", nil),
+      ("aaAaa", "aaA"))
+    // - case insensitive
+    firstMatchTests(
+      "(?i:a+A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "(?i)a+A",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "a+(?i:A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
+    firstMatchTests(
+      "a+(?:(?i)A)",
+      ("aaaaA", "aaaaA"),
+      ("aaaaa", "aaaaa"))
 
     // XFAIL'd possessive tests
     firstMatchTests(
