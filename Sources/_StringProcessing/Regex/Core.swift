@@ -108,6 +108,7 @@ public struct Regex<Output>: RegexComponent {
   }
 
   // Compiler interface. Do not change independently.
+  @_effects(readnone)
   @usableFromInline
   init(_regexString pattern: String) {
     self.init(ast: try! parse(pattern, .traditional))
