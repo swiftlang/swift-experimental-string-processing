@@ -2853,6 +2853,9 @@ extension RegexTests {
     expectCompletion(regex: #"(a?)*"#, in: "aa")
     expectCompletion(regex: #"(a{,4})*"#, in: "aa")
     expectCompletion(regex: #"((|)+)*"#, in: "aa")
+      
+    expectCompletion(regex: #"(?:A*(?:b|c*))*"#, in: "ABC")
+    expectCompletion(regex: #"^(?:(?:[^/]*(?:/|$))*)(?:[^/]*)$"#, in: "Sources/main.swift")
   }
 
   func testQuantifyOptimization() throws {

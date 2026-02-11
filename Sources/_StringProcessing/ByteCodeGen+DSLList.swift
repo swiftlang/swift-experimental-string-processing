@@ -391,8 +391,13 @@ fileprivate extension Compiler.ByteCodeGen {
       return ccc.guaranteesForwardProgress
     case .quantification(let amount, _, _):
       let (atLeast, _) = amount.ast.bounds
-      guard let atLeast, atLeast > 0 else { return false }
-      return _guaranteesForwardProgressImpl(list, position: &position)
+      if let atLeast, atLeast > 0 {
+        return _guaranteesForwardProgressImpl(list, position: &position)
+      } else {
+        list.skipNode(&position)
+        position += 1
+        return false
+      }
     case .limitCaptureNesting, .ignoreCapturesInTypedOutput:
       return _guaranteesForwardProgressImpl(list, position: &position)
     default: return false
