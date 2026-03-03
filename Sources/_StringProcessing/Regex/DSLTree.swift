@@ -25,26 +25,26 @@ extension DSLTree {
     /// Matches each node in order.
     ///
     ///     ... | ... | ...
-    case orderedChoice([Node])
+    case orderedChoice(Int)
 
     /// Match each node in sequence.
     ///
     ///     ... ...
-    case concatenation([Node])
+    case concatenation(Int)
 
     /// Captures the result of a subpattern.
     ///
     ///     (...), (?<name>...)
     case capture(
-      name: String? = nil, reference: ReferenceID? = nil, Node,
+      name: String? = nil, reference: ReferenceID? = nil,
       CaptureTransform? = nil)
 
     /// Matches a noncapturing subpattern.
-    case nonCapturingGroup(_AST.GroupKind, Node)
+    case nonCapturingGroup(_AST.GroupKind)
 
     /// Marks all captures in a subpattern as ignored in strongly-typed output.
-    case ignoreCapturesInTypedOutput(Node)
-    case limitCaptureNesting(Node)
+    case ignoreCapturesInTypedOutput
+    case limitCaptureNesting
 
     // TODO: Consider splitting off grouped conditions, or have
     // our own kind
@@ -53,13 +53,11 @@ extension DSLTree {
     ///
     ///     (?(cond) true-branch | false-branch)
     ///
-    case conditional(
-      _AST.ConditionKind, Node, Node)
+    case conditional(_AST.ConditionKind)
 
     case quantification(
       _AST.QuantificationAmount,
-      QuantificationKind,
-      Node)
+      QuantificationKind)
 
     case customCharacterClass(CustomCharacterClass)
 
@@ -384,125 +382,6 @@ typealias _CharacterPredicateInterface = (
 
  */
 
-extension DSLTree.Node {
-  /// Indicates whether this node has at least one child node (among other
-  /// associated values).
-  var hasChildNodes: Bool {
-    switch self {
-    case .trivia, .empty, .quotedLiteral,
-        .consumer, .matcher, .characterPredicate,
-        .customCharacterClass, .atom:
-      return false
-      
-    case .orderedChoice(let c), .concatenation(let c):
-      return !c.isEmpty
-      
-    case .capture, .nonCapturingGroup,
-        .quantification, .ignoreCapturesInTypedOutput, .limitCaptureNesting,
-        .conditional:
-      return true
-      
-    case .absentFunction(let abs):
-      return !abs.ast.children.isEmpty
-    }
-  }
-  
-  @_spi(RegexBuilder)
-  public var children: [DSLTree.Node] {
-    switch self {
-      
-    case let .orderedChoice(v):   return v
-    case let .concatenation(v):   return v
-      
-    case let .capture(_, _, n, _):        return [n]
-    case let .nonCapturingGroup(_, n):    return [n]
-    case let .quantification(_, _, n):    return [n]
-    case let .ignoreCapturesInTypedOutput(n): return [n]
-    case let .limitCaptureNesting(n):     return [n]
-      
-    case let .conditional(_, t, f): return [t,f]
-      
-    case .trivia, .empty, .quotedLiteral,
-        .consumer, .matcher, .characterPredicate,
-        .customCharacterClass, .atom:
-      return []
-      
-    case let .absentFunction(abs):
-      return abs.ast.children.map(\.dslTreeNode)
-    }
-  }
-  
-  public var coalescedChildren: [DSLTree.Node] {
-    // Before converting a concatenation in a tree to list form, we need to
-    // flatten out any nested concatenations, and coalesce any adjacent
-    // characters and scalars, forming quoted literals of their contents,
-    // over which we can perform grapheme breaking.
-
-    func flatten(_ node: DSLTree.Node) -> [DSLTree.Node] {
-      switch node {
-      case .concatenation(let ch):
-        return ch.flatMap(flatten)
-      case .ignoreCapturesInTypedOutput(let n), .limitCaptureNesting(let n):
-        return flatten(n)
-      default:
-        return [node]
-      }
-    }
-    
-    switch self {
-    case let .orderedChoice(v):   return v
-    case let .concatenation(v):
-      let children = v
-        .flatMap(flatten)
-        .coalescing(with: "", into: DSLTree.Node.quotedLiteral) { str, node in
-          switch node {
-          case .atom(let a):
-            guard let c = a.literalCharacterValue else { return false }
-            str.append(c)
-            return true
-          case .quotedLiteral(let q):
-            str += q
-            return true
-          case .trivia:
-            // Trivia can be completely ignored if we've already coalesced
-            // something.
-            return !str.isEmpty
-          default:
-            return false
-          }
-        }
-      return children
-
-    case let .capture(_, _, n, _):        return [n]
-    case let .nonCapturingGroup(_, n):    return [n]
-    case let .quantification(_, _, n):    return [n]
-    case let .ignoreCapturesInTypedOutput(n): return [n]
-    case let .limitCaptureNesting(n):     return [n]
-
-    case let .conditional(_, t, f): return [t,f]
-
-    case .trivia, .empty, .quotedLiteral,
-        .consumer, .matcher, .characterPredicate,
-        .customCharacterClass, .atom:
-      return []
-
-    case let .absentFunction(abs):
-      return abs.ast.children.map(\.dslTreeNode)
-    }
-  }
-}
-
-extension DSLTree.Node {
-  var astNode: AST.Node? {
-    nil
-  }
-
-  /// If this node is for a converted literal, look through it.
-  var lookingThroughConvertedLiteral: Self {
-    self
-  }
-}
-
 extension DSLTree.Atom {
   // Return the Character or promote a scalar to a Character
   var literalCharacterValue: Character? {
@@ -521,48 +400,6 @@ extension DSLTree.Node {
     case .quotedLiteral(let s): return s
     default: return nil
     }
-  }
-}
-
-extension DSLTree {
-  struct Options {
-    // TBD
-  }
-}
-
-extension DSLTree {
-  /// Indicates whether this DSLTree contains any capture groups.
-  var hasCapture: Bool {
-    root.hasCapture
-  }
-}
-extension DSLTree.Node {
-  /// Indicates whether this DSLTree node contains any capture groups.
-  var hasCapture: Bool {
-    switch self {
-    case .capture:
-      return true
-    default:
-      return self.children.any(\.hasCapture)
-    }
-  }
-}
-
-extension DSLTree.Node {
-  func appending(_ newNode: DSLTree.Node) -> DSLTree.Node {
-    if case .concatenation(let components) = self {
-      return .concatenation(components + [newNode])
-    }
-    return .concatenation([self, newNode])
-  }
-
-  func appendingAlternationCase(
-    _ newNode: DSLTree.Node
-  ) -> DSLTree.Node {
-    if case .orderedChoice(let components) = self {
-      return .orderedChoice(components + [newNode])
-    }
-    return .orderedChoice([self, newNode])
   }
 }
 
@@ -698,123 +535,40 @@ struct CaptureTransform: Hashable, CustomStringConvertible {
 
 extension CaptureList.Builder {
   mutating func addCaptures(
-    of node: DSLTree.Node, optionalNesting nesting: OptionalNesting, visibleInTypedOutput: Bool
-  ) {
-    switch node {
-    case let .orderedChoice(children):
-      for child in children {
-        addCaptures(of: child, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
-      }
-
-    case let .concatenation(children):
-      for child in children {
-        addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
-      }
-
-    case let .capture(name, _, child, transform):
-      captures.append(.init(
-        name: name,
-        type: transform?.resultType ?? child.wholeMatchType,
-        optionalDepth: nesting.depth, visibleInTypedOutput: visibleInTypedOutput, .fake))
-      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
-
-    case let .nonCapturingGroup(kind, child):
-      assert(!kind.ast.isCapturing)
-      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
-      
-    case let .ignoreCapturesInTypedOutput(child):
-      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: false)
-
-    case let .limitCaptureNesting(child):
-      addCaptures(of: child, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
-      
-    case let .conditional(cond, trueBranch, falseBranch):
-      switch cond.ast {
-      case .group(let g):
-        addCaptures(of: .group(g), optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
-      default:
-        break
-      }
-
-      addCaptures(of: trueBranch, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
-      addCaptures(of: falseBranch, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
-
-    case let .quantification(amount, _, child):
-      var optNesting = nesting
-      if amount.ast.bounds.atLeast == 0 {
-        optNesting = optNesting.addingOptional
-      }
-      addCaptures(of: child, optionalNesting: optNesting, visibleInTypedOutput: visibleInTypedOutput)
-
-    case let .absentFunction(abs):
-      switch abs.ast.kind {
-      case .expression(_, _, let child):
-        addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
-      case .clearer, .repeater, .stopper:
-        break
-      #if RESILIENT_LIBRARIES
-      @unknown default:
-        fatalError()
-      #endif
-      }
-
-//    case let .convertedRegexLiteral(n, _):
-//      // We disable nesting for converted AST trees, as literals do not nest
-//      // captures. This includes literals nested in a DSL.
-//      return addCaptures(of: n, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
-//
-    case .matcher:
-      break
-
-    case .customCharacterClass, .atom, .trivia, .empty,
-        .quotedLiteral, .consumer, .characterPredicate:
-      break
-    }
-  }
-
-  static func build(_ dsl: DSLTree) -> CaptureList {
-    var builder = Self()
-    builder.captures.append(
-      .init(type: dsl.root.wholeMatchType, optionalDepth: 0, visibleInTypedOutput: true, .fake))
-    builder.addCaptures(of: dsl.root, optionalNesting: .init(canNest: true), visibleInTypedOutput: true)
-    return builder.captures
-  }
-
-  mutating func addCaptures(
     in list: inout ArraySlice<DSLTree.Node>, optionalNesting nesting: OptionalNesting, visibleInTypedOutput: Bool
   ) {
     guard let node = list.popFirst() else { return }
     switch node {
-    case let .orderedChoice(children):
-      for _ in 0..<children.count {
+    case let .orderedChoice(count):
+      for _ in 0..<count {
         addCaptures(in: &list, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
       }
 
-    case let .concatenation(children):
-      for _ in 0..<children.count {
+    case let .concatenation(count):
+      for _ in 0..<count {
         addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       }
 
-    case let .capture(name, _, child, transform):
+    case let .capture(name, _, transform):
       captures.append(.init(
         name: name,
-        type: transform?.resultType ?? child.wholeMatchType,
+        type: transform?.resultType ?? list.wholeMatchType,
         optionalDepth: nesting.depth, visibleInTypedOutput: visibleInTypedOutput, .fake))
       addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
 
-    case .nonCapturingGroup(let kind, _):
+    case let .nonCapturingGroup(kind):
       assert(!kind.ast.isCapturing)
       addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
-
-    case .ignoreCapturesInTypedOutput(_):
+      
+    case .ignoreCapturesInTypedOutput:
       addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: false)
 
-    case .limitCaptureNesting(_):
+    case .limitCaptureNesting:
       addCaptures(in: &list, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
-
-    case let .conditional(cond, _, _):
+      
+    case let .conditional(cond):
       switch cond.ast {
-      case .group(_):
+      case .group:
         addCaptures(in: &list, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       default:
         break
@@ -823,7 +577,7 @@ extension CaptureList.Builder {
       addCaptures(in: &list, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
       addCaptures(in: &list, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
 
-    case let .quantification(amount, _, _):
+    case let .quantification(amount, _):
       var optNesting = nesting
       if amount.ast.bounds.atLeast == 0 {
         optNesting = optNesting.addingOptional
@@ -842,11 +596,6 @@ extension CaptureList.Builder {
       #endif
       }
 
-//    case let .convertedRegexLiteral(n, _):
-//      // We disable nesting for converted AST trees, as literals do not nest
-//      // captures. This includes literals nested in a DSL.
-//      return addCaptures(of: n, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
-//
     case .matcher:
       break
 
@@ -859,243 +608,38 @@ extension CaptureList.Builder {
   static func build(_ dsl: DSLList) -> CaptureList {
     var builder = Self()
     builder.captures.append(
-      .init(type: dsl.first.wholeMatchType, optionalDepth: 0, visibleInTypedOutput: true, .fake))
+      .init(type: dsl.wholeMatchType, optionalDepth: 0, visibleInTypedOutput: true, .fake))
     var nodes = dsl.nodes[...]
     builder.addCaptures(in: &nodes, optionalNesting: .init(canNest: true), visibleInTypedOutput: true)
     return builder.captures
   }
 }
 
-extension DSLTree.Node {
-  /// Returns true if the node is output-forwarding, i.e. not defining its own
-  /// output but forwarding its only child's output.
-  var isOutputForwarding: Bool {
-    switch self {
-    case .nonCapturingGroup, .ignoreCapturesInTypedOutput:
-      return true
-    case .orderedChoice, .concatenation, .capture,
-         .conditional, .quantification, .customCharacterClass, .atom,
-         .trivia, .empty, .quotedLiteral, .limitCaptureNesting,
-         .consumer, .absentFunction,
-         .characterPredicate, .matcher:
-      return false
-    }
-  }
-
-  /// Returns the output-defining node, peering through any output-forwarding
-  /// nodes.
-  var outputDefiningNode: Self {
-    if isOutputForwarding {
-      assert(children.count == 1)
-      return children[0].outputDefiningNode
-    }
-    return self
-  }
-
-  /// Returns the type of the whole match, i.e. `.0` element type of the output.
-  var wholeMatchType: Any.Type {
-    if case .matcher(let type, _) = outputDefiningNode {
-      return type
-    }
-    return Substring.self
-  }
-}
-
 extension DSLList {
-
-  /// Returns the output-defining node, peering through any output-forwarding
-  /// nodes.
-  var outputDefiningNode: DSLTree.Node? {
-    nodes.first(where: { !$0.isOutputForwarding })
-  }
-
   /// Returns the type of the whole match, i.e. `.0` element type of the output.
   var wholeMatchType: Any.Type {
-    if case .matcher(let type, _) = outputDefiningNode {
-      return type
-    }
-    return Substring.self
+    nodes.wholeMatchType
   }
 }
 
-extension DSLTree.Node {
-  /// Implementation for `canOnlyMatchAtStart`, which maintains the option
-  /// state.
-  ///
-  /// For a given specific node, this method can return one of three values:
-  ///
-  /// - `true`: This node is guaranteed to match only at the start of a subject.
-  /// - `false`: This node can match anywhere in the subject.
-  /// - `nil`: This node is inconclusive about where it can match.
-  ///
-  /// In particular, non-required groups and option-setting groups are
-  /// inconclusive about where they can match.
-  private func _canOnlyMatchAtStartImpl(_ options: inout MatchingOptions) -> Bool? {
-    switch self {
-    // Defining cases
-    case .atom(.assertion(.startOfSubject)):
-      return true
-    case .atom(.assertion(.caretAnchor)):
-      return !options.anchorsMatchNewlines
-      
-    // Changing options doesn't determine `true`/`false`.
-    case .atom(.changeMatchingOptions(let sequence)):
-      options.apply(sequence.ast)
-      return nil
-      
-    // Any other atom or consuming node returns `false`.
-    case .atom, .customCharacterClass, .quotedLiteral:
-      return false
-      
-    // Trivia/empty have no effect.
-    case .trivia, .empty:
-      return nil
-      
-    // In an alternation, all of its children must match only at start.
-    case .orderedChoice(let children):
-      return children.allSatisfy { $0._canOnlyMatchAtStartImpl(&options) == true }
-      
-    // In a concatenation, the first definitive child provides the answer.
-    case .concatenation(let children):
-      for child in children {
-        if let result = child._canOnlyMatchAtStartImpl(&options) {
-          return result
-        }
+extension Sequence<DSLTree.Node> {
+  var wholeMatchType: Any.Type {
+  Loop:
+    for node in self {
+      switch node {
+      case .nonCapturingGroup, .ignoreCapturesInTypedOutput:
+        continue Loop
+      case .matcher(let type, _):
+        return type
+      default:
+        break Loop
       }
-      return false
-
-    // Groups (and other parent nodes) defer to the child.
-    case .nonCapturingGroup(let kind, let child):
-      // Don't let a negative lookahead affect this - need to continue to next sibling
-      if kind.isNegativeLookahead {
-        return nil
-      }
-      options.beginScope()
-      defer { options.endScope() }
-      if case .changeMatchingOptions(let sequence) = kind.ast {
-        options.apply(sequence)
-      }
-      return child._canOnlyMatchAtStartImpl(&options)
-    case .capture(_, _, let child, _):
-      options.beginScope()
-      defer { options.endScope() }
-      return child._canOnlyMatchAtStartImpl(&options)
-    case .ignoreCapturesInTypedOutput(let child), .limitCaptureNesting(let child):
-      return child._canOnlyMatchAtStartImpl(&options)
-
-    // A quantification that doesn't require its child to exist can still
-    // allow a start-only match. (e.g. `/(foo)?^bar/`)
-    case .quantification(let amount, _, let child):
-      return amount.requiresAtLeastOne
-        ? child._canOnlyMatchAtStartImpl(&options)
-        : nil
-
-    // For conditional nodes, both sides must require matching at start.
-    case .conditional(_, let child1, let child2):
-      return child1._canOnlyMatchAtStartImpl(&options) == true
-        && child2._canOnlyMatchAtStartImpl(&options) == true
-
-    // Extended behavior isn't known, so we return `false` for safety.
-    case .consumer, .matcher, .characterPredicate, .absentFunction:
-      return false
     }
-  }
-  
-  /// Returns a Boolean value indicating whether the regex with this node as
-  /// the root can _only_ match at the start of a subject.
-  ///
-  /// For example, these regexes can only match at the start of a subject:
-  ///
-  /// - `/^foo/`
-  /// - `/(^foo|^bar)/` (both sides of the alternation start with `^`)
-  ///
-  /// These can match other places in a subject:
-  ///
-  /// - `/(^foo)?bar/` (`^` is in an optional group)
-  /// - `/(^foo|bar)/` (only one side of the alternation starts with `^`)
-  /// - `/(?m)^foo/` (`^` means "the start of a line" due to `(?m)`)
-  internal func canOnlyMatchAtStart() -> Bool {
-    var options = MatchingOptions()
-    return _canOnlyMatchAtStartImpl(&options) ?? false
+    return Substring.self
   }
 }
 
 // MARK: Required first and last atoms
-
-extension DSLTree.Node {
-  private func _requiredAtomImpl(forward: Bool) -> DSLTree.Atom?? {
-    switch self {
-    case .atom(let atom):
-      return switch atom {
-      case .changeMatchingOptions:
-        nil
-      default:
-        atom
-      }
-
-    // In a concatenation, the first definitive child provides the answer.
-    case .concatenation(let children):
-      if forward {
-        for child in children {
-          if let result = child._requiredAtomImpl(forward: forward) {
-            return result
-          }
-        }
-      } else {
-        for child in children.reversed() {
-          if let result = child._requiredAtomImpl(forward: forward) {
-            return result
-          }
-        }
-      }
-      return nil
-
-    // For a quoted literal, we can look at the first char
-    // TODO: matching semantics???
-    case .quotedLiteral(let str):
-      return str.first.map(DSLTree.Atom.char)
-    
-    // TODO: custom character classes could/should participate here somehow
-    case .customCharacterClass:
-      return .some(nil)
-      
-    // Trivia/empty have no effect.
-    case .trivia, .empty:
-      return nil
-      
-    // For alternation and conditional, no required first (this could change
-    // if we identify the _same_ required first atom across all possibilities).
-    case .orderedChoice, .conditional:
-      return .some(nil)
-
-    // Groups (and other parent nodes) defer to the child.
-    case .nonCapturingGroup(_, let child), .capture(_, _, let child, _),
-        .ignoreCapturesInTypedOutput(let child),
-        .limitCaptureNesting(let child):
-      return child._requiredAtomImpl(forward: forward)
-
-    // A quantification that doesn't require its child to exist can still
-    // allow a start-only match. (e.g. `/(foo)?^bar/`)
-    case .quantification(let amount, _, let child):
-      return amount.requiresAtLeastOne
-        ? child._requiredAtomImpl(forward: forward)
-        : .some(nil)
-
-    // Extended behavior isn't known, so we return `false` for safety.
-    case .consumer, .matcher, .characterPredicate, .absentFunction:
-      return .some(nil)
-    }
-  }
-  
-  internal func requiredFirstAtom() -> DSLTree.Atom? {
-    self._requiredAtomImpl(forward: true) ?? nil
-  }
-  
-  internal func requiredLastAtom() -> DSLTree.Atom? {
-    self._requiredAtomImpl(forward: false) ?? nil
-  }
-}
-
 
 private func _requiredAtomImpl(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTree.Atom?? {
   guard let node = list.popFirst() else {
@@ -1111,8 +655,8 @@ private func _requiredAtomImpl(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTre
     }
 
   // In a concatenation, the first definitive child provides the answer.
-  case .concatenation(let children):
-    for _ in 0..<children.count {
+  case .concatenation(let count):
+    for _ in 0..<count {
       if let result = _requiredAtomImpl(&list) {
         return result
       }
@@ -1145,7 +689,7 @@ private func _requiredAtomImpl(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTre
 
   // A quantification that doesn't require its child to exist can still
   // allow a start-only match. (e.g. `/(foo)?^bar/`)
-  case .quantification(let amount, _, _):
+  case .quantification(let amount, _):
     return amount.requiresAtLeastOne
       ? _requiredAtomImpl(&list)
       : .some(nil)
@@ -1166,44 +710,6 @@ internal func requiredFirstAtom(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTr
 // include symbols from implementation-only dependencies.
 
 extension DSLTree {
-  var captureList: CaptureList { .Builder.build(self) }
-
-  /// Presents a wrapped version of `DSLTree.Node` that can provide an internal
-  /// `_TreeNode` conformance.
-  struct _Tree: _TreeNode {
-    var node: DSLTree.Node
-    
-    init(_ node: DSLTree.Node) {
-      self.node = node
-    }
-    
-    var children: [_Tree]? {
-      switch node {
-        
-      case let .orderedChoice(v): return v.map(_Tree.init)
-      case let .concatenation(v): return v.map(_Tree.init)
-
-      case let .capture(_, _, n, _):        return [_Tree(n)]
-      case let .nonCapturingGroup(_, n):    return [_Tree(n)]
-      case let .quantification(_, _, n):    return [_Tree(n)]
-      case let .ignoreCapturesInTypedOutput(n): return [_Tree(n)]
-      case let .limitCaptureNesting(n):
-        // This is a transparent wrapper
-        return _Tree(n).children
-
-      case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
-
-      case .trivia, .empty, .quotedLiteral,
-          .consumer, .matcher, .characterPredicate,
-          .customCharacterClass, .atom:
-        return []
-
-      case let .absentFunction(abs):
-        return abs.ast.children.map(\.dslTreeNode).map(_Tree.init)
-      }
-    }
-  }
-
   @_spi(RegexBuilder)
   public enum _AST {
     @_spi(RegexBuilder)
@@ -1342,8 +848,7 @@ extension DSLTree.Node {
   @available(SwiftStdlib 5.7, *)
   static func repeating(
     _ range: Range<Int>,
-    _ behavior: RegexRepetitionBehavior?,
-    _ node: DSLTree.Node
+    _ behavior: RegexRepetitionBehavior?
   ) -> DSLTree.Node {
     // TODO: Throw these as errors
     precondition(range.lowerBound >= 0, "Cannot specify a negative lower bound")
@@ -1361,23 +866,23 @@ extension DSLTree.Node {
     if range.upperBound == Int.max {
       switch lower {
       case 0: // 0...
-        return .quantification(.zeroOrMore, kind, node)
+        return .quantification(.zeroOrMore, kind)
       case 1: // 1...
-        return .quantification(.oneOrMore, kind, node)
+        return .quantification(.oneOrMore, kind)
       default: // n...
-        return .quantification(.nOrMore(lower), kind, node)
+        return .quantification(.nOrMore(lower), kind)
       }
     }
     if range.count == 1 {
       // ..<1 or ...0 or any range with count == 1
       // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(lower), .default, node)
+      return .quantification(.exactly(lower), .default)
     }
     switch lower {
     case 0: // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(upperInclusive), kind, node)
+      return .quantification(.upToN(upperInclusive), kind)
     default:
-      return .quantification(.range(lower, upperInclusive), kind, node)
+      return .quantification(.range(lower, upperInclusive), kind)
     }
   }
 }

@@ -11,8 +11,6 @@
 
 internal import _RegexParser
 
-let TEMP_FAKE_NODE = DSLTree.Node.empty
-
 /// A type that represents a regular expression.
 ///
 /// You can use types that conform to `RegexComponent` as parameters to string
@@ -199,10 +197,6 @@ extension Regex {
       self.list = DSLList(ast: ast)
     }
 
-    init(tree: DSLTree) {
-      self.list = DSLList(tree: tree)
-    }
-
     init(list: DSLList) {
       self.list = list
     }
@@ -261,11 +255,11 @@ extension Regex {
     // Use an existing concatenation if it's already the root;
     // otherwise, embed self and other in a new concatenation root.
     switch list.nodes[0] {
-    case .concatenation(let children):
-      list.nodes[0] = .concatenation(Array(repeating: TEMP_FAKE_NODE, count: children.count + 1))
+    case .concatenation(let count):
+      list.nodes[0] = .concatenation(count + 1)
       list.nodes.append(contentsOf: other.nodes)
     default:
-      list.nodes.insert(.concatenation(Array(repeating: TEMP_FAKE_NODE, count: 2)), at: 0)
+      list.nodes.insert(.concatenation(2), at: 0)
       list.nodes.append(contentsOf: other.nodes)
     }
     return Regex<T>(list: list)
@@ -274,11 +268,11 @@ extension Regex {
   func alternating<T>(with other: some Collection<DSLTree.Node>) -> Regex<T> {
     var nodes = program.list.nodes
     switch nodes[0] {
-    case .orderedChoice(let children):
-      nodes[0] = .orderedChoice(Array(repeating: TEMP_FAKE_NODE, count: children.count + 1))
+    case .orderedChoice(let count):
+      nodes[0] = .orderedChoice(count + 1)
       nodes.append(contentsOf: other)
     default:
-      nodes.insert(.orderedChoice(Array(repeating: TEMP_FAKE_NODE, count: 2)), at: 0)
+      nodes.insert(.orderedChoice(2), at: 0)
       nodes.append(contentsOf: other)
     }
     return Regex<T>(list: DSLList(nodes))

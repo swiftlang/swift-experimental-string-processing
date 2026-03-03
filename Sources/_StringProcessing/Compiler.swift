@@ -19,20 +19,11 @@ class Compiler {
   private var compileOptions: _CompileOptions = .default
 
   init(ast: AST) {
-    self.tree = DSLList(tree: ast.dslTree)
-  }
-
-  init(tree: DSLTree) {
-    self.tree = DSLList(tree: tree)
+    self.tree = DSLList(ast: ast)
   }
 
   init(list: DSLList) {
     self.tree = list
-  }
-
-  init(tree: DSLTree, compileOptions: _CompileOptions) {
-    self.tree = DSLList(tree: tree)
-    self.compileOptions = compileOptions
   }
 
   init(tree: DSLList, compileOptions: _CompileOptions) {
@@ -44,20 +35,8 @@ class Compiler {
     try emitViaList()
   }
   
-  __consuming func emitViaTree() throws -> MEProgram {
-    // TODO: Handle global options
-    _ = ByteCodeGen(
-      options: options,
-      compileOptions:
-        compileOptions,
-      captureList: tree.captureList)
-    fatalError()
-//    return try codegen.emitRoot(tree.root)
-  }
-  
   __consuming func emitViaList() throws -> MEProgram {
     // TODO: Handle global options
-//    var dslList = DSLList(tree: tree)
     var codegen = ByteCodeGen(
       options: options,
       compileOptions:

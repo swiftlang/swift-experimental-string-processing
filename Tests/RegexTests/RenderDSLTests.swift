@@ -236,13 +236,13 @@ extension RenderDSLTests {
 
     try testConversion(#"a\u{301}"#, #"""
       Regex {
-        "a\u{301}"
+        "á"
       }
       """#)
 
     try testConversion(#"(?x) a \u{301}"#, #"""
       Regex {
-        "a\u{301}"
+        "á"
       }
       """#)
 
@@ -254,16 +254,16 @@ extension RenderDSLTests {
 
     try testConversion(#"👨\u{200D}👨\u{200D}👧\u{200D}👦"#, #"""
       Regex {
-        "👨\u{200D}👨\u{200D}👧\u{200D}👦"
+        "👨‍👨‍👧‍👦"
       }
       """#)
 
     try testConversion(#"(👨\u{200D}👨)\u{200D}👧\u{200D}👦"#, #"""
       Regex {
         Capture {
-          "👨\u{200D}👨"
+          "👨‍👨"
         }
-        "\u{200D}👧\u{200D}👦"
+        "‍👧‍👦"
       }
       """#)
 
@@ -272,7 +272,7 @@ extension RenderDSLTests {
       Regex {
         "abcd"
         Regex {
-          "e\u{301}"
+          "é"
           One(.digit)
         }
       }
@@ -284,12 +284,9 @@ extension RenderDSLTests {
       }
       """#)
 
-    // TODO: We might want to consider preserving scalar sequences in the DSL,
-    // and allowing them to merge with other concatenations.
     try testConversion(#"\u{A B C}\u{d}efg"#, #"""
       Regex {
-        "\u{A}\u{B}\u{C}"
-        "\u{D}efg"
+        "\u{A}\u{B}\u{C}\u{D}efg"
       }
       """#)
 
@@ -303,6 +300,60 @@ extension RenderDSLTests {
       """#)
   }
 
+  func testQuantifiers() throws {
+    try testConversion(#"a+b*c?d{1,}e{,3}f{2,4}g{5}"#, #"""
+      Regex {
+        OneOrMore {
+          "a"
+        }
+        ZeroOrMore {
+          "b"
+        }
+        Optionally {
+          "c"
+        }
+        Repeat(1...) {
+          "d"
+        }
+        Repeat(...3) {
+          "e"
+        }
+        Repeat(2...4) {
+          "f"
+        }
+        Repeat(count: 5) {
+          "g"
+        }
+      }
+      """#)
+
+    try testConversion(#"(?:(?:(?:(?:(?:(?:a+b)*c)?d){1,}e){,3}f){2,4}g){5}"#, #"""
+      Regex {
+        Repeat(count: 5) {
+          Repeat(2...4) {
+            Repeat(...3) {
+              Repeat(1...) {
+                Optionally {
+                  ZeroOrMore {
+                    OneOrMore {
+                      "a"
+                    }
+                    "b"
+                  }
+                  "c"
+                }
+                "d"
+              }
+              "e"
+            }
+            "f"
+          }
+          "g"
+        }
+      }
+      """#)
+  }
+  
   func testCharacterClass() throws {
     try testConversion(#"[abc]+"#, #"""
       Regex {
@@ -341,6 +392,30 @@ extension RenderDSLTests {
     try testConversion(#"[^i]*"#, #"""
       Regex {
         ZeroOrMore(CharacterClass.anyOf("i").inverted)
+      }
+      """#)
+
+    try testConversion(#"[a-z]+"#, #"""
+      Regex {
+        OneOrMore(("a"..."z"))
+      }
+      """#)
+
+    try testConversion(#"[[a-z]&&[0-9]]+"#, #"""
+      Regex {
+        OneOrMore {
+          One(("a"..."z")
+            .intersection(("0"..."9")))
+        }
+      }
+      """#)
+
+    // Non-convertible elements in character class
+    try testConversion(#"[a-z\N{BEE}]+"#, #"""
+      Regex {
+        OneOrMore {
+          #/[a-z\N{BEE}]/#
+        }
       }
       """#)
   }

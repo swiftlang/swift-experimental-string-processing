@@ -37,7 +37,7 @@ import Testing
     list.autoPossessify()
     for node in list.nodes {
       switch node {
-      case .quantification(_, let kind, _):
+      case .quantification(_, let kind):
         #expect(
           kind.isExplicit && kind.quantificationKind?.ast == .possessive,
           "Expected possessification in '\(pattern._literalPattern!)'")
@@ -57,7 +57,7 @@ import Testing
     list.autoPossessify()
     for node in list.nodes {
       switch node {
-      case .quantification(_, let kind, _):
+      case .quantification(_, let kind):
         #expect(
           kind.quantificationKind?.ast != .possessive,
           "Unexpected possessification in '\(pattern._literalPattern!)'")

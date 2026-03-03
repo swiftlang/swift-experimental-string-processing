@@ -129,7 +129,7 @@ extension StringCapture {
 // TODO: Move `flatCaptureTest`s over here too...
 
 func compile(_ ast: AST) -> MEProgram {
-  try! Compiler(tree: ast.dslTree).emit()
+  try! Compiler(ast: ast).emit()
 }
 
 func captureTest(

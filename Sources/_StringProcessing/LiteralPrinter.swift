@@ -102,12 +102,12 @@ extension LiteralPrinter {
     }
     
     switch node {
-    case let .orderedChoice(children):
-      try outputAlternation(&list, count: children.count)
-    case let .concatenation(children):
-      try outputConcatenation(&list, count: children.count)
+    case let .orderedChoice(count):
+      try outputAlternation(&list, count: count)
+    case let .concatenation(count):
+      try outputConcatenation(&list, count: count)
       
-    case let .capture(name, nil, _, nil):
+    case let .capture(name, nil, nil):
       options.beginScope()
       defer { options.endScope() }
       try outputCapture(&list, name: name)
@@ -116,7 +116,7 @@ extension LiteralPrinter {
       try inconvertible(node)
       return
       
-    case let .nonCapturingGroup(kind, _):
+    case let .nonCapturingGroup(kind):
       guard let kindPattern = kind._patternString else {
         try inconvertible(node)
         return
@@ -131,10 +131,10 @@ extension LiteralPrinter {
       try outputList(&list)
       output(")")
       
-    case .ignoreCapturesInTypedOutput(_),
-      .limitCaptureNesting(_):
+    case .ignoreCapturesInTypedOutput,
+      .limitCaptureNesting:
       try outputList(&list)
-    case let .quantification(amount, kind, _):
+    case let .quantification(amount, kind):
       try outputQuantification(&list, amount: amount, kind: kind)
     case let .customCharacterClass(charClass):
       outputCustomCharacterClass(charClass)
@@ -182,8 +182,8 @@ extension LiteralPrinter {
   func requiresGrouping(_ list: ArraySlice<DSLTree.Node>) -> Bool {
     guard let node = list.first else { return false } // malformed?
     switch node {
-    case .concatenation(let children):
-      switch children.count {
+    case .concatenation(let count):
+      switch count {
       case 0:
         return false
       case 1:
@@ -239,144 +239,7 @@ extension LiteralPrinter {
   }
 }
 
-extension LiteralPrinter {
-  mutating func outputNode(_ node: DSLTree.Node) {
-    switch node {
-    case let .orderedChoice(children):
-      outputAlternation(children)
-    case let .concatenation(children):
-      outputConcatenation(children)
-      
-    case let .capture(name, nil, child, nil):
-      options.beginScope()
-      defer { options.endScope() }
-      outputCapture(name, child)
-    case .capture:
-      // Captures that use a reference or a transform are unsupported
-      saveInconvertible(node)
-      
-    case let .nonCapturingGroup(kind, child):
-      guard let kindPattern = kind._patternString else {
-        saveInconvertible(node)
-        return
-      }
-      options.beginScope()
-      defer { options.endScope() }
-
-      output(kindPattern)
-      if case .changeMatchingOptions(let optionSequence) = kind.ast {
-        options.apply(optionSequence)
-      }
-      outputNode(child)
-      output(")")
-      
-    case let .ignoreCapturesInTypedOutput(child),
-         let .limitCaptureNesting(child):
-      outputNode(child)
-    case let .quantification(amount, kind, node):
-      outputQuantification(amount, kind, node)
-    case let .customCharacterClass(charClass):
-      outputCustomCharacterClass(charClass)
-    case let .atom(atom):
-      outputAtom(atom)
-    case let .quotedLiteral(literal):
-      output(prepareQuotedLiteral(literal))
-
-    case .trivia(_):
-      // TODO: Include trivia?
-      return
-    case .empty:
-      return
-
-    case .conditional, .absentFunction, .consumer, .matcher, .characterPredicate:
-      saveInconvertible(node)
-    }
-  }
-  
-  mutating func outputAlternation(_ children: [DSLTree.Node]) {
-    guard let first = children.first else { return }
-    
-    outputNode(first)
-    for child in children.dropFirst() {
-      output("|")
-      outputNode(child)
-    }
-  }
-  
-  mutating func outputConcatenation(_ children: [DSLTree.Node]) {
-    for child in children {
-      outputNode(child)
-    }
-  }
-  
-  mutating func outputCapture(_ name: String?, _ child: DSLTree.Node) {
-    if let name {
-      output("(?<\(name)>")
-    } else {
-      output("(")
-    }
-    outputNode(child)
-    output(")")
-  }
-  
-  func requiresGrouping(_ node: DSLTree.Node) -> Bool {
-    switch node {
-    case .concatenation(let children):
-      switch children.count {
-      case 0:
-        return false
-      case 1:
-        return requiresGrouping(children.first!)
-      default:
-        return true
-      }
-      
-    case .quotedLiteral(let literal):
-      return prepareQuotedLiteral(literal).count > 1
-      
-    default:
-      return false
-    }
-  }
-
-  mutating func outputQuantification(
-    _ amount: DSLTree._AST.QuantificationAmount,
-    _ kind: DSLTree.QuantificationKind,
-    _ child: DSLTree.Node
-  ) {
-    // RegexBuilder regexes can have children that need 
-    if requiresGrouping(child) {
-      output("(?:")
-      outputNode(child)
-      output(")")
-    } else {
-      outputNode(child)
-    }
-
-    switch amount.ast {
-    case .zeroOrMore:
-      output("*")
-    case .oneOrMore:
-      output("+")
-    case .zeroOrOne:
-      output("?")
-    case let .exactly(n):
-      output("{\(n.value!)}")
-    case let .nOrMore(n):
-      output("{\(n.value!),}")
-    case let .upToN(n):
-      output("{,\(n.value!)}")
-    case let .range(low, high):
-      output("{\(low.value!),\(high.value!)}")
-    #if RESILIENT_LIBRARIES
-    @unknown default:
-      fatalError()
-    #endif
-    }
-    
-    outputQuantificationKind(kind)
-  }
-  
+extension LiteralPrinter {  
   mutating func outputQuantificationKind(_ kind: DSLTree.QuantificationKind) {
     guard let astKind = kind.quantificationKind?.ast else {
       // We can treat this as if the current default had been given explicity.

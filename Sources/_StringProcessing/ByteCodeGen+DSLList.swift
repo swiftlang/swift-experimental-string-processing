@@ -73,19 +73,19 @@ fileprivate extension Compiler.ByteCodeGen {
       return nil
       
     // In an alternation, all of its children must match only at start.
-    case .orderedChoice(let children):
-      for _ in 0..<children.count {
+    case .orderedChoice(let count):
+      for _ in 0..<count {
         guard _canOnlyMatchAtStartImpl(&list) == true else {
           return false
         }
       }
       return true
-      
-    case .concatenation(let children):
+
+    case .concatenation(let count):
       // In a concatenation, the first definitive child provides the answer.
       var i = 0
       var found = false
-      while i < children.count {
+      while i < count {
         i += 1
         if let result = _canOnlyMatchAtStartImpl(&list) {
           found = result
@@ -94,14 +94,14 @@ fileprivate extension Compiler.ByteCodeGen {
       }
       // Once a definitive answer has been found, skip the rest of the nodes
       // in the concatenation.
-      while i < children.count {
+      while i < count {
         i += 1
         try? skipNode(&list, preservingCaptures: false)
       }
       return found
 
     // Groups (and other parent nodes) defer to the child.
-    case .nonCapturingGroup(let kind, _):
+    case .nonCapturingGroup(let kind):
       // Don't let a negative lookahead affect this - need to continue to next sibling
       if kind.isNegativeLookahead {
         try? skipNode(&list, preservingCaptures: false)
@@ -122,7 +122,7 @@ fileprivate extension Compiler.ByteCodeGen {
 
     // A quantification that doesn't require its child to exist can still
     // allow a start-only match. (e.g. `/(foo)?^bar/`)
-    case .quantification(let amount, _, _):
+    case .quantification(let amount, _):
       if amount.requiresAtLeastOne {
         return _canOnlyMatchAtStartImpl(&list)
       } else {
@@ -356,17 +356,17 @@ fileprivate extension Compiler.ByteCodeGen {
     let node = list[position]
     position += 1
     switch node {
-    case .orderedChoice(let children):
-      return (0..<children.count).allSatisfy { _ in
+    case .orderedChoice(let count):
+      return (0..<count).allSatisfy { _ in
         _guaranteesForwardProgressImpl(list, position: &position)
       }
-    case .concatenation(let children):
-      return (0..<children.count).contains { _ in
+    case .concatenation(let count):
+      return (0..<count).contains { _ in
         _guaranteesForwardProgressImpl(list, position: &position)
       }
-    case .capture(_, _, _, _):
+    case .capture(_, _, _):
       return _guaranteesForwardProgressImpl(list, position: &position)
-    case .nonCapturingGroup(let kind, _):
+    case .nonCapturingGroup(let kind):
       switch kind.ast {
       case .lookahead, .negativeLookahead, .lookbehind, .negativeLookbehind:
         return false
@@ -389,7 +389,7 @@ fileprivate extension Compiler.ByteCodeGen {
       return false
     case .customCharacterClass(let ccc):
       return ccc.guaranteesForwardProgress
-    case .quantification(let amount, _, _):
+    case .quantification(let amount, _):
       let (atLeast, _) = amount.ast.bounds
       if let atLeast, atLeast > 0 {
         return _guaranteesForwardProgressImpl(list, position: &position)
@@ -719,7 +719,7 @@ fileprivate extension Compiler.ByteCodeGen {
       } else {
         return false
       }
-    case .nonCapturingGroup(let groupKind, _):
+    case .nonCapturingGroup(let groupKind):
       // .nonCapture nonCapturingGroups are ignored during compilation
       guard groupKind.ast == .nonCapture else {
         return false
@@ -751,15 +751,13 @@ fileprivate extension Compiler.ByteCodeGen {
     guard let node = list.popFirst() else { return nil }
     switch node {
       
-    case let .orderedChoice(children):
-      let n = children.count
+    case let .orderedChoice(n):
       try emitAlternation(&list, alternationCount: n)
-      
-    case let .concatenation(children):
-      let n = children.count
+
+    case let .concatenation(n):
       try emitConcatenation(&list, componentCount: n)
       
-    case let .capture(name, refId, _, transform):
+    case let .capture(name, refId, transform):
       options.beginScope()
       defer { options.endScope() }
       
@@ -793,19 +791,19 @@ fileprivate extension Compiler.ByteCodeGen {
         builder.buildTransformCapture(cap, fn)
       }
       
-    case let .nonCapturingGroup(kind, _):
+    case let .nonCapturingGroup(kind):
       try emitNoncapturingGroup(kind.ast, &list)
       
-    case .ignoreCapturesInTypedOutput(_):
+    case .ignoreCapturesInTypedOutput:
       try emitNode(&list)
       
-    case .limitCaptureNesting(_):
+    case .limitCaptureNesting:
       return try emitNode(&list)
       
     case .conditional:
       throw Unsupported("Conditionals")
       
-    case let .quantification(amt, kind, _):
+    case let .quantification(amt, kind):
       try emitQuantification(amt.ast, kind, &list)
       
     case let .customCharacterClass(ccc):
@@ -852,19 +850,17 @@ extension Compiler.ByteCodeGen {
   ) throws {
     guard let node = list.popFirst() else { return }
     switch node {
-    case let .orderedChoice(children):
-      let n = children.count
-      for _ in 0..<n {
-        try skipNode(&list, preservingCaptures: preservingCaptures)
-      }
-      
-    case let .concatenation(children):
-      let n = children.count
+    case let .orderedChoice(n):
       for _ in 0..<n {
         try skipNode(&list, preservingCaptures: preservingCaptures)
       }
 
-    case let .capture(name, refId, _, _):
+    case let .concatenation(n):
+      for _ in 0..<n {
+        try skipNode(&list, preservingCaptures: preservingCaptures)
+      }
+
+    case let .capture(name, refId, _):
       options.beginScope()
       defer { options.endScope() }
 
@@ -877,7 +873,7 @@ extension Compiler.ByteCodeGen {
         try skipNode(&list, preservingCaptures: preservingCaptures)
       }
       
-    case .nonCapturingGroup(_, _):
+    case .nonCapturingGroup:
       try skipNode(&list, preservingCaptures: preservingCaptures)
 
     case .ignoreCapturesInTypedOutput:
@@ -886,7 +882,7 @@ extension Compiler.ByteCodeGen {
     case .limitCaptureNesting:
       try skipNode(&list, preservingCaptures: preservingCaptures)
 
-    case .quantification(_, _, _):
+    case .quantification:
       try skipNode(&list, preservingCaptures: preservingCaptures)
 
     case .customCharacterClass, .atom, .quotedLiteral, .matcher:

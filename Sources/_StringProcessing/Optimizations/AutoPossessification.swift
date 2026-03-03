@@ -39,10 +39,10 @@ extension DSLList {
     // In a concatenation, the first definitive child provides the answer,
     // and then we need to skip past (in some cases at least) the remaining
     // concatenation elements.
-    case .concatenation(let children):
+    case .concatenation(let count):
       var result: DSLTree.Atom?? = nil
       var i = 0
-      while i < children.count {
+      while i < count {
         i += 1
         position += 1
         if let r = _requiredAtomImpl(&position, options: &options, allowOptionsChanges: allowOptionsChanges) {
@@ -50,8 +50,8 @@ extension DSLList {
           break
         }
       }
-      
-      for _ in i..<children.count {
+
+      for _ in i..<count {
         position += 1
         skipNode(&position)
       }
@@ -77,12 +77,12 @@ extension DSLList {
 
     // A negative lookahead rules out the existence of a safe required
     // character.
-    case .nonCapturingGroup(let kind, _) where kind.isNegativeLookahead:
+    case .nonCapturingGroup(let kind) where kind.isNegativeLookahead:
       return .some(nil)
 
     // Bail out early if this group changes options.
     // TODO: Allow some/all options changes.
-    case .nonCapturingGroup(let kind, _):
+    case .nonCapturingGroup(let kind):
       position += 1
       options.beginScope()
       defer { options.endScope() }
@@ -111,7 +111,7 @@ extension DSLList {
 
     // A quantification that doesn't require its child to exist can still
     // allow a start-only match. (e.g. `/(foo)?^bar/`)
-    case .quantification(let amount, _, _):
+    case .quantification(let amount, _):
       if amount.requiresAtLeastOne {
         position += 1
         return _requiredAtomImpl(&position, options: &options, allowOptionsChanges: allowOptionsChanges)
@@ -140,7 +140,7 @@ extension DSLList {
     }
     
     switch nodes[position] {
-    case .quantification(_, _, _):
+    case .quantification(_, _):
       let quantPosition = position
       position += 1
       
@@ -158,7 +158,7 @@ extension DSLList {
         return nil
       }
       
-    case .concatenation(let children):
+    case .concatenation(let count):
       // If we find a valid quantification among this concatenation's components,
       // we must look for a required atom in the sibling. If a definitive result
       // is not found, pop up the recursion stack to find a sibling at a higher
@@ -167,15 +167,15 @@ extension DSLList {
       var foundNextAtom: DSLTree.Atom? = nil
       var i = 0
       position += 1
-      while i < children.count {
+      while i < count {
         i += 1
         if let result = autoPossessifyNextQuantification(&position, options: &options) {
           foundQuantification = result
           break
         }
       }
-      
-      while i < children.count {
+
+      while i < count {
         i += 1
         position += 1
         if let result = _requiredAtomImpl(&position, options: &options, allowOptionsChanges: false) {
@@ -184,7 +184,7 @@ extension DSLList {
         }
       }
 
-      for _ in i..<children.count {
+      for _ in i..<count {
         position += 1
         skipNode(&position)
       }
@@ -198,9 +198,9 @@ extension DSLList {
       // safely convert the quantifier to possessive.
       
       if firstAtom.excludes(nextAtom, options: options),
-          case .quantification(let amount, _, let node) = nodes[quantIndex]
+          case .quantification(let amount, _) = nodes[quantIndex]
       {
-        nodes[quantIndex] = .quantification(amount, .explicit(.possessive), node)
+        nodes[quantIndex] = .quantification(amount, .explicit(.possessive))
       }
       
       return nil
@@ -209,9 +209,9 @@ extension DSLList {
     // branches, but quantifications inside an alternation don't
     // auto-possessify with following matching elements outside of the
     // alternation (for now, at least).
-    case .orderedChoice(let children):
+    case .orderedChoice(let count):
       position += 1
-      for _ in 0..<children.count {
+      for _ in 0..<count {
         _ = autoPossessifyNextQuantification(&position, options: &options)
       }
     
@@ -222,7 +222,7 @@ extension DSLList {
         _ = autoPossessifyNextQuantification(&position, options: &options)
       }
 
-    case .nonCapturingGroup(let kind, _):
+    case .nonCapturingGroup(let kind):
       position += 1
       options.beginScope()
       defer { options.endScope() }

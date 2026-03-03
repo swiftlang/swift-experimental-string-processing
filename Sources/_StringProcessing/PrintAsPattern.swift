@@ -40,42 +40,203 @@ public func renderAsBuilderDSL(
 }
 
 extension PrettyPrinter {
-  /// If pattern printing should back off, prints the regex literal and returns true
-  mutating func patternBackoff<T: _TreeNode>(
-    _ ast: T
-  ) -> Bool {
-    if let max = maxTopDownLevels, depth >= max {
-      return true
-    }
-    if let min = minBottomUpLevels, ast.height <= min {
-      return true
-    }
-    return false
-  }
-
-  mutating func printBackoff(_ node: DSLTree.Node) {
-    precondition(node.astNode != nil, "unconverted node")
-    printAsCanonical(
-      .init(node.astNode!, globalOptions: nil, diags: Diagnostics()),
-      delimiters: true)
-  }
-
   mutating func printAsPattern(_ ast: AST) {
-    // TODO: Handle global options...
-    let node = ast.root.dslTreeNode
-    
+    let list = DSLList(ast: ast)
+
     // If we have any named captures, create references to those above the regex.
-    let namedCaptures = node.getNamedCaptures()
-    
+    let namedCaptures = list.getNamedCaptures()
+
     for namedCapture in namedCaptures {
       print("let \(namedCapture) = Reference(Substring.self)")
     }
 
     printBlock("Regex") { printer in
-      printer.printAsPattern(convertedFromAST: node, isTopLevel: true)
+      var slice = list.nodes[...]
+      printer.printAsPatternFromList(&slice, isTopLevel: true)
     }
 
     printInlineMatchingOptions()
+  }
+
+  private mutating func printAsPatternFromList(
+    _ list: inout ArraySlice<DSLTree.Node>,
+    isTopLevel: Bool = false
+  ) {
+    guard let node = list.popFirst() else { return }
+
+    switch node {
+    case .orderedChoice(let count):
+      printBlock("ChoiceOf") { printer in
+        for _ in 0..<count {
+          printer.printAsPatternFromList(&list)
+        }
+      }
+
+    case .concatenation(let count):
+      printConcatenationAsPatternFromList(&list, count: count, isTopLevel: isTopLevel)
+
+    case let .nonCapturingGroup(kind):
+      switch kind.ast {
+      case .atomicNonCapturing:
+        printBlock("Local") { printer in
+          printer.printAsPatternFromList(&list)
+        }
+
+      case .lookahead:
+        printBlock("Lookahead") { printer in
+          printer.printAsPatternFromList(&list)
+        }
+
+      case .negativeLookahead:
+        printBlock("NegativeLookahead") { printer in
+          printer.printAsPatternFromList(&list)
+        }
+
+      default:
+        printAsPatternFromList(&list, isTopLevel: isTopLevel)
+      }
+
+    case let .capture(name, _, _):
+      var cap = "Capture"
+      if let n = name {
+        cap += "(as: \(n))"
+      }
+      printBlock(cap) { printer in
+        printer.printAsPatternFromList(&list)
+      }
+
+    case .ignoreCapturesInTypedOutput:
+      printAsPatternFromList(&list, isTopLevel: isTopLevel)
+
+    case .limitCaptureNesting:
+      printAsPatternFromList(&list, isTopLevel: isTopLevel)
+
+    case .conditional:
+      print("/* TODO: conditional */")
+
+    case let .quantification(amount, kind):
+      let amountStr = amount.ast._patternBase
+      var kindStr = kind.ast?._patternBase ?? ""
+
+      if quantificationBehavior != .eager {
+        kindStr = quantificationBehavior._patternBase
+      }
+
+      var blockName = "\(amountStr)(\(kindStr))"
+      if kindStr == ".eager" {
+        blockName = "\(amountStr)"
+      }
+
+      // Special case: check if next child is a simple atom or CCC for inline syntax
+      if amount.ast.supportsInlineComponent, let child = list.first {
+        switch child {
+        case let .atom(a):
+          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
+            // Consume the atom from the list
+            list = list.dropFirst()
+            indent()
+            if kindStr != ".eager" {
+              var b = blockName
+              b.removeLast()
+              output("\(b), ")
+            } else {
+              output("\(blockName)(")
+            }
+            output("\(pattern.0))")
+            terminateLine()
+            return
+          }
+        case let .customCharacterClass(ccc):
+          if ccc.isSimplePrint {
+            list = list.dropFirst()
+            indent()
+            if kindStr != ".eager" {
+              var b = blockName
+              b.removeLast()
+              output("\(b), ")
+            } else {
+              output("\(blockName)(")
+            }
+            printAsPattern(ccc, wrap: false, terminateLine: false)
+            output(")")
+            terminateLine()
+            return
+          }
+        default:
+          break
+        }
+      }
+
+      printBlock(blockName) { printer in
+        printer.printAsPatternFromList(&list, isTopLevel: true)
+      }
+
+    case let .atom(a):
+      if case .unconverted(let a) = a, a.ast.isUnprintableAtom {
+        print("#/\(a.ast._regexBase)/#")
+        return
+      }
+
+      if let pattern = a._patternBase(&self) {
+        if pattern.canBeWrapped {
+          print("One(\(pattern.0))")
+        } else {
+          print(pattern.0)
+        }
+      }
+
+    case .trivia:
+      break
+
+    case .empty:
+      print("")
+
+    case let .quotedLiteral(v):
+      let str = v._quoted.reduce(into: "") { result, ch in
+        for scalar in ch.unicodeScalars {
+          switch scalar.properties.generalCategory {
+          case .control:
+            result.append(#"\u{\#(String(scalar.value, radix: 16, uppercase: true))}"#)
+          default:
+            result.append(Character(scalar))
+          }
+        }
+      }
+      print(str)
+
+    case let .customCharacterClass(ccc):
+      printAsPattern(ccc)
+
+    case .consumer:
+      print("/* TODO: consumers */")
+    case .matcher:
+      print("/* TODO: consumer validators */")
+    case .characterPredicate:
+      print("/* TODO: character predicates */")
+    case .absentFunction:
+      print("/* TODO: absent function */")
+    }
+  }
+
+  // List-based concatenation printing. Since DSLList(ast:) pre-coalesces
+  // adjacent chars/scalars into quotedLiteral nodes, no additional coalescing
+  // is needed here — we just iterate the count children.
+  private mutating func printConcatenationAsPatternFromList(
+    _ list: inout ArraySlice<DSLTree.Node>,
+    count: Int,
+    isTopLevel: Bool
+  ) {
+    if isTopLevel || count <= 1 {
+      for _ in 0..<count {
+        printAsPatternFromList(&list)
+      }
+    } else {
+      printBlock("Regex") { printer in
+        for _ in 0..<count {
+          printer.printAsPatternFromList(&list)
+        }
+      }
+    }
   }
 
   mutating func printInlineMatchingOptions() {
@@ -121,252 +282,11 @@ extension PrettyPrinter {
     }
   }
 
-  // FIXME: Use of back-offs like height and depth
-  // imply that this DSLTree node has a corresponding
-  // AST. That's not always true, and it would be nice
-  // to have a non-backing-off pretty-printer that this
-  // can defer to.
-  private mutating func printAsPattern(
-    convertedFromAST node: DSLTree.Node, isTopLevel: Bool = false
-  ) {
-    if patternBackoff(DSLTree._Tree(node)) {
-      printBackoff(node)
-      return
-    }
-
-    switch node {
-
-    case let .orderedChoice(a):
-      printBlock("ChoiceOf") { printer in
-        a.forEach {
-          printer.printAsPattern(convertedFromAST: $0)
-        }
-      }
-
-    case let .concatenation(c):
-      printConcatenationAsPattern(c, isTopLevel: isTopLevel)
-
-    case let .nonCapturingGroup(kind, child):
-      switch kind.ast {
-      case .atomicNonCapturing:
-        printBlock("Local") { printer in
-          printer.printAsPattern(convertedFromAST: child)
-        }
-        
-      case .lookahead:
-        printBlock("Lookahead") { printer in
-          printer.printAsPattern(convertedFromAST: child)
-        }
-        
-      case .negativeLookahead:
-        printBlock("NegativeLookahead") { printer in
-          printer.printAsPattern(convertedFromAST: child)
-        }
-        
-      default:
-        printAsPattern(convertedFromAST: child)
-      }
-
-    case let .capture(name, _, child, _):
-      var cap = "Capture"
-      if let n = name {
-        cap += "(as: \(n))"
-      }
-      printBlock(cap) { printer in
-        printer.printAsPattern(convertedFromAST: child)
-      }
-
-    case let .ignoreCapturesInTypedOutput(child):
-      printAsPattern(convertedFromAST: child, isTopLevel: isTopLevel)
-      
-    case let .limitCaptureNesting(child):
-      printAsPattern(convertedFromAST: child, isTopLevel: isTopLevel)
-      
-    case .conditional:
-      print("/* TODO: conditional */")
-
-    case let .quantification(amount, kind, child):
-      let amountStr = amount.ast._patternBase
-      var kind = kind.ast?._patternBase ?? ""
-      
-      // If we've updated our quantification behavior, then use that. This
-      // occurs in scenarios where we use things like '(?U)' to indicate that
-      // we want reluctant default quantification behavior.
-      if quantificationBehavior != .eager {
-        kind = quantificationBehavior._patternBase
-      }
-      
-      var blockName = "\(amountStr)(\(kind))"
-      
-      if kind == ".eager" {
-        blockName = "\(amountStr)"
-      }
-      
-      // Special case single child character classes for repetition nodes.
-      // This lets us do something like the following:
-      //
-      //     OneOrMore(.digit)
-      //     vs
-      //     OneOrMore {
-      //       One(.digit)
-      //     }
-      //
-      func printAtom(_ pattern: String) {
-        indent()
-        
-        if kind != ".eager" {
-          blockName.removeLast()
-          output("\(blockName), ")
-        } else {
-          output("\(blockName)(")
-        }
-        
-        output("\(pattern))")
-        terminateLine()
-      }
-      
-      func printSimpleCCC(
-        _ ccc: DSLTree.CustomCharacterClass
-      ) {
-        indent()
-        
-        if kind != ".eager" {
-          blockName.removeLast()
-          output("\(blockName), ")
-        } else {
-          output("\(blockName)(")
-        }
-        
-        printAsPattern(ccc, wrap: false, terminateLine: false)
-        output(")")
-        terminateLine()
-      }
-      
-      // We can only do this for Optionally, ZeroOrMore, and OneOrMore. Cannot
-      // do it right now for Repeat.
-      if amount.ast.supportsInlineComponent {
-        switch child {
-        case let .atom(a):
-          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
-            printAtom(pattern.0)
-            return
-          }
-          
-          break
-        case let .customCharacterClass(ccc):
-          if ccc.isSimplePrint {
-            printSimpleCCC(ccc)
-            return
-          }
-          
-          break
-          
-        default:
-          break
-        }
-      }
-      
-      printBlock(blockName) { printer in
-        printer.printAsPattern(convertedFromAST: child)
-      }
-
-    case let .atom(a):
-      if case .unconverted(let a) = a, a.ast.isUnprintableAtom {
-        print("#/\(a.ast._regexBase)/#")
-        return
-      }
-      
-      if let pattern = a._patternBase(&self) {
-        if pattern.canBeWrapped {
-          print("One(\(pattern.0))")
-        } else {
-          print(pattern.0)
-        }
-      }
-
-    case .trivia:
-      // We never print trivia
-      break
-
-    case .empty:
-      print("")
-
-    case let .quotedLiteral(v):
-      print(v._quoted)
-
-    case let .customCharacterClass(ccc):
-      printAsPattern(ccc)
-
-    case .consumer:
-      print("/* TODO: consumers */")
-    case .matcher:
-      print("/* TODO: consumer validators */")
-    case .characterPredicate:
-      print("/* TODO: character predicates */")
-
-    case .absentFunction:
-      print("/* TODO: absent function */")
-    }
-  }
-
   enum NodeToPrint {
     case dslNode(DSLTree.Node)
     case stringLiteral(String)
   }
 
-  mutating func printAsPattern(_ node: NodeToPrint) {
-    switch node {
-    case .dslNode(let n):
-      printAsPattern(convertedFromAST: n)
-    case .stringLiteral(let str):
-      print(str)
-    }
-  }
-
-  mutating func printConcatenationAsPattern(
-    _ nodes: [DSLTree.Node], isTopLevel: Bool
-  ) {
-    // We need to coalesce any adjacent character and scalar elements into a
-    // string literal, preserving scalar syntax.
-    let nodes = nodes
-      .map { NodeToPrint.dslNode($0.lookingThroughConvertedLiteral) }
-      .coalescing(
-        with: StringLiteralBuilder(), into: { .stringLiteral($0.result) }
-      ) { literal, node in
-        guard case .dslNode(let node) = node else { return false }
-        switch node {
-        case let .atom(.char(c)):
-          literal.append(c)
-          return true
-        case let .atom(.scalar(s)):
-          literal.append(unescaped: s._dslBase)
-          return true
-        case .quotedLiteral(let q):
-          literal.append(q)
-          return true
-        case .trivia:
-          // Trivia can be completely ignored if we've already coalesced
-          // something.
-          return !literal.isEmpty
-        default:
-          return false
-        }
-      }
-    if isTopLevel || nodes.count == 1 {
-      // If we're at the top level, or we coalesced everything into a single
-      // element, we don't need to print a surrounding Regex { ... }.
-      for n in nodes {
-        printAsPattern(n)
-      }
-      return
-    }
-    printBlock("Regex") { printer in
-      for n in nodes {
-        printer.printAsPattern(n)
-      }
-    }
-  }
-  
   mutating func printAsPattern(
     _ ccc: DSLTree.CustomCharacterClass,
     wrap: Bool = true,
@@ -1397,29 +1317,5 @@ extension DSLTree.Atom {
       
       return result
     }
-  }
-}
-
-extension DSLTree.Node {
-  func getNamedCaptures() -> [String] {
-    var result: [String] = []
-    
-    switch self {
-    case .capture(let name?, _, _, _):
-      result.append(name)
-
-    case .concatenation(let nodes):
-      for node in nodes {
-        result += node.getNamedCaptures()
-      }
-      
-    case .quantification(_, _, let node):
-      result += node.getNamedCaptures()
-      
-    default:
-      break
-    }
-    
-    return result
   }
 }

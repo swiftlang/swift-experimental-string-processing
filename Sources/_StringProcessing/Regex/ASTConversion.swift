@@ -11,23 +11,17 @@
 
 internal import _RegexParser
 
-extension AST {
-  var dslTree: DSLTree {
-    return DSLTree(.limitCaptureNesting(root.dslTreeNode))
-  }
-}
-
 extension AST.Node {
   func convert(into list: inout [DSLTree.Node]) throws {
     switch self {
     case .alternation(let alternation):
-      list.append(.orderedChoice(Array(repeating: TEMP_FAKE_NODE, count: alternation.children.count)))
+      list.append(.orderedChoice(alternation.children.count))
       for child in alternation.children {
         try child.convert(into: &list)
       }
     case .concatenation(_):
       let coalesced = self.coalescedChildren
-      list.append(.concatenation(Array(repeating: TEMP_FAKE_NODE, count: coalesced.count)))
+      list.append(.concatenation(coalesced.count))
       for child in coalesced {
         try child.convert(into: &list)
       }
@@ -35,24 +29,24 @@ extension AST.Node {
       let child = group.child
       switch group.kind.value {
       case .capture:
-        list.append(.capture(TEMP_FAKE_NODE))
+        list.append(.capture())
         try child.convert(into: &list)
       case .namedCapture(let name):
-        list.append(.capture(name: name.value, TEMP_FAKE_NODE))
+        list.append(.capture(name: name.value))
         try child.convert(into: &list)
       case .balancedCapture:
         throw Unsupported("TODO: balanced captures")
       default:
-        list.append(.nonCapturingGroup(.init(ast: group.kind.value), TEMP_FAKE_NODE))
+        list.append(.nonCapturingGroup(.init(ast: group.kind.value)))
         try child.convert(into: &list)
       }
     case .conditional(let conditional):
-      list.append(.conditional(.init(ast: conditional.condition.kind), TEMP_FAKE_NODE, TEMP_FAKE_NODE))
+      list.append(.conditional(.init(ast: conditional.condition.kind)))
       try conditional.trueBranch.convert(into: &list)
       try conditional.falseBranch.convert(into: &list)
     case .quantification(let quant):
       list.append(
-        .quantification(.init(ast: quant.amount.value), .syntax(.init(ast: quant.kind.value)), TEMP_FAKE_NODE))
+        .quantification(.init(ast: quant.amount.value), .syntax(.init(ast: quant.kind.value))))
       try quant.child.convert(into: &list)
     case .quote(let node):
       list.append(.quotedLiteral(node.literal))
@@ -151,84 +145,6 @@ extension AST.Node {
     @unknown default:
       return []
     }
-  }
-}
-
-extension AST.Node {
-  /// Converts an AST node to a `convertedRegexLiteral` node.
-  var dslTreeNode: DSLTree.Node {
-    // Convert the top-level node without wrapping
-    func convert() throws -> DSLTree.Node {
-      switch self {
-      case let .alternation(v):
-        let children = v.children.map(\.dslTreeNode)
-        return .orderedChoice(children)
-
-      case let .concatenation(v):
-        return .concatenation(v.children.map(\.dslTreeNode))
-
-      case let .group(v):
-        let child = v.child.dslTreeNode
-        switch v.kind.value {
-        case .capture:
-          return .capture(child)
-        case .namedCapture(let name):
-          return .capture(name: name.value, child)
-        case .balancedCapture:
-          throw Unsupported("TODO: balanced captures")
-        default:
-          return .nonCapturingGroup(.init(ast: v.kind.value), child)
-        }
-
-      case let .conditional(v):
-        let trueBranch = v.trueBranch.dslTreeNode
-        let falseBranch = v.falseBranch.dslTreeNode
-        return .conditional(
-          .init(ast: v.condition.kind), trueBranch, falseBranch)
-
-      case let .quantification(v):
-        let child = v.child.dslTreeNode
-        return .quantification(
-          .init(ast: v.amount.value), .syntax(.init(ast: v.kind.value)), child)
-
-      case let .quote(v):
-        return .quotedLiteral(v.literal)
-
-      case let .trivia(v):
-        return .trivia(v.contents)
-
-      case .interpolation:
-        throw Unsupported("TODO: interpolation")
-
-      case let .atom(v):
-        switch v.kind {
-        case .scalarSequence(let seq):
-          // The DSL doesn't have an equivalent node for scalar sequences. Splat
-          // them into a concatenation of scalars.
-          return .concatenation(seq.scalarValues.map { .atom(.scalar($0)) })
-        default:
-          return .atom(v.dslTreeAtom)
-        }
-
-      case let .customCharacterClass(ccc):
-        return .customCharacterClass(ccc.dslTreeClass)
-
-      case .empty(_):
-        return .empty
-
-      case let .absentFunction(abs):
-        // TODO: What should this map to?
-        return .absentFunction(.init(ast: abs))
-
-      #if RESILIENT_LIBRARIES
-      @unknown default:
-        fatalError()
-      #endif
-      }
-    }
-
-    let converted = try! convert()
-    return converted
   }
 }
 

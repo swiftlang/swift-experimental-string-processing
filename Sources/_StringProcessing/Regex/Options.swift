@@ -296,7 +296,7 @@ extension RegexComponent {
       : AST.MatchingOptionSequence(removing: [.init(option, location: .fake)])
     
     var list = regex.program.list
-    list.nodes.insert(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence)), TEMP_FAKE_NODE), at: 0)
+    list.nodes.insert(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence))), at: 0)
     return Regex(list: list)
   }
 }
