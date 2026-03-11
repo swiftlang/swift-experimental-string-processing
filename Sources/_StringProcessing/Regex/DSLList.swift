@@ -174,6 +174,7 @@ extension DSLList {
   func indexOfCoalescableAtom(startingAt position: Int, findLast: Bool = false) -> Int? {
     switch nodes[position] {
     case .concatenation(let children):
+      guard children.count > 0 else { return nil }
       var position = position + 1
       if findLast {
         for _ in 0..<(children.count - 1) {
