@@ -1673,6 +1673,29 @@ class RegexDSLTests: XCTestCase {
       """)
   }
   
+  func testManyConcatenatedComponents() throws {
+    let r = Regex {
+      #/a\n/#
+      Regex<Substring>(verbatim: "/some/path")
+      #/\n/#
+      #/b\n/#
+      Regex<Substring>(verbatim: "/some/path")
+      #/\n/#
+      #/c\n/#
+      Regex<Substring>(verbatim: "/some/path")
+      #/\n/#
+      #/d\n/#
+      Regex<Substring>(verbatim: "/some/path")
+      #/\n/#
+      #/e\n/#
+      Regex<Substring>(verbatim: "/some/path")
+      #/\n/#
+      #/f/#
+    }
+    let input = "a\n/some/path\nb\n/some/path\nc\n/some/path\nd\n/some/path\ne\n/some/path\nf"
+    XCTAssertNotNil(try r.wholeMatch(in: input))
+  }
+
   func testRegexComponentBuilderResultType() {
     // Test that the user can declare a closure or computed property marked with
     // `@RegexComponentBuilder` with `Regex` as the result type.

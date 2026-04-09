@@ -125,7 +125,7 @@ extension DSLList {
     case .concatenation(let count):
       var position = position + 1
       if findLast {
-        for _ in 0..<(count - 1) {
+        for _ in (0..<count).dropLast() {
           skipNode(&position)
           position += 1
         }
@@ -159,17 +159,22 @@ extension DSLList {
     // Remove the postfix node and fix up any parent concatenations
     other.nodes.remove(at: postfixIndex)
     var i = postfixIndex - 1
-  Loop:
+
     while i >= 0 {
       switch other.nodes[i] {
       case .concatenation(let count):
-        other.nodes[i] = .concatenation(count - 1)
-        break Loop
+        // Omit a concatenation entirely if it would have zero children.
+        if count == 1 {
+          other.nodes[i] = .empty
+        } else {
+          other.nodes[i] = .concatenation(count - 1)
+        }
+        return
       case .limitCaptureNesting, .ignoreCapturesInTypedOutput:
         other.nodes.remove(at: i)
         i -= 1
       default:
-        break Loop
+        return
       }
     }
   }
