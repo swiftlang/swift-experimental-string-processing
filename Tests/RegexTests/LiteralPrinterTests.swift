@@ -40,6 +40,12 @@ extension RegexTests {
     XCTAssertEqual("\(printableRegex)", regexString)
   }
   
+  func testLiteral169973074() throws {
+    let regexString = #"^id\-\d+"#
+    let regex = try Regex(regexString)
+    _literalTest(regex, expected: regexString)
+  }
+  
   func testUnicodeEscapes() throws {
     let regex0 = #/[a]\u0301/#
     _literalTest(regex0, expected: #"[a]\u0301"#)

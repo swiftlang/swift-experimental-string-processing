@@ -389,7 +389,7 @@ extension LiteralPrinter {
   }
   
   func prepareQuotedLiteral(_ literal: String) -> String {
-    if options.usesExtendedWhitespace || literal.containsRegexMetaCharacters {
+    if options.usesExtendedWhitespace {
       return #"\Q\#(literal)\E"#
     } else {
       return literal.escapingConfusableCharacters()
@@ -474,8 +474,12 @@ extension String {
   func escapingConfusableCharacters() -> String {
     reduce(into: "") { result, ch in
       for scalar in ch.unicodeScalars {
-        if scalar.isPrintableASCII {
-          result.append(Character(scalar))
+        let ch = Character(scalar)
+        if ch.isRegexMetaCharacter {
+          result.append("\\")
+          result.append(ch)
+        } else if scalar.isPrintableASCII {
+          result.append(ch)
         } else {
           result.append(scalar.escapedString)
         }
