@@ -100,7 +100,7 @@ jobs:
           set -euo pipefail
           eval "$BENCH_CMD --load $RUNNER_TEMP/$COMPARE_FILE --compare $RUNNER_TEMP/$MAIN_FILE --compare-compile-time $RUNNER_TEMP/$MAIN_FILE"
       - name: Upload benchmark artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-results
           path: |
