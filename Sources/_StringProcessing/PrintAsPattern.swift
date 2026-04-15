@@ -191,18 +191,6 @@ extension PrettyPrinter {
     case .empty:
       print("")
 
-//    case let .quotedLiteral(v):
-//      let str = v._quoted.reduce(into: "") { result, ch in
-//        for scalar in ch.unicodeScalars {
-//          switch scalar.properties.generalCategory {
-//          case .control:
-//            result.append(#"\u{\#(String(scalar.value, radix: 16, uppercase: true))}"#)
-//          default:
-//            result.append(Character(scalar))
-//          }
-//        }
-//      }
-//      print(str)
     case let .quotedLiteral(v, display: d):
       if let display = d {
         print(display._bareQuoted)
