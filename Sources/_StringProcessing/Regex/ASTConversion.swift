@@ -20,7 +20,7 @@ extension AST.Node {
         try child.convert(into: &list)
       }
     case .concatenation(_):
-      let coalesced = self.coalescedChildren
+      let coalesced = self.coalescedChildrenWithDisplay
       list.append(.concatenation(coalesced.count))
       for child in coalesced {
         switch child {

@@ -169,18 +169,12 @@ extension DSLList {
     while i >= 0 {
       switch other.nodes[i] {
       case .concatenation(let count):
-<<<<<<< HEAD
         // Omit a concatenation entirely if it would have zero children.
         if count == 1 {
           other.nodes[i] = .empty
         } else {
           other.nodes[i] = .concatenation(count - 1)
         }
-        return
-=======
-        other.nodes[i] = .concatenation(count - 1)
-        break Loop
->>>>>>> main
       case .limitCaptureNesting, .ignoreCapturesInTypedOutput:
         other.nodes.remove(at: i)
         i -= 1

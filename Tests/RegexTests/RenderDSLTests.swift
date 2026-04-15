@@ -236,13 +236,13 @@ extension RenderDSLTests {
 
     try testConversion(#"a\u{301}"#, #"""
       Regex {
-        "á"
+        "a\u{301}"
       }
       """#)
 
     try testConversion(#"(?x) a \u{301}"#, #"""
       Regex {
-        "á"
+        "a\u{301}"
       }
       """#)
 
@@ -254,16 +254,16 @@ extension RenderDSLTests {
 
     try testConversion(#"👨\u{200D}👨\u{200D}👧\u{200D}👦"#, #"""
       Regex {
-        "👨‍👨‍👧‍👦"
+        "👨\u{200D}👨\u{200D}👧\u{200D}👦"
       }
       """#)
 
     try testConversion(#"(👨\u{200D}👨)\u{200D}👧\u{200D}👦"#, #"""
       Regex {
         Capture {
-          "👨‍👨"
+          "👨\u{200D}👨"
         }
-        "‍👧‍👦"
+        "\u{200D}👧\u{200D}👦"
       }
       """#)
 
@@ -272,7 +272,7 @@ extension RenderDSLTests {
       Regex {
         "abcd"
         Regex {
-          "é"
+          "e\u{301}"
           One(.digit)
         }
       }
