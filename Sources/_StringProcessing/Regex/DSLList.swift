@@ -153,8 +153,14 @@ extension DSLList {
           let postfixValue = other.nodes[postfixIndex].literalStringValue
     else { return }
 
+    // Merge display strings, falling back to the escaped value for either
+    // side if its display is not available.
+    let prefixDisplay = nodes[prefixIndex].literalDisplayValue ?? prefixValue._escaped
+    let postfixDisplay = other.nodes[postfixIndex].literalDisplayValue ?? postfixValue._escaped
+    let mergedDisplay = prefixDisplay + postfixDisplay
+
     // Replace the prefix node with a coalesced version of the two
-    nodes[prefixIndex] = .quotedLiteral(prefixValue + postfixValue)
+    nodes[prefixIndex] = .quotedLiteral(prefixValue + postfixValue, display: mergedDisplay)
     
     // Remove the postfix node and fix up any parent concatenations
     other.nodes.remove(at: postfixIndex)
@@ -163,6 +169,7 @@ extension DSLList {
     while i >= 0 {
       switch other.nodes[i] {
       case .concatenation(let count):
+<<<<<<< HEAD
         // Omit a concatenation entirely if it would have zero children.
         if count == 1 {
           other.nodes[i] = .empty
@@ -170,6 +177,10 @@ extension DSLList {
           other.nodes[i] = .concatenation(count - 1)
         }
         return
+=======
+        other.nodes[i] = .concatenation(count - 1)
+        break Loop
+>>>>>>> main
       case .limitCaptureNesting, .ignoreCapturesInTypedOutput:
         other.nodes.remove(at: i)
         i -= 1

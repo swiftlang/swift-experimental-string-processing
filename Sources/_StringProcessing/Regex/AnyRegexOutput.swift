@@ -248,7 +248,7 @@ extension Regex {
   /// - Parameter verbatimString: A string to convert into a regular expression
   ///   exactly, escaping any metacharacters.
   public init(verbatim verbatimString: String) {
-    self.init(node: .quotedLiteral(verbatimString))
+    self.init(node: .quotedLiteral(verbatimString, display: nil))
   }
 
   /// Returns a Boolean value indicating whether a named capture with the given

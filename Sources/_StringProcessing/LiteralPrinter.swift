@@ -140,7 +140,7 @@ extension LiteralPrinter {
       outputCustomCharacterClass(charClass)
     case let .atom(atom):
       outputAtom(atom)
-    case let .quotedLiteral(literal):
+    case let .quotedLiteral(literal, _):
       output(prepareQuotedLiteral(literal))
       
     case .trivia(_):
@@ -192,7 +192,7 @@ extension LiteralPrinter {
         return true
       }
       
-    case .quotedLiteral(let literal):
+    case .quotedLiteral(let literal, _):
       return prepareQuotedLiteral(literal).count > 1
       
     default:
@@ -389,7 +389,7 @@ extension LiteralPrinter {
   }
   
   func prepareQuotedLiteral(_ literal: String) -> String {
-    if options.usesExtendedWhitespace || literal.containsRegexMetaCharacters {
+    if options.usesExtendedWhitespace {
       return #"\Q\#(literal)\E"#
     } else {
       return literal.escapingConfusableCharacters()
@@ -474,8 +474,12 @@ extension String {
   func escapingConfusableCharacters() -> String {
     reduce(into: "") { result, ch in
       for scalar in ch.unicodeScalars {
-        if scalar.isPrintableASCII {
-          result.append(Character(scalar))
+        let ch = Character(scalar)
+        if ch.isRegexMetaCharacter {
+          result.append("\\")
+          result.append(ch)
+        } else if scalar.isPrintableASCII {
+          result.append(ch)
         } else {
           result.append(scalar.escapedString)
         }

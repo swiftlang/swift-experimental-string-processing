@@ -71,7 +71,7 @@ extension DSLTree {
 
     case empty
 
-    case quotedLiteral(String)
+    case quotedLiteral(String, display: String?)
 
     // TODO: What should we do here?
     ///
@@ -397,7 +397,18 @@ extension DSLTree.Node {
   var literalStringValue: String? {
     switch self {
     case .atom(let a):   return a.literalCharacterValue.map(String.init)
-    case .quotedLiteral(let s): return s
+    case .quotedLiteral(let s, _): return s
+    default: return nil
+    }
+  }
+
+  var literalDisplayValue: String? {
+    switch self {
+    case .atom(let a):
+      guard let c = a.literalCharacterValue else { return nil }
+      return String(c)._escaped
+    case .quotedLiteral(_, display: let d):
+      return d
     default: return nil
     }
   }
@@ -665,7 +676,7 @@ private func _requiredAtomImpl(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTre
 
   // For a quoted literal, we can look at the first char
   // TODO: matching semantics???
-  case .quotedLiteral(let str):
+  case .quotedLiteral(let str, _):
     return str.first.map(DSLTree.Atom.char)
   
   // TODO: custom character classes could/should participate here somehow
