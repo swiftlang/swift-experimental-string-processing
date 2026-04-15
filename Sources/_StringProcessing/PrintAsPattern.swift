@@ -191,18 +191,12 @@ extension PrettyPrinter {
     case .empty:
       print("")
 
-    case let .quotedLiteral(v):
-      let str = v._quoted.reduce(into: "") { result, ch in
-        for scalar in ch.unicodeScalars {
-          switch scalar.properties.generalCategory {
-          case .control:
-            result.append(#"\u{\#(String(scalar.value, radix: 16, uppercase: true))}"#)
-          default:
-            result.append(Character(scalar))
-          }
-        }
+    case let .quotedLiteral(v, display: d):
+      if let display = d {
+        print(display._bareQuoted)
+      } else {
+        print(v._quoted)
       }
-      print(str)
 
     case let .customCharacterClass(ccc):
       printAsPattern(ccc)
@@ -626,15 +620,15 @@ extension PrettyPrinter {
 }
 
 extension String {
-  fileprivate var _escaped: String {
+  var _escaped: String {
     _replacing(#"\"#, with: #"\\"#)._replacing(#"""#, with: #"\""#)
   }
 
-  fileprivate var _quoted: String {
+  var _quoted: String {
     _escaped._bareQuoted
   }
 
-  fileprivate var _bareQuoted: String {
+  var _bareQuoted: String {
     #""\#(self)""#
   }
 }

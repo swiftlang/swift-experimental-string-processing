@@ -59,7 +59,7 @@ extension DSLList {
 
     // For a quoted literal, we can look at the first char
     // TODO: matching semantics???
-    case .quotedLiteral(let str):
+    case .quotedLiteral(let str, _):
       return str.first.map(DSLTree.Atom.char)
     
     // TODO: custom character classes could/should participate here somehow
