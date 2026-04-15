@@ -129,7 +129,7 @@ public struct Regex<Output>: RegexComponent {
 extension Regex {
   @available(*, deprecated, renamed: "init(verbatim:)")
   public init(quoting _string: String) {
-    self.init(node: .quotedLiteral(_string))
+    self.init(node: .quotedLiteral(_string, display: nil))
   }
 }
 

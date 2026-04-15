@@ -382,7 +382,7 @@ fileprivate extension Compiler.ByteCodeGen {
       }
     case .trivia, .empty:
       return false
-    case .quotedLiteral(let string):
+    case .quotedLiteral(let string, _):
       return !string.isEmpty
     case .consumer, .matcher:
       // Allow zero width consumers and matchers
@@ -820,7 +820,7 @@ fileprivate extension Compiler.ByteCodeGen {
     case let .atom(a):
       try emitAtom(a)
       
-    case let .quotedLiteral(s):
+    case let .quotedLiteral(s, _):
       emitQuotedLiteral(s)
       
     case .absentFunction:

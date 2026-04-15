@@ -140,7 +140,7 @@ extension LiteralPrinter {
       outputCustomCharacterClass(charClass)
     case let .atom(atom):
       outputAtom(atom)
-    case let .quotedLiteral(literal):
+    case let .quotedLiteral(literal, _):
       output(prepareQuotedLiteral(literal))
       
     case .trivia(_):
@@ -192,7 +192,7 @@ extension LiteralPrinter {
         return true
       }
       
-    case .quotedLiteral(let literal):
+    case .quotedLiteral(let literal, _):
       return prepareQuotedLiteral(literal).count > 1
       
     default:
