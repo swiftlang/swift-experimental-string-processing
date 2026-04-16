@@ -96,7 +96,7 @@ extension LiteralPrinter {
     case error
   }
   
-  mutating func outputList(_ list: inout ArraySlice<DSLTree.Node>) throws {
+  mutating func outputList(_ list: inout Deque<DSLTree.Node>.SubSequence) throws {
     guard let node = list.popFirst() else {
       return
     }
@@ -154,7 +154,7 @@ extension LiteralPrinter {
     }
   }
   
-  mutating func outputAlternation(_ list: inout ArraySlice<DSLTree.Node>, count: Int) throws {
+  mutating func outputAlternation(_ list: inout Deque<DSLTree.Node>.SubSequence, count: Int) throws {
     for i in 0..<count {
       if i != 0 {
         output("|")
@@ -163,13 +163,13 @@ extension LiteralPrinter {
     }
   }
   
-  mutating func outputConcatenation(_ list: inout ArraySlice<DSLTree.Node>, count: Int) throws {
+  mutating func outputConcatenation(_ list: inout Deque<DSLTree.Node>.SubSequence, count: Int) throws {
     for _ in 0..<count {
       try outputList(&list)
     }
   }
   
-  mutating func outputCapture(_ list: inout ArraySlice<DSLTree.Node>, name: String?) throws {
+  mutating func outputCapture(_ list: inout Deque<DSLTree.Node>.SubSequence, name: String?) throws {
     if let name {
       output("(?<\(name)>")
     } else {
@@ -179,7 +179,7 @@ extension LiteralPrinter {
     output(")")
   }
   
-  func requiresGrouping(_ list: ArraySlice<DSLTree.Node>) -> Bool {
+  func requiresGrouping(_ list: Deque<DSLTree.Node>.SubSequence) -> Bool {
     guard let node = list.first else { return false } // malformed?
     switch node {
     case .concatenation(let count):
@@ -201,7 +201,7 @@ extension LiteralPrinter {
   }
 
   mutating func outputQuantification(
-    _ list: inout ArraySlice<DSLTree.Node>,
+    _ list: inout Deque<DSLTree.Node>.SubSequence,
     amount: DSLTree._AST.QuantificationAmount,
     kind: DSLTree.QuantificationKind
   ) throws {
