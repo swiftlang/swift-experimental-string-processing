@@ -49,7 +49,7 @@ fileprivate extension Compiler.ByteCodeGen {
   /// In particular, non-required groups and option-setting groups are
   /// inconclusive about where they can match.
   private mutating func _canOnlyMatchAtStartImpl(
-    _ list: inout ArraySlice<DSLTree.Node>
+    _ list: inout Deque<DSLTree.Node>.SubSequence
   ) -> Bool? {
     guard let node = list.popFirst() else { return false }
     switch node {
@@ -164,10 +164,10 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitAlternationGen<T>(
-    _ elements: inout ArraySlice<T>,
+    _ elements: inout Deque<T>.SubSequence,
     alternationCount: Int,
     withBacktracking: Bool,
-    _ body: (inout Compiler.ByteCodeGen, inout ArraySlice<T>) throws -> Void
+    _ body: (inout Compiler.ByteCodeGen, inout Deque<T>.SubSequence) throws -> Void
   ) rethrows {
     // Alternation: p0 | p1 | ... | pn
     //     save next_p1
@@ -201,7 +201,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
   
   mutating func emitAlternation(
-    _ list: inout ArraySlice<DSLTree.Node>,
+    _ list: inout Deque<DSLTree.Node>.SubSequence,
     alternationCount count: Int
   ) throws {
     try emitAlternationGen(&list, alternationCount: count, withBacktracking: true) {
@@ -209,7 +209,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitPositiveLookahead(_ list: inout ArraySlice<DSLTree.Node>) throws {
+  mutating func emitPositiveLookahead(_ list: inout Deque<DSLTree.Node>.SubSequence) throws {
     /*
       save(restoringAt: success)
       save(restoringAt: intercept)
@@ -238,7 +238,7 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.label(success)
   }
   
-  mutating func emitNegativeLookahead(_ list: inout ArraySlice<DSLTree.Node>) throws {
+  mutating func emitNegativeLookahead(_ list: inout Deque<DSLTree.Node>.SubSequence) throws {
     /*
       save(restoringAt: success)
       save(restoringAt: intercept)
@@ -269,7 +269,7 @@ fileprivate extension Compiler.ByteCodeGen {
   
   mutating func emitLookaround(
     _ kind: (forwards: Bool, positive: Bool),
-    _ list: inout ArraySlice<DSLTree.Node>
+    _ list: inout Deque<DSLTree.Node>.SubSequence
   ) throws {
     guard kind.forwards else {
       throw Unsupported("backwards assertions")
@@ -282,7 +282,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitAtomicNoncapturingGroup(
-    _ list: inout ArraySlice<DSLTree.Node>
+    _ list: inout Deque<DSLTree.Node>.SubSequence
   ) throws {
     /*
       save(continuingAt: success)
@@ -315,7 +315,7 @@ fileprivate extension Compiler.ByteCodeGen {
 
   mutating func emitNoncapturingGroup(
     _ kind: AST.Group.Kind,
-    _ list: inout ArraySlice<DSLTree.Node>
+    _ list: inout Deque<DSLTree.Node>.SubSequence
   ) throws {
     assert(!kind.isCapturing)
 
@@ -351,7 +351,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  func _guaranteesForwardProgressImpl(_ list: ArraySlice<DSLTree.Node>, position: inout Int) -> Bool {
+  func _guaranteesForwardProgressImpl(_ list: Deque<DSLTree.Node>.SubSequence, position: inout Int) -> Bool {
     guard position < list.endIndex else { return false }
     let node = list[position]
     position += 1
@@ -404,7 +404,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
   
-  func guaranteesForwardProgress(_ list: ArraySlice<DSLTree.Node>) -> Bool {
+  func guaranteesForwardProgress(_ list: Deque<DSLTree.Node>.SubSequence) -> Bool {
     var pos = list.startIndex
     return _guaranteesForwardProgressImpl(list, position: &pos)
   }
@@ -412,7 +412,7 @@ fileprivate extension Compiler.ByteCodeGen {
   mutating func emitQuantification(
     _ amount: AST.Quantification.Amount,
     _ kind: DSLTree.QuantificationKind,
-    _ list: inout ArraySlice<DSLTree.Node>
+    _ list: inout Deque<DSLTree.Node>.SubSequence
   ) throws {
     let updatedKind = kind.applying(options: options)
 
@@ -652,7 +652,7 @@ fileprivate extension Compiler.ByteCodeGen {
   /// - single grapheme consumgin built in character classes
   /// - .any, .anyNonNewline, .dot
   mutating func tryEmitFastQuant(
-    _ list: inout ArraySlice<DSLTree.Node>,
+    _ list: inout Deque<DSLTree.Node>.SubSequence,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ maxExtraTrips: Int?
@@ -736,7 +736,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
   
   mutating func emitConcatenation(
-    _ list: inout ArraySlice<DSLTree.Node>,
+    _ list: inout Deque<DSLTree.Node>.SubSequence,
     componentCount: Int
   ) throws {
     // Unlike the tree-based bytecode generator, in a DSLList concatenations
@@ -747,7 +747,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   @discardableResult
-  mutating func emitNode(_ list: inout ArraySlice<DSLTree.Node>) throws -> ValueRegister? {
+  mutating func emitNode(_ list: inout Deque<DSLTree.Node>.SubSequence) throws -> ValueRegister? {
     guard let node = list.popFirst() else { return nil }
     switch node {
       
@@ -845,7 +845,7 @@ fileprivate extension Compiler.ByteCodeGen {
 
 extension Compiler.ByteCodeGen {
   mutating func skipNode(
-    _ list: inout ArraySlice<DSLTree.Node>,
+    _ list: inout Deque<DSLTree.Node>.SubSequence,
     preservingCaptures: Bool = true
   ) throws {
     guard let node = list.popFirst() else { return }
