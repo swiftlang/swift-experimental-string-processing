@@ -2828,7 +2828,12 @@ extension RegexTests {
     }
   }
 
-  func expectCompletion(regex: String, in target: String) {
+  func expectCompletion(
+    regex: String,
+    in target: String,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
     let expectation = XCTestExpectation(description: "Run the given regex to completion")
     Task.init {
       let r = try! Regex(regex)
@@ -2836,7 +2841,14 @@ extension RegexTests {
       expectation.fulfill()
       return val
     }
-    wait(for: [expectation], timeout: 3.0)
+    let result = XCTWaiter().wait(for: [expectation], timeout: 3.0)
+    if result != .completed {
+      XCTFail("""
+        Matching didn't complete within 3 seconds:
+          regex: \(regex)
+          input: \(target)
+        """, file: file, line: line)
+    }
   }
 
   func testQuantificationForwardProgress() {
@@ -2856,7 +2868,12 @@ extension RegexTests {
       
     expectCompletion(regex: #"(?:A*(?:b|c*))*"#, in: "ABC")
     expectCompletion(regex: #"^(?:(?:[^/]*(?:/|$))*)(?:[^/]*)$"#, in: "Sources/main.swift")
-    expectCompletion(regex: #"(?:(?!a)\d*)*"#, in: "A")
+    
+    // Repeated lookahead
+    expectCompletion(regex: #"(?:(?=\w)\d*)*"#, in: "a")
+    expectCompletion(regex: #"(?:(?=\d)\w*)*"#, in: "a")
+    expectCompletion(regex: #"(?:(?!b)\d*)*"#, in: "a")
+    expectCompletion(regex: #"(?:(?!\d)[0-9]*)*"#, in: "a")
   }
 
   func testQuantifyOptimization() throws {
