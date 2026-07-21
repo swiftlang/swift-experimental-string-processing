@@ -369,6 +369,8 @@ fileprivate extension Compiler.ByteCodeGen {
     case .nonCapturingGroup(let kind):
       switch kind.ast {
       case .lookahead, .negativeLookahead, .lookbehind, .negativeLookbehind:
+        list.skipNode(&position)
+        position += 1
         return false
       default:
         return _guaranteesForwardProgressImpl(list, position: &position)
