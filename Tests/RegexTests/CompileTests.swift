@@ -531,7 +531,9 @@ extension RegexTests {
     expectProgram(for: #"(?:\w|(?i))+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
     expectProgram(for: #"(?:A*(?:b|c*))*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
     expectProgram(for: #"(?:[^/]*(?:/|$))*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:(?=a)\d*)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
     expectProgram(for: #"(?:(?!a)\d*)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:(?!\d)[0-9]*)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
 
     // Bounded quantification, don't emit position checking
     expectProgram(for: #"(?:(?=a)){1,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
