@@ -11,38 +11,42 @@
 
 extension Processor {
   struct SavePoint {
+    /// The current position in the instruction list.
     var pc: InstructionAddress
+    
+    /// The current position in the input, when this save point represents a single position.
+    ///
+    /// `pos` is `nil` whenever `quantifiedRange` has a value, and can also be `nil`
+    /// when the save point is only for backtracking to a previous instruction address.
     var pos: Position?
 
-    // Quantifiers may store a range of positions to restore to
+    /// The current range in the input, when this save point represents a range of positions.
     var quantifiedRange: Range<Position>?
 
     // FIXME: refactor, for now this field is only used for quantifier save
     //        points. We should try to separate out the concerns better.
+    /// Indicates whether this save point has scalar or grapheme semantics.
     var isScalarSemantics: Bool
 
-    // FIXME: Save minimal info (e.g. stack position and
-    // perhaps current start)
-    var captureEnds: [_StoredCapture]
+    // These properties store indices into the mutable `Processor.Registers`
+    // LoggingArray logs. On backtrack, each log is unwound down to the
+    // point saved here.
 
-    // The int registers store values that can be relevant to
-    // backtracking, such as the number of trips in a quantification.
-    var intRegisters: [Int]
-    // Same with position registers
-    var posRegisters: [Input.Index]
+    /// The length of the log of the `captures` register when this save point was created,
+    /// for backtracking on failure.
+    var captureLogEnd: Int
+    /// The length of the log of the `ints` register when this save point was created,
+    /// for backtracking on failure.
+    var intLogEnd: Int
+    /// The length of the log of the `positions` register when this save point was created,
+    /// for backtracking on failure.
+    var positionLogEnd: Int
+    /// The length of the log of the `values` register when this save point was created,
+    /// for backtracking on failure.
+    var valueLogEnd: Int
 
-    var destructure: (
-      pc: InstructionAddress,
-      pos: Position?,
-      captureEnds: [_StoredCapture],
-      intRegisters: [Int],
-      PositionRegister: [Input.Index]
-    ) {
-      return (pc, pos, captureEnds, intRegisters, posRegisters)
-    }
-
-    // Whether this save point is quantified, meaning it has a range of
-    // possible positions to explore.
+    /// Whether this save point is quantified, meaning it has a range of
+    /// possible positions to explore.
     var isQuantified: Bool {
       quantifiedRange != nil
     }
@@ -77,9 +81,10 @@ extension Processor {
       pos: currentPosition,
       quantifiedRange: nil,
       isScalarSemantics: false,
-      captureEnds: storedCaptures,
-      intRegisters: registers.ints,
-      posRegisters: registers.positions)
+      captureLogEnd: registers.storedCaptures.logCount,
+      intLogEnd: registers.ints.logCount,
+      positionLogEnd: registers.positions.logCount,
+      valueLogEnd: registers.values.logCount)
   }
 
   func makeAddressOnlySavePoint(
@@ -90,9 +95,10 @@ extension Processor {
       pos: nil,
       quantifiedRange: nil,
       isScalarSemantics: false,
-      captureEnds: storedCaptures,
-      intRegisters: registers.ints,
-      posRegisters: registers.positions)
+      captureLogEnd: registers.storedCaptures.logCount,
+      intLogEnd: registers.ints.logCount,
+      positionLogEnd: registers.positions.logCount,
+      valueLogEnd: registers.values.logCount)
   }
 
   func makeQuantifiedSavePoint(
@@ -104,9 +110,10 @@ extension Processor {
       pos: nil,
       quantifiedRange: range,
       isScalarSemantics: isScalarSemantics,
-      captureEnds: storedCaptures,
-      intRegisters: registers.ints,
-      posRegisters: registers.positions)
+      captureLogEnd: registers.storedCaptures.logCount,
+      intLogEnd: registers.ints.logCount,
+      positionLogEnd: registers.positions.logCount,
+      valueLogEnd: registers.values.logCount)
   }
 }
 
