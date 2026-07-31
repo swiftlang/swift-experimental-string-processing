@@ -10,6 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
+@testable @_spi(RegexBuilder) import _StringProcessing
 import RegexBuilder
 
 // Regression tests for `DSLList.coalesce(withFirstAtomIn:)`, which merges
@@ -29,6 +30,24 @@ class DSLListCoalescingTests: XCTestCase {
       "a"
       Regex {
         "X"
+        OneOrMore(.digit)
+      }
+    }
+    let extraNested = Regex {
+      "a"
+      Regex {
+        "X"
+        Regex {
+          OneOrMore(.digit)
+        }
+      }
+    }
+    let nestedBefore = Regex {
+      "a"
+      Regex {
+        Regex {
+          "X"
+        }
         OneOrMore(.digit)
       }
     }
@@ -58,6 +77,8 @@ class DSLListCoalescingTests: XCTestCase {
     
     runTest(flat)
     runTest(nested)
+    runTest(extraNested)
+    runTest(nestedBefore)
     runTest(mixed)
     runTest(nestedMixed)
     runTest(complexNestedMixed)
@@ -263,5 +284,143 @@ class DSLListCoalescingTests: XCTestCase {
     let match = try XCTUnwrap("aX0".wholeMatch(of: nested))
     XCTAssertEqual(match.output.1, "a")
     XCTAssertNil("aX".wholeMatch(of: nested))
+  }
+
+  // MARK: - `coalesce(withFirstAtomIn:)` unit tests
+
+  func testCoalesceStackedConcatenations() {
+    // Handle one concatenation directly nested in another --
+    // RegexBuilder never emits this, but the coalescing algorithm can/
+    // should still handle this
+    var lhs = DSLList([.quotedLiteral("a", display: nil)])
+    var rhs = DSLList([
+      .concatenation(2),               // outer: [inner-concat, .word]
+      .concatenation(2),               // inner: [X, .digit]
+      .atom(.char("X")),
+      .atom(.characterClass(.digit)),
+      .atom(.characterClass(.word)),
+    ])
+
+    lhs.coalesce(withFirstAtomIn: &rhs)
+
+    XCTAssertEqual(lhs.nodes, [.quotedLiteral("aX", display: "aX")])
+    XCTAssertEqual(rhs.nodes, [
+      .concatenation(2),
+      .concatenation(1),
+      .atom(.characterClass(.digit)),
+      .atom(.characterClass(.word)),
+    ])
+  }
+
+  func testCoalesceStackedConcatenationsEmpty() {
+    // Same as above, but the inner concatenation collapses to
+    // `.empty`
+    var lhs = DSLList([.quotedLiteral("a", display: nil)])
+    var rhs = DSLList([
+      .concatenation(2),               // outer: [inner-concat, .digit]
+      .concatenation(1),               //   inner: [X]
+      .atom(.char("X")),
+      .atom(.characterClass(.digit)),
+    ])
+
+    lhs.coalesce(withFirstAtomIn: &rhs)
+
+    XCTAssertEqual(lhs.nodes, [.quotedLiteral("aX", display: "aX")])
+    XCTAssertEqual(rhs.nodes, [
+      .concatenation(2),
+      .empty,
+      .atom(.characterClass(.digit)),
+    ])
+  }
+
+  func testCoalesceStackedWrapperNodes() {
+    // Check that any wrapper nodes before the concatenation get stripped
+    var lhs = DSLList([.quotedLiteral("a", display: nil)])
+    var rhs = DSLList([
+      .concatenation(2),                  // [wrapped-X, .word]
+      .limitCaptureNesting,
+      .ignoreCapturesInTypedOutput,
+      .atom(.char("X")),
+      .atom(.characterClass(.word)),
+    ])
+
+    lhs.coalesce(withFirstAtomIn: &rhs)
+
+    XCTAssertEqual(rhs.nodes, [
+      .concatenation(1),
+      .atom(.characterClass(.word)),
+    ])
+  }
+
+  func testCoalesceNoEnclosingConcatenation() {
+    // If the coalesced atom's ancestors are only wrapper nodes,
+    // coalescing should eat the whole `rhs`
+    var lhs = DSLList([.quotedLiteral("a", display: nil)])
+    var rhs = DSLList([
+      .limitCaptureNesting,
+      .ignoreCapturesInTypedOutput,
+      .atom(.char("X")),
+    ])
+
+    lhs.coalesce(withFirstAtomIn: &rhs)
+
+    XCTAssertEqual(lhs.nodes, [.quotedLiteral("aX", display: "aX")])
+    XCTAssertEqual(rhs.nodes, [])
+  }
+
+  func testCoalesceSingleConcatenation() {
+    // If the coalesced atom's is the sole member of a top-level
+    // concatenation, coalescing should only leave an `.empty` node
+    var lhs = DSLList([.quotedLiteral("a", display: nil)])
+    var rhs = DSLList([
+      .concatenation(1),
+      .atom(.char("X")),
+    ])
+
+    lhs.coalesce(withFirstAtomIn: &rhs)
+
+    XCTAssertEqual(lhs.nodes, [.quotedLiteral("aX", display: "aX")])
+    XCTAssertEqual(rhs.nodes, [.empty])
+  }
+
+  func testCoalesceStopsAtNonWrapperNonConcatenation() {
+    // This shouldn't coalesce at all
+    var lhs = DSLList([.quotedLiteral("a", display: nil)])
+    var rhs = DSLList([
+      .orderedChoice(2),
+      .atom(.char("X")),
+      .atom(.characterClass(.word)),
+    ])
+
+	let originals = (lhs, rhs)
+    lhs.coalesce(withFirstAtomIn: &rhs)
+
+    XCTAssertEqual(lhs.nodes, originals.0.nodes)
+    XCTAssertEqual(rhs.nodes, originals.1.nodes)
+  }
+}
+
+
+extension DSLTree.Node: @retroactive Equatable {
+  public static func == (lhs: DSLTree.Node, rhs: DSLTree.Node) -> Bool {
+    switch (lhs, rhs) {
+    case (.concatenation(let l), .concatenation(let r)): return l == r
+    case (.orderedChoice(let l), .orderedChoice(let r)): return l == r
+    case (.quotedLiteral(let ls, let ld), .quotedLiteral(let rs, let rd)):
+      return ls == rs && ld == rd
+    case (.atom(let l), .atom(let r)):
+      switch (l, r) {
+      case (.char(let lc), .char(let rc)): 
+      	return lc == rc
+      case (.characterClass(let lc), .characterClass(let rc)): 
+      	return lc == rc
+      default: return false
+      }
+    case (.empty, .empty),
+     (.limitCaptureNesting, .limitCaptureNesting),
+     (.ignoreCapturesInTypedOutput, .ignoreCapturesInTypedOutput): 
+     return true
+    default: return false
+    }
   }
 }
