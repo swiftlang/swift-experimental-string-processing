@@ -175,6 +175,8 @@ extension DSLList {
         } else {
           other.nodes[i] = .concatenation(count - 1)
         }
+        // No more fixing up to do
+        return
       case .limitCaptureNesting, .ignoreCapturesInTypedOutput:
         other.nodes.remove(at: i)
         i -= 1
