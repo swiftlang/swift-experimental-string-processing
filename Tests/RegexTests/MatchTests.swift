@@ -1347,7 +1347,10 @@ extension RegexTests {
     firstMatchTest("[[:isALNUM:]]", input: "[[:alnum:]]", match: "a")
     firstMatchTest("[[:AL_NUM:]]", input: "[[:alnum:]]", match: "a")
 
+// FIXME: Remove this once macOS CI is running 13.0
+#if os(Linux)
     firstMatchTest("[[:script=Greek:]]", input: "123αβγxyz", match: "α")
+#endif
 
     func scalar(_ u: UnicodeScalar) -> UInt32 { u.value }
 
@@ -1519,6 +1522,8 @@ extension RegexTests {
     firstMatchTest(#"\p{ascii}"#, input: "123abcXYZ", match: "1")
     firstMatchTest(#"\p{isAny}"#, input: "123abcXYZ", match: "1")
 
+// FIXME: Remove this once macOS CI is running 13.0
+#if os(Linux)
     firstMatchTest(#"\p{sc=grek}"#, input: "123αβγxyz", match: "α")
     firstMatchTest(#"\p{sc=isGreek}"#, input: "123αβγxyz", match: "α")
     firstMatchTest(#"\p{Greek}"#, input: "123αβγxyz", match: "α")
@@ -1531,6 +1536,7 @@ extension RegexTests {
     firstMatchTest(#"\p{Script=Unknown}"#, input: "\u{10FFFF}", match: "\u{10FFFF}")
     firstMatchTest(#"\p{scx=Gujr}"#, input: "\u{a839}", match: "\u{a839}")
     firstMatchTest(#"\p{Gujr}"#, input: "\u{a839}", match: "\u{a839}")
+#endif
 
     firstMatchTest(#"\p{alpha}"#, input: "123abcXYZ", match: "a")
     firstMatchTest(#"\P{alpha}"#, input: "123abcXYZ", match: "1")
