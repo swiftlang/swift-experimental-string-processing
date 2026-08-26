@@ -15,6 +15,7 @@ jobs:
       linux_exclude_swift_versions: '[{"swift_version": "5.9"}, {"swift_version": "5.10"}, {"swift_version": "6.0"}, {"swift_version": "6.1"}, {"swift_version": "6.2"}]'
       enable_windows_checks: false
       enable_macos_checks: false
+      enable_wasm_sdk_build: true
   soundness:
     name: Soundness
     uses: swiftlang/github-workflows/.github/workflows/soundness.yml@main
