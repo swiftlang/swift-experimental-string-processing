@@ -2874,6 +2874,9 @@ extension RegexTests {
     expectCompletion(regex: #"(?:(?=\d)\w*)*"#, in: "a")
     expectCompletion(regex: #"(?:(?!b)\d*)*"#, in: "a")
     expectCompletion(regex: #"(?:(?!\d)[0-9]*)*"#, in: "a")
+    
+    expectCompletion(regex: #"(?:(?:(?:){65535}){65535}){65535}"#, in: "")
+    expectCompletion(regex: #"(?:(?:(?:){10,10000}){10,10000}){10,10000}"#, in: "")
   }
 
   func testQuantifyOptimization() throws {
