@@ -96,22 +96,23 @@ extension Instruction.Payload {
   // for 1990s Unicode it's good enough for us.
   //
   // TODO: but really, let's come up with something
-  private var firstSplitMask: UInt64 { 0x0000_FFFF }
-  private var secondSplitMask: UInt64 { 0xFFFF_0000 }
+  private static var firstSplitMask: UInt64 { 0x00FF_FFFF }
+  private static var secondSplitMask: UInt64 { 0xFFFF_FF00_0000 }
+  private static var secondSplitShift: UInt64 { 24 }
 
   private var split: (first: UInt64, second: UInt64) {
-    assert(rawValue == ((firstSplitMask|secondSplitMask) & rawValue))
+    assert(rawValue == ((Self.firstSplitMask|Self.secondSplitMask) & rawValue))
 
     // TODO: Which order is better?
-    let first = rawValue & firstSplitMask
-    let second = (rawValue & secondSplitMask) &>> 16
+    let first = rawValue & Self.firstSplitMask
+    let second = rawValue &>> Self.secondSplitShift
     return (first, second)
   }
 
   private init(_ a: UInt64, _ b: UInt64) {
-    self.init(a | (b &<< 16))
-    assert(a == a & firstSplitMask)
-    assert(b == b & firstSplitMask)
+    self.init(a | (b &<< Self.secondSplitShift))
+    assert(a == a & Self.firstSplitMask)
+    assert(b &<< Self.secondSplitShift == (b &<< Self.secondSplitShift) & Self.secondSplitMask)
   }
   private init<👻>(_ a: UInt64, _ b: TypedInt<👻>) {
     self.init(a, b.bits)
@@ -410,11 +411,11 @@ struct QuantifyPayload: RawRepresentable {
   static var maxStorableTrips: UInt64 { (1 << 8) - 1 }
   static var isScalarSemanticsBit: UInt64 { 1 &<< 38 }
 
-  var quantKindMask: UInt64  { 3 }
-  var maxExtraTripsMask: UInt64 { 0x1FF }
-  var minTripsMask: UInt64   { 0xFF }
-  var typeMask: UInt64       { 7 }
-  var payloadMask: UInt64    { 0xFF_FF }
+  static var quantKindMask: UInt64  { 3 }
+  static var maxExtraTripsMask: UInt64 { 0x1FF }
+  static var minTripsMask: UInt64   { 0xFF }
+  static var typeMask: UInt64       { 7 }
+  static var quantifyPayloadMask: UInt64    { 0xFF_FF }
 
   // Calculate the maximum number of trips, else UInt64.max if unbounded
   var maxTrips: UInt64 {
@@ -466,7 +467,7 @@ struct QuantifyPayload: RawRepresentable {
     _ maxExtraTrips: Int?,
     isScalarSemantics: Bool
   ) {
-    assert(bitset.bits <= _payloadMask)
+    assert(bitset.bits <= Self.quantifyPayloadMask)
     self.rawValue = bitset.bits
       + QuantifyPayload.packInfoValues(kind, minTrips, maxExtraTrips, .asciiBitset, isScalarSemantics: isScalarSemantics)
   }
@@ -513,7 +514,7 @@ struct QuantifyPayload: RawRepresentable {
   }
 
   var quantKind: AST.Quantification.Kind {
-    switch (self.rawValue >> QuantifyPayload.quantKindShift) & quantKindMask {
+    switch (self.rawValue >> Self.quantKindShift) & Self.quantKindMask {
     case 0: return .eager
     case 1: return .reluctant
     case 2: return .possessive
@@ -523,11 +524,11 @@ struct QuantifyPayload: RawRepresentable {
   }
 
   var minTrips: UInt64 {
-    (self.rawValue >> QuantifyPayload.minTripsShift) & minTripsMask
+    (self.rawValue >> Self.minTripsShift) & Self.minTripsMask
   }
 
   var maxExtraTrips: UInt64? {
-    let val = (self.rawValue >> QuantifyPayload.maxExtraTripsShift) & maxExtraTripsMask
+    let val = (self.rawValue >> Self.maxExtraTripsShift) & Self.maxExtraTripsMask
     if val == 1 {
       return nil
     } else {
@@ -540,11 +541,11 @@ struct QuantifyPayload: RawRepresentable {
   }
 
   var bitset: AsciiBitsetRegister {
-    TypedInt(self.rawValue & payloadMask)
+    TypedInt(self.rawValue & Self.quantifyPayloadMask)
   }
 
   var asciiChar: UInt8 {
-    UInt8(asserting: self.rawValue & payloadMask)
+    UInt8(asserting: self.rawValue & Self.quantifyPayloadMask)
   }
 
   var anyMatchesNewline: Bool {
