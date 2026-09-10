@@ -1136,7 +1136,6 @@ extension RegexTests {
       ("j", "j")
     )
 
-
     // These can't compile in grapheme semantic mode, but make sure they work in
     // scalar semantic mode.
     firstMatchTests(
@@ -3014,5 +3013,23 @@ extension RegexTests {
     let regex = #/(?i)tests?/#
     XCTAssertNotNil("testS".wholeMatch(of: regex))
     XCTAssertNotNil("tesTs".wholeMatch(of: regex))
+  }
+  
+  func testQuantifierPayload() throws {
+    // rdar://185730811
+    func test(_ n: Int, line: UInt = #line) throws {
+      let pattern = "^" + String(repeating: "[ac]", count: n) + "[bd]+"
+      let regex = try Regex(pattern)
+      let goodInput = String(repeating: "a", count: n) + "b"
+      let badInput = String(repeating: "a", count: n + 1)
+      
+      XCTAssertTrue(goodInput.contains(regex), "Missed match in 'a....b'", line: line)
+      XCTAssertFalse(badInput.contains(regex), "Incorrect match in 'a....'", line: line)
+    }
+
+    try test(4)
+    try test(65534)
+    try test(65535)
+    try test(65536)
   }
 }
