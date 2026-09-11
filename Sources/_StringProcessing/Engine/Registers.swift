@@ -36,13 +36,14 @@ extension Processor {
 
     // Value-constructing matchers
     var matcherFunctions: [MEProgram.MatcherFunction]
+    
+    // MARK: writeable
+
+    var values: UndoableArray<ValueRegister, Any>
 
     // MARK: writeable, resettable
 
-    // currently, useful for range-based quantification
     var ints: UndoableArray<IntRegister, Int>
-
-    var values: UndoableArray<ValueRegister, Any>
 
     var positions: UndoableArray<PositionRegister, Input.Index>
 
@@ -98,7 +99,7 @@ extension Processor {
 
   @inline(always)
   mutating func updateRegister(at i: ValueRegister, to newValue: Any) {
-    registers.values.set(i, to: newValue, logging: !savePoints.isEmpty)
+    registers.values.set(i, to: newValue, logging: false)
   }
 
   @inline(always)

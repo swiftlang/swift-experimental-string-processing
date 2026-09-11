@@ -41,9 +41,6 @@ extension Processor {
     /// The length of the log of the `positions` register when this save point was created,
     /// for backtracking on failure.
     var positionLogEnd: Int
-    /// The length of the log of the `values` register when this save point was created,
-    /// for backtracking on failure.
-    var valueLogEnd: Int
 
     /// Whether this save point is quantified, meaning it has a range of
     /// possible positions to explore.
@@ -83,8 +80,7 @@ extension Processor {
       isScalarSemantics: false,
       captureLogEnd: registers.storedCaptures.logCount,
       intLogEnd: registers.ints.logCount,
-      positionLogEnd: registers.positions.logCount,
-      valueLogEnd: registers.values.logCount)
+      positionLogEnd: registers.positions.logCount)
   }
 
   func makeAddressOnlySavePoint(
@@ -97,8 +93,7 @@ extension Processor {
       isScalarSemantics: false,
       captureLogEnd: registers.storedCaptures.logCount,
       intLogEnd: registers.ints.logCount,
-      positionLogEnd: registers.positions.logCount,
-      valueLogEnd: registers.values.logCount)
+      positionLogEnd: registers.positions.logCount)
   }
 
   func makeQuantifiedSavePoint(
@@ -112,8 +107,7 @@ extension Processor {
       isScalarSemantics: isScalarSemantics,
       captureLogEnd: registers.storedCaptures.logCount,
       intLogEnd: registers.ints.logCount,
-      positionLogEnd: registers.positions.logCount,
-      valueLogEnd: registers.values.logCount)
+      positionLogEnd: registers.positions.logCount)
   }
 }
 

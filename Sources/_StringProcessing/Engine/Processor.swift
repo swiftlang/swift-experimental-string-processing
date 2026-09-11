@@ -388,7 +388,6 @@ extension Processor {
 
     registers.ints.undo(to: sp.intLogEnd)
     registers.positions.undo(to: sp.positionLogEnd)
-    registers.values.undo(to: sp.valueLogEnd)
 
     if !preservingCaptures {
       registers.storedCaptures.undo(to: sp.captureLogEnd)
