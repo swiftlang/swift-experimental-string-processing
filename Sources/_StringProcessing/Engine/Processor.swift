@@ -22,7 +22,9 @@ struct Controller: Equatable {
   var pc: InstructionAddress
 
   mutating func step() {
-    pc.rawValue += 1
+    // `pc` is always kept in `0..<instructions.count` by the bounds check
+    // on every fetch, so this can never overflow in practice.
+    pc.rawValue &+= 1
   }
 }
 
@@ -373,24 +375,26 @@ extension Processor {
 
     let idx = savePoints.index(before: savePoints.endIndex)
 
-    // If we have a quantifier save point, move the next range position into
-    // pos instead of removing it
+    // If we have a quantifier save point, pop the next range position
+    // instead of removing it
     let sp: SavePoint
+    let resumePosition: Position?
     if savePoints[idx].isQuantified {
-      savePoints[idx].takePositionFromQuantifiedRange(input)
+      resumePosition = savePoints[idx].popQuantifiedPosition(input)
       sp = savePoints[idx]
     } else {
       sp = savePoints.removeLast()
+      resumePosition = sp.pos
     }
 
     controller.pc = sp.pc
-    currentPosition = sp.pos ?? currentPosition
+    currentPosition = resumePosition ?? currentPosition
 
-    registers.ints.undo(to: sp.intLogEnd)
-    registers.positions.undo(to: sp.positionLogEnd)
+    registers.ints.undo(to: Int(sp.intLogEnd))
+    registers.positions.undo(to: Int(sp.positionLogEnd))
 
     if !preservingCaptures {
-      registers.storedCaptures.undo(to: sp.captureLogEnd)
+      registers.storedCaptures.undo(to: Int(sp.captureLogEnd))
     }
     // If preserving captures, leave the capture log entries recorded since
     // this save point untouched (rather than replaying or discarding them):
@@ -487,7 +491,9 @@ extension Processor {
       if registers[int] == 0 {
         controller.pc = addr
       } else {
-        updateRegister(at: int) { $0 -= 1 }
+        // Only reached when `registers[int] != 0`, so this can never
+        // underflow in practice.
+        updateRegister(at: int) { $0 &-= 1 }
         controller.step()
       }
     case .condBranchSamePosition:
