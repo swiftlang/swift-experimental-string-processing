@@ -49,10 +49,8 @@ extension Processor {
 
     var storedCaptures: UndoableArray<CaptureRegister, Processor._StoredCapture>
 
-    var isDirty: Bool {
-      ints.isDirty || values.isDirty || positions.isDirty || storedCaptures.isDirty
-    }
-
+    var isDirty = false
+    
     init(
       elements: [Element],
       utf8Contents: [[UInt8]],
@@ -85,26 +83,31 @@ extension Processor {
   @inline(always)
   mutating func updateRegister(at i: IntRegister, to newValue: Int) {
     registers.ints.set(i, to: newValue, logging: !savePoints.isEmpty)
+    registers.isDirty = true
   }
 
   @inline(always)
   mutating func updateRegister(at i: IntRegister, body: (inout Int) -> ()) {
     registers.ints.update(i, logging: !savePoints.isEmpty, body)
+    registers.isDirty = true
   }
 
   @inline(always)
   mutating func updateRegister(at i: PositionRegister, to newValue: Input.Index) {
     registers.positions.set(i, to: newValue, logging: !savePoints.isEmpty)
+    registers.isDirty = true
   }
 
   @inline(always)
   mutating func updateRegister(at i: ValueRegister, to newValue: Any) {
     registers.values.set(i, to: newValue, logging: false)
+    registers.isDirty = true
   }
 
   @inline(always)
   mutating func updateRegister(at i: CaptureRegister, body: (inout _StoredCapture) -> ()) {
     registers.storedCaptures.update(i, logging: !savePoints.isEmpty, body)
+    registers.isDirty = true
   }
 }
 
@@ -155,10 +158,12 @@ extension Processor.Registers {
   }
 
   mutating func reset() {
+    guard isDirty else { return }
     ints.reset(to: 0)
     values.reset(to: SentinelValue())
     positions.reset(to: Processor.Registers.sentinelIndex)
     storedCaptures.reset(to: Processor._StoredCapture())
+    isDirty = false
   }
 }
 

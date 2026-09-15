@@ -37,9 +37,6 @@ struct UndoableArray<Register: RawRepresentable, Value> where Register.RawValue 
   /// `undo(to:)`.
   var logCount: Int { log.count }
 
-  /// Whether any register slot has been mutated since the last `reset(to:)`.
-  var isDirty = false
-
   /// Sets the value of `i`'s register slot, recording its previous value
   /// in the undo log when `logging` is true.
   @inline(always)
@@ -48,7 +45,6 @@ struct UndoableArray<Register: RawRepresentable, Value> where Register.RawValue 
       log.append((i, values[i.rawValue]))
     }
     values[i.rawValue] = newValue
-    isDirty = true
   }
 
   /// Mutates the value of `i`'s register slot in place, recording its
@@ -61,7 +57,6 @@ struct UndoableArray<Register: RawRepresentable, Value> where Register.RawValue 
       log.append((i, values[i.rawValue]))
     }
     body(&values[i.rawValue])
-    isDirty = true
   }
 
   /// Reverts register slots to the values they held when the undo log
@@ -72,20 +67,17 @@ struct UndoableArray<Register: RawRepresentable, Value> where Register.RawValue 
       let entry = log.removeLast()
       values[entry.slot.rawValue] = entry.oldValue
     }
-    isDirty = true
   }
 
   /// Resets every register slot to `initialValue` and discards the undo
   /// log.
   @inline(always)
   mutating func reset(to initialValue: Value) {
-    guard isDirty else { return }
     if !log.isEmpty {
       log.removeAll(keepingCapacity: true)
     }
     for idx in values.indices {
       values[idx] = initialValue
     }
-    isDirty = false
   }
 }

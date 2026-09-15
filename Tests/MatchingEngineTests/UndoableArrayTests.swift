@@ -18,7 +18,6 @@ class UndoableArrayTests: XCTestCase {
     let a = UndoableArray<IntRegister, Int>(repeating: 0, count: 4)
     XCTAssertEqual(a.count, 4)
     XCTAssertEqual(a.logCount, 0)
-    XCTAssertFalse(a.isDirty)
     for i in 0..<4 {
       XCTAssertEqual(a[IntRegister(i)], 0)
     }
@@ -31,7 +30,6 @@ class UndoableArrayTests: XCTestCase {
 
     XCTAssertEqual(a[IntRegister(0)], 42)
     XCTAssertEqual(a[IntRegister(1)], 7)
-    XCTAssertTrue(a.isDirty)
     // No log entries were recorded, so there's nothing to undo.
     XCTAssertEqual(a.logCount, 0)
   }
@@ -42,7 +40,6 @@ class UndoableArrayTests: XCTestCase {
 
     XCTAssertEqual(a[IntRegister(0)], 15)
     XCTAssertEqual(a.logCount, 0)
-    XCTAssertTrue(a.isDirty)
   }
 
   func testSetWithLoggingRecordsUndoEntry() {
@@ -131,7 +128,6 @@ class UndoableArrayTests: XCTestCase {
     a.set(IntRegister(0), to: 1, logging: true)
     a.set(IntRegister(1), to: 2, logging: true)
     a.set(IntRegister(2), to: 3, logging: false)
-    XCTAssertTrue(a.isDirty)
     XCTAssertEqual(a.logCount, 2)
 
     a.reset(to: 0)
@@ -139,7 +135,6 @@ class UndoableArrayTests: XCTestCase {
     for i in 0..<3 {
       XCTAssertEqual(a[IntRegister(i)], 0)
     }
-    XCTAssertFalse(a.isDirty)
     XCTAssertEqual(a.logCount, 0)
   }
 }

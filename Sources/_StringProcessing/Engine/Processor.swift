@@ -392,6 +392,7 @@ extension Processor {
 
     registers.ints.undo(to: Int(sp.intLogEnd))
     registers.positions.undo(to: Int(sp.positionLogEnd))
+    registers.isDirty = true
 
     if !preservingCaptures {
       registers.storedCaptures.undo(to: Int(sp.captureLogEnd))
