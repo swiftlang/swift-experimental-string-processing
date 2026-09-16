@@ -17,7 +17,7 @@ struct Runner: ParsableCommand {
   var specificBenchmarks: [String] = []
 
   @Option(help: "How many samples to collect for each benchmark")
-  var samples = 30
+  var samples = 100
 
   @Flag(help: "Debug benchmark regexes")
   var debug = false

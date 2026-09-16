@@ -193,10 +193,31 @@ struct BenchmarkRunner {
     suite.append(benchmark)
   }
   
+  private static let minWarmupDuration = Time(0.01)
+  private static let minWarmupIterations = 3
+  private static let maxWarmupIterations = 10_000
+
+  /// Runs the given closure repeatedly, ignoring timing, before a
+  /// measurement begins, to allow the CPU ramp up to its steady-state
+  /// clock speed and to warm caches/branch predictors.
+  private func warmUp(closure: () -> Void) {
+    let start = Tick.now
+    var iterations = 0
+    while iterations < Self.minWarmupIterations
+            || Tick.now.elapsedTime(since: start) < Self.minWarmupDuration {
+      closure()
+      iterations += 1
+      // Safety valve for benchmarks whose single iteration already
+      // exceeds the warm-up duration target.
+      if iterations >= Self.maxWarmupIterations { break }
+    }
+  }
+
   func medianMeasure(
     samples: Int,
     closure: () -> Void
   ) -> Measurement {
+    warmUp(closure: closure)
     // FIXME: use suspendingclock?
     var times: [Time] = []
     for _ in 0..<samples {
@@ -242,6 +263,12 @@ struct BenchmarkRunner {
   }
   
   mutating func run() {
+    elevateSchedulingPriority()
+    var environment = EnvironmentInfo.current
+    warnIfLoadIsHigh(
+      "at the start of this run", environment.loadAverageAtStart ?? 0,
+      cores: environment.logicalCoreCount)
+
     print("Running")
     for b in suite {
       var result = measure(benchmark: b, samples: samples)
@@ -263,7 +290,7 @@ struct BenchmarkRunner {
       if result.compileTime?.median ?? .zero > Time.millisecond {
         print("Warning: Abnormally high compilation time, what happened?")
       }
-      
+
       if result.parseTime?.median ?? .zero > Time.millisecond {
         print("Warning: Abnormally high parse time, what happened?")
       }
@@ -272,6 +299,13 @@ struct BenchmarkRunner {
       }
       self.results.add(name: b.name, result: result)
     }
+
+    environment.loadAverageAtEnd = currentLoadAverage()
+    warnIfLoadIsHigh(
+      "by the end of this run", environment.loadAverageAtEnd ?? 0,
+      cores: environment.logicalCoreCount)
+    warnIfLoadJumped(during: environment)
+    self.results.environment = environment
   }
     
   mutating func debug() {
