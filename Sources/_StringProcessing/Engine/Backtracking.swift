@@ -14,29 +14,16 @@ extension Processor {
     /// The current position in the instruction list.
     var pc: InstructionAddress
 
-    /// What to resume the current match position at when this save point
-    /// is invoked, and what (if anything) to keep around for a future
-    /// pop of the same save point.
-    ///
-    /// A save point is in exactly one of these states at a time: a single
-    /// position isn't also mid-quantified-range, and vice versa. The
-    /// value most recently popped from a quantified range never needs to
-    /// be stored here — `popQuantifiedPosition(_:)` returns it directly
-    /// to its caller instead, so it doesn't have to coexist in storage
-    /// with the (already-shrunk) remaining range.
+    /// The match position to resume when a save point is restored.
     enum SavedPosition {
       /// A single position to resume at.
       case position(Position)
-      /// A range of positions still to explore, most-recently-matched
-      /// first, from a quantifier's greedy over-match, along with
-      /// whether the quantifier has scalar or grapheme semantics.
-      ///
-      /// `isScalarSemantics` only ever matters while popping a range
-      /// (see `popQuantifiedPosition(_:)`), so it travels with the range
-      /// itself instead of living in its own struct-wide field that the
-      /// `position`/`addressOnly` cases would otherwise carry for no
-      /// reason.
+      
+      /// A range of positions still to explore, from the end of the
+      /// range to the start, along with the semantic mode to use
+      /// when consuming the range.
       case range(Range<Position>, isScalarSemantics: Bool)
+      
       /// No position to restore — only the instruction address matters.
       case addressOnly
     }
@@ -46,12 +33,6 @@ extension Processor {
     // These properties store indices into the mutable `Processor.Registers`
     // undo logs. On backtrack, each log is unwound down to the point saved
     // here.
-    //
-    // `UInt32` rather than `Int`: these are lengths of the per-register
-    // undo logs, which grow by one entry per logged mutation while this
-    // save point (or a newer one) is live. Overflowing 4 billion entries
-    // in a single log would already require tens of gigabytes just for
-    // that one log, long before this could matter in practice.
 
     /// The length of the log of the `captures` register when this save point was created,
     /// for backtracking on failure.

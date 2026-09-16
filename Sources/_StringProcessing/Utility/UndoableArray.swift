@@ -66,11 +66,13 @@ struct UndoableArray<Register: RawRepresentable, Value> where Register.RawValue 
     if log.count == mark { return }
     let toRemove = log.count - mark
     assert(toRemove > 0)
-    var i = log.count
-    while i > mark {
-      i -= 1
-      let entry = log[i]
-      values[entry.slot.rawValue] = entry.oldValue
+    values.withUnsafeMutableBufferPointer { buffer in
+      var i = log.count
+      while i > mark {
+        i -= 1
+        let entry = log[i]
+        buffer[entry.slot.rawValue] = entry.oldValue
+      }
     }
     log.removeLast(toRemove)
   }
