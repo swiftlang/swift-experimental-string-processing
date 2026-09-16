@@ -63,10 +63,16 @@ struct UndoableArray<Register: RawRepresentable, Value> where Register.RawValue 
   /// contained `mark` entries, replaying the log in reverse.
   @inline(always)
   mutating func undo(to mark: Int) {
-    while log.count > mark {
-      let entry = log.removeLast()
+    if log.count == mark { return }
+    let toRemove = log.count - mark
+    assert(toRemove > 0)
+    var i = log.count
+    while i > mark {
+      i -= 1
+      let entry = log[i]
       values[entry.slot.rawValue] = entry.oldValue
     }
+    log.removeLast(toRemove)
   }
 
   /// Resets every register slot to `initialValue` and discards the undo
