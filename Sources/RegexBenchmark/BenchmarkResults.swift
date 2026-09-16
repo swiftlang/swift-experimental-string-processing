@@ -57,6 +57,11 @@ extension BenchmarkRunner {
     let compareResult = try SuiteResult.load(from: compareFileURL)
     let compareFile = compareFileURL.lastPathComponent
 
+    warnAboutEnvironmentMismatch(
+      current: results.environment,
+      baseline: compareResult.environment,
+      baselineLabel: compareFile)
+
     let comparisons = results
       .compare(with: compareResult)
       .filter({!$0.name.contains("_NS")})
@@ -69,7 +74,7 @@ extension BenchmarkRunner {
       try saveComparisons(comparisons, path: saveFile)
     }
   }
-  
+
   // Compile times are often very short (5-20µs) so results are likely to be
   // very affected by background tasks. This is primarily for making sure
   // there aren't any catastrophic changes in compile times
@@ -162,19 +167,42 @@ struct Measurement: Codable, CustomStringConvertible {
   let median: Time
   let stdev: Double
   let samples: Int
-  
+
+  /// The individual sample times, retained so that comparisons can use a
+  /// test that needs the full distributions rather than a summary mean/stdev.
+  let rawSamples: [Time]?
+
   init(results: [Time]) {
     let sorted = results.sorted()
     self.samples = sorted.count
     self.median = sorted[samples/2]
-    let sum = results.reduce(0.0) {acc, next in acc + next.seconds}
+    let sum = results.reduce(0.0) { $0 + $1.seconds }
     let mean = sum / Double(samples)
-    let squareDiffs = results.reduce(0.0) { acc, next in
-      acc + pow(next.seconds - mean, 2)
-    }
+    let squareDiffs = results.reduce(0.0) { $0 + pow($1.seconds - mean, 2) }
     self.stdev = (squareDiffs / Double(samples)).squareRoot()
+    self.rawSamples = sorted
   }
-  
+
+  enum CodingKeys: String, CodingKey {
+    case median, stdev, samples, rawSamples
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.median = try container.decode(Time.self, forKey: .median)
+    self.stdev = try container.decode(Double.self, forKey: .stdev)
+    self.samples = try container.decode(Int.self, forKey: .samples)
+    self.rawSamples = try container.decodeIfPresent([Time].self, forKey: .rawSamples)
+  }
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(median, forKey: .median)
+    try container.encode(stdev, forKey: .stdev)
+    try container.encode(samples, forKey: .samples)
+    try container.encodeIfPresent(rawSamples, forKey: .rawSamples)
+  }
+
   var description: String {
     return "\(median) (stdev: \(Time(stdev)), N = \(samples))"
   }
@@ -220,7 +248,7 @@ extension BenchmarkResult {
     var latestTime: Time { latest.median }
     var baselineTime: Time { baseline.median }
     var diff: Time? {
-      if Stats.tTest(baseline, latest) {
+      if Self.isSignificantlyDifferent(baseline, latest) {
         return latestTime - baselineTime
       }
       return nil
@@ -259,7 +287,12 @@ extension BenchmarkResult {
 
 struct SuiteResult {
   var results: [String: BenchmarkResult] = [:]
-  
+
+  /// System-contention snapshot for this run, if measured. Optional so
+  /// that older saved result files (from before this field existed)
+  /// still decode fine.
+  var environment: EnvironmentInfo? = nil
+
   mutating func add(name: String, result: BenchmarkResult) {
     results.updateValue(result, forKey: name)
   }
