@@ -36,18 +36,21 @@ extension Processor {
 
     // Value-constructing matchers
     var matcherFunctions: [MEProgram.MatcherFunction]
+    
+    // MARK: writeable
+
+    var values: UndoableArray<ValueRegister, Any>
 
     // MARK: writeable, resettable
 
+    var ints: UndoableArray<IntRegister, Int>
+
+    var positions: UndoableArray<PositionRegister, Input.Index>
+
+    var storedCaptures: UndoableArray<CaptureRegister, Processor._StoredCapture>
+
     var isDirty = false
-
-    // currently, useful for range-based quantification
-    var ints: [Int]
-
-    var values: [Any]
-
-    var positions: [Input.Index]
-
+    
     init(
       elements: [Element],
       utf8Contents: [[UInt8]],
@@ -55,10 +58,10 @@ extension Processor {
       consumeFunctions: [MEProgram.ConsumeFunction],
       transformFunctions: [MEProgram.TransformFunction],
       matcherFunctions: [MEProgram.MatcherFunction],
-      isDirty: Bool = false,
       numInts: Int,
       numValues: Int,
-      numPositions: Int
+      numPositions: Int,
+      numCaptures: Int
     ) {
       self.elements = elements
       self.utf8Contents = utf8Contents
@@ -66,12 +69,45 @@ extension Processor {
       self.consumeFunctions = consumeFunctions
       self.transformFunctions = transformFunctions
       self.matcherFunctions = matcherFunctions
-      self.isDirty = isDirty
-      self.ints = Array(repeating: 0, count: numInts)
-      self.values = Array(repeating: SentinelValue(), count: numValues)
-      self.positions = Array(
+      self.ints = UndoableArray(repeating: 0, count: numInts)
+      self.values = UndoableArray(repeating: SentinelValue(), count: numValues)
+      self.positions = UndoableArray(
         repeating: Self.sentinelIndex, count: numPositions)
+      self.storedCaptures = UndoableArray(
+        repeating: Processor._StoredCapture(), count: numCaptures)
     }
+  }
+}
+
+extension Processor {
+  @inline(always)
+  mutating func updateRegister(at i: IntRegister, to newValue: Int) {
+    registers.ints.set(i, to: newValue, logging: !savePoints.isEmpty)
+    registers.isDirty = true
+  }
+
+  @inline(always)
+  mutating func updateRegister(at i: IntRegister, body: (inout Int) -> ()) {
+    registers.ints.update(i, logging: !savePoints.isEmpty, body)
+    registers.isDirty = true
+  }
+
+  @inline(always)
+  mutating func updateRegister(at i: PositionRegister, to newValue: Input.Index) {
+    registers.positions.set(i, to: newValue, logging: !savePoints.isEmpty)
+    registers.isDirty = true
+  }
+
+  @inline(always)
+  mutating func updateRegister(at i: ValueRegister, to newValue: Any) {
+    registers.values.set(i, to: newValue, logging: false)
+    registers.isDirty = true
+  }
+
+  @inline(always)
+  mutating func updateRegister(at i: CaptureRegister, body: (inout _StoredCapture) -> ()) {
+    registers.storedCaptures.update(i, logging: !savePoints.isEmpty, body)
+    registers.isDirty = true
   }
 }
 
@@ -79,26 +115,21 @@ extension Processor.Registers {
   typealias Input = String
 
   subscript(_ i: IntRegister) -> Int {
-    get { ints[i.rawValue] }
-    set {
-      isDirty = true
-      ints[i.rawValue] = newValue
-    }
+    ints[i]
   }
+
   subscript(_ i: ValueRegister) -> Any {
-    get { values[i.rawValue] }
-    set {
-      isDirty = true
-      values[i.rawValue] = newValue
-    }
+    values[i]
   }
+
   subscript(_ i: PositionRegister) -> Input.Index {
-    get { positions[i.rawValue] }
-    set {
-      isDirty = true
-      positions[i.rawValue] = newValue
-    }
+    positions[i]
   }
+
+  subscript(_ i: CaptureRegister) -> Processor._StoredCapture {
+    storedCaptures[i]
+  }
+
   subscript(_ i: ElementRegister) -> Input.Element {
     elements[i.rawValue]
   }
@@ -127,21 +158,12 @@ extension Processor.Registers {
   }
 
   mutating func reset() {
-    guard isDirty else {
-      return
-    }
-    self.ints._setAll(to: 0)
-    self.values._setAll(to: SentinelValue())
-    self.positions._setAll(to: Processor.Registers.sentinelIndex)
-  }
-}
-
-// TODO: Productize into general algorithm
-extension MutableCollection {
-  mutating func _setAll(to e: Element) {
-    for idx in self.indices {
-      self[idx] = e
-    }
+    guard isDirty else { return }
+    ints.reset(to: 0)
+    values.reset(to: SentinelValue())
+    positions.reset(to: Processor.Registers.sentinelIndex)
+    storedCaptures.reset(to: Processor._StoredCapture())
+    isDirty = false
   }
 }
 
@@ -158,9 +180,9 @@ extension Processor.Registers: CustomStringConvertible {
 
     return """
       \(formatRegisters("elements", elements))\
-      \(formatRegisters("ints", ints))\
+      \(formatRegisters("ints", ints.values))\
 
-      """    
+      """
   }
 }
 
