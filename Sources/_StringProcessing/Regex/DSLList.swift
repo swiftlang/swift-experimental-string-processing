@@ -12,7 +12,7 @@
 internal import _RegexParser
 
 struct DSLList {
-  var nodes: [DSLTree.Node]
+  var nodes: Deque<DSLTree.Node>
   
   // experimental
   var hasCapture: Bool = false
@@ -28,7 +28,7 @@ struct DSLList {
     self.nodes = [initial]
   }
   
-  init(_ nodes: [DSLTree.Node]) {
+  init(_ nodes: Deque<DSLTree.Node>) {
     self.nodes = nodes
   }
   
@@ -52,11 +52,11 @@ extension DSLList {
   }
   
   mutating func prepend(_ node: DSLTree.Node) {
-    nodes.insert(node, at: 0)
+    nodes.prepend(node)
   }
   
   mutating func prepend(contentsOf other: some Collection<DSLTree.Node>) {
-    nodes.insert(contentsOf: other, at: 0)
+    nodes.prepend(contentsOf: other)
   }
 }
 
@@ -85,7 +85,7 @@ extension DSLTree.Node {
   }
 }
 
-extension ArraySlice<DSLTree.Node> {
+extension Slice<Deque<DSLTree.Node>> {
   internal func skipNode(_ position: inout Int) {
     guard position < endIndex else {
       return

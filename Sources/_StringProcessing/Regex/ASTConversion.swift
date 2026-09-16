@@ -12,7 +12,7 @@
 internal import _RegexParser
 
 extension AST.Node {
-  func convert(into list: inout [DSLTree.Node]) throws {
+  func convert(into list: inout Deque<DSLTree.Node>) throws {
     switch self {
     case .alternation(let alternation):
       list.append(.orderedChoice(alternation.children.count))
