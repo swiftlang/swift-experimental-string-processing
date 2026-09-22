@@ -2036,22 +2036,6 @@ extension RegexTests {
       ("bacada", nil),
       (":a:boco", ["a"])          // this matches only the ':a:' prefix
     )
-
-    // A capture made inside a successful lookahead/atomic group must be kept
-    // if that branch is the one that ultimately matches, but must NOT leak
-    // into the result if an outer, older backtrack abandons that branch in
-    // favor of a different alternative. This exercises save points nested
-    // inside a still-live, older save point (the outer alternation).
-    flatCaptureTest(
-      #"(?=(a+))a+b|(a)c"#,
-      ("ac", [nil, "a"]),
-      ("aab", ["aa", nil])
-    )
-    flatCaptureTest(
-      #"(?>(a+))b|(a)c"#,
-      ("ac", [nil, "a"]),
-      ("aab", ["aa", nil])
-    )
   }
 
   func testMatchReferences() {

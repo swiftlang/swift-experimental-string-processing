@@ -201,7 +201,7 @@ extension Executor {
     let aroElements = Executor.createExistentialElements(
       program,
       matchRange: startPosition..<endIdx,
-      storedCaptures: cpu.registers.storedCaptures.values,
+      storedCaptures: cpu.storedCaptures,
       wholeMatchValue: wholeMatchValue)
 
     let anyRegexOutput = AnyRegexOutput(
