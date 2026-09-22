@@ -22,7 +22,7 @@ public struct Unsupported: Error, CustomStringConvertible {
 
   public init(
     _ s: String,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     self.message = s
@@ -44,7 +44,7 @@ public struct Unreachable: Error, CustomStringConvertible {
 
   public init(
     _ s: String,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     self.message = s

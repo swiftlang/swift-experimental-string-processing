@@ -137,7 +137,7 @@ func captureTest(
   _ expected: CaptureList,
   _ tests: (input: String, output: [StringCapture])...,
   skipEngine: Bool = false,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   let ast = try! parse(regex, .traditional)

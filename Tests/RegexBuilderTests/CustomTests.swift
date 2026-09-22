@@ -127,7 +127,7 @@ enum MatchCall {
 fileprivate func customTest<Match: Equatable>(
   _ regex: Regex<Match>,
   _ tests: (input: String, call: MatchCall, match: Match?)...,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   for (input, call, match) in tests {
@@ -147,7 +147,7 @@ fileprivate func customTest<Match>(
   _ regex: some RegexComponent<Match>,
   _ isEquivalent: (Match, Match) -> Bool,
   _ tests: (input: String, call: MatchCall, match: Match?)...,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   for (input, call, match) in tests {
@@ -431,7 +431,7 @@ class CustomRegexComponentTests: XCTestCase {
     func customTest<Match: Equatable, E: Error & Equatable>(
       _ regex: Regex<Match>,
       _ tests: (input: String, match: Match?, expectError: E?)...,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) {
       for (input, match, expectError) in tests {
@@ -449,7 +449,7 @@ class CustomRegexComponentTests: XCTestCase {
     func customTest<Match: Equatable, Error1: Error & Equatable, Error2: Error & Equatable>(
       _ regex: Regex<Match>,
       _ tests: (input: String, match: Match?, expectError1: Error1?, expectError2: Error2?)...,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) {
       for (input, match, expectError1, expectError2) in tests {
@@ -469,7 +469,7 @@ class CustomRegexComponentTests: XCTestCase {
     func customTest<Capture: Equatable, Error1: Error & Equatable, Error2: Error & Equatable>(
       _ regex: Regex<(Substring, Capture)>,
       _ tests: (input: String, match: (Substring, Capture)?, expectError1: Error1?, expectError2: Error2?)...,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) {
       for (input, match, expectError1, expectError2) in tests {
@@ -490,7 +490,7 @@ class CustomRegexComponentTests: XCTestCase {
     func customTest<Capture1: Equatable, Capture2: Equatable, Error1: Error & Equatable, Error2: Error & Equatable>(
       _ regex: Regex<(Substring, Capture1, Capture2)>,
       _ tests: (input: String, match: (Substring, Capture1, Capture2)?, expectError1: Error1?, expectError2: Error2?)...,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) {
       for (input, match, expectError1, expectError2) in tests {
@@ -646,7 +646,7 @@ class CustomRegexComponentTests: XCTestCase {
       _ regex: Regex<Match>,
       _ input: Concat,
       expected: (wholeMatch: Match?, firstMatch: Match?, prefixMatch: Match?),
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let wholeResult = input.wholeMatch(of: regex)?.output
       let firstResult = input.firstMatch(of: regex)?.output
@@ -661,7 +661,7 @@ class CustomRegexComponentTests: XCTestCase {
       _ regex: Regex<CaptureMatch1>,
       _ input: Concat,
       expected: (wholeMatch: CaptureMatch1?, firstMatch: CaptureMatch1?, prefixMatch: CaptureMatch1?),
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let wholeResult = input.wholeMatch(of: regex)?.output
       let firstResult = input.firstMatch(of: regex)?.output

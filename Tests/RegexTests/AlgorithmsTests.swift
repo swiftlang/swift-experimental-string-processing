@@ -120,7 +120,7 @@ class AlgorithmTests: XCTestCase {
       _ string: String,
       _ regex: String,
       _ expected: [Range<Int>],
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let regex = try! Regex(regex)
       
@@ -164,7 +164,7 @@ class AlgorithmTests: XCTestCase {
       _ input: String,
       _ pattern: String,
       _ expected: [Range<Int>],
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let actualSeq: [Range<Int>] = input.ranges(of: pattern).map(input.offsets(of:))
       XCTAssertEqual(actualSeq, expected, file: file, line: line)
@@ -222,7 +222,7 @@ class AlgorithmTests: XCTestCase {
       _ string: String,
       _ regex: String,
       _ expected: [Substring],
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let regex = try! Regex(regex)
       let actual = Array(string.split(separator: regex, omittingEmptySubsequences: false))
@@ -243,7 +243,7 @@ class AlgorithmTests: XCTestCase {
       _ string: String,
       _ separator: String,
       _ expected: [Substring],
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let actual = Array(string.split(separator: separator, omittingEmptySubsequences: false))
       XCTAssertEqual(actual, expected, file: file, line: line)
@@ -379,7 +379,7 @@ class AlgorithmTests: XCTestCase {
       _ string: String,
       _ regex: String,
       _ expected: Substring,
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let regex = try! Regex(regex)
       let actual = string.trimmingPrefix(regex)
@@ -403,7 +403,7 @@ class AlgorithmTests: XCTestCase {
       _ string: String,
       _ predicate: (Character) -> Bool,
       _ expected: Substring,
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let actual = string.trimmingPrefix(while: predicate)
       XCTAssertEqual(actual, expected, file: file, line: line)
@@ -425,7 +425,7 @@ class AlgorithmTests: XCTestCase {
       _ string: String,
       _ pattern: String,
       _ expected: Substring,
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let actual = string.trimmingPrefix(pattern)
       XCTAssertEqual(actual, expected, file: file, line: line)
@@ -465,7 +465,7 @@ class AlgorithmTests: XCTestCase {
       _ regex: String,
       _ replacement: String,
       _ expected: String,
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let regex = try! Regex(regex)
       let actual = string.replacing(regex, with: replacement)
@@ -494,7 +494,7 @@ class AlgorithmTests: XCTestCase {
       _ pattern: String,
       _ replacement: String,
       _ expected: String,
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let actual = string.replacing(pattern, with: replacement)
       XCTAssertEqual(actual, expected, file: file, line: line)
@@ -577,7 +577,7 @@ class AlgorithmTests: XCTestCase {
       _ expected: Bool,
       _ a: some StringProtocol,
       _ b: some StringProtocol,
-      file: StaticString = #file, line: UInt = #line
+      file: StaticString = #filePath, line: UInt = #line
     ) {
       let result = a.firstRange(of: b) != nil
       XCTAssertEqual(expected, result, file: file, line: line)

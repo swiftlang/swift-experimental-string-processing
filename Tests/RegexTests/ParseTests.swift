@@ -40,7 +40,7 @@ func parseTest(
   throwsError expectedErrors: ParseError..., unsupported: Bool = false,
   uncheckedErrors: Bool = false, syntax: SyntaxOptions = .traditional,
   captures expectedCaptures: CaptureList = [],
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   parseTest(
@@ -57,7 +57,7 @@ func parseTest(
   uncheckedErrors: Bool = false,
   syntax: SyntaxOptions = .traditional,
   captures expectedCaptures: CaptureList = [],
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   let ast = parseWithRecovery(input, syntax)
@@ -143,7 +143,7 @@ func parseTest(
 @discardableResult
 func delimiterLexingTest(
   _ input: String, ignoreTrailing: Bool = false,
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) -> String {
   input.withCString(encodedAs: UTF8.self) { ptr in
     let endPtr = ptr + input.utf8.count
@@ -173,7 +173,7 @@ func parseWithDelimitersTest(
   _ input: String, _ expecting: AST.Node,
   throwsError expectedErrors: ParseError..., unsupported: Bool = false,
   uncheckedErrors: Bool = false, ignoreTrailing: Bool = false,
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) {
   // First try lexing.
   let literal = delimiterLexingTest(
@@ -200,7 +200,7 @@ func parseWithDelimitersTest(
 func parseNotEqualTest(
   _ lhs: String, _ rhs: String,
   syntax: SyntaxOptions = .traditional,
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) {
   let lhsAST = parseWithRecovery(lhs, syntax)
   let rhsAST = parseWithRecovery(rhs, syntax)
@@ -217,7 +217,7 @@ func rangeTest(
   _ input: String, syntax: SyntaxOptions = .traditional,
   _ expectedRange: (String) -> Range<Int>,
   at locFn: (AST.Node) -> SourceLocation = \.location,
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) {
   let ast = parseWithRecovery(input, syntax).root
   let range = input.offsets(of: locFn(ast).range)
@@ -275,7 +275,7 @@ func matchDiagnostics(
 func diagnosticTest(
   _ input: String, _ expectedErrors: ParseError..., unsupported: Bool = false,
   syntax: SyntaxOptions = .traditional,
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) {
   let ast = parseWithRecovery(input, syntax)
   matchDiagnostics(
@@ -286,7 +286,7 @@ func diagnosticTest(
 
 func diagnosticWithDelimitersTest(
   _ input: String, _ expectedErrors: ParseError..., unsupported: Bool = false,
-  ignoreTrailing: Bool = false, file: StaticString = #file, line: UInt = #line
+  ignoreTrailing: Bool = false, file: StaticString = #filePath, line: UInt = #line
 ) {
   // First try lexing.
   let literal = delimiterLexingTest(
@@ -302,7 +302,7 @@ func diagnosticWithDelimitersTest(
 func delimiterLexingDiagnosticTest(
   _ input: String, _ expected: DelimiterLexError.Kind,
   syntax: SyntaxOptions = .traditional,
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) {
   do {
     _ = try input.withCString { ptr in
@@ -328,7 +328,7 @@ func delimiterLexingDiagnosticTest(
 
 func compilerInterfaceDiagnosticMessageTest(
   _ input: String, _ expectedErr: String,
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) {
   do {
     let captureBuffer = UnsafeMutableRawBufferPointer(start: nil, count: 0)

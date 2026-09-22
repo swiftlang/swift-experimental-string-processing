@@ -25,7 +25,7 @@ class RegexDSLTests: XCTestCase {
     matchType: MatchType.Type,
     _ equivalence: (MatchType, MatchType) -> Bool,
     xfail: Bool = false,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> some RegexComponent<MatchType>
   ) throws {
@@ -980,7 +980,7 @@ class RegexDSLTests: XCTestCase {
   func testCanOnlyMatchAtStart() throws {
     func expectCanOnlyMatchAtStart(
       _ expectation: Bool,
-      file: StaticString = #file, line: UInt = #line,
+      file: StaticString = #filePath, line: UInt = #line,
       @RegexComponentBuilder _ content: () -> some RegexComponent
     ) {
       let regex = content().regex

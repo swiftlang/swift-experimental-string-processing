@@ -56,7 +56,7 @@ fileprivate func expectFirstMatch<Output: Equatable>(
   _ input: String,
   _ r: Regex<Output>,
   _ output: Output,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line)
 {
   XCTAssertEqual(input.firstMatch(of: r)?.output, output, file: file, line: line)

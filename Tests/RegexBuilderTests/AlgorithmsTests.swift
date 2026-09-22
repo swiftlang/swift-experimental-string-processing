@@ -27,7 +27,7 @@ class RegexConsumerTests: XCTestCase {
       input: String,
       result: String,
       _ replace: (Regex<R.RegexOutput>.Match) -> String,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) {
       XCTAssertEqual(input.replacing(regex, with: replace), result)
@@ -67,7 +67,7 @@ class RegexConsumerTests: XCTestCase {
       input: String,
       _ replace: (Regex<R.RegexOutput>.Match) -> String,
       _ tests: (subrange: Range<String.Index>, maxReplacement: Int, result: String)...,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) {
       for (subrange, maxReplacement, result) in tests {
@@ -125,7 +125,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
     _ tests: (input: String, expectedCaptures: MatchType?)...,
     matchType: MatchType.Type,
     equivalence: (MatchType, MatchType) -> Bool,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> some RegexComponent<RegexOutputType>
   ) throws {
@@ -152,7 +152,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
   func expectEqual<Expected: Equatable>(
     _ algo: EquatableAlgo,
     _ tests: (input: String, expected: Expected)...,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> some RegexComponent
   ) throws {

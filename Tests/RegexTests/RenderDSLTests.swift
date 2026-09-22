@@ -30,7 +30,7 @@ extension BidirectionalCollection {
 func testConversion(
   _ regex: String,
   _ expectedDSL: String,
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) throws {
   let ast = try _RegexParser.parse(regex, .traditional)
   let actualDSL = renderAsBuilderDSL(ast: ast).trimmingSuffix(while: \.isWhitespace)
