@@ -22,7 +22,9 @@ struct Controller: Equatable {
   var pc: InstructionAddress
 
   mutating func step() {
-    pc.rawValue += 1
+    // `pc` is always kept in `0..<instructions.count` by the bounds check
+    // on every fetch, so this can never overflow in practice.
+    pc.rawValue &+= 1
   }
 }
 
@@ -82,8 +84,6 @@ struct Processor {
 
   var savePoints: [SavePoint] = []
 
-  var storedCaptures: Array<_StoredCapture>
-
   var state: State = .inProgress
 
   var failureReason: Error? = nil
@@ -125,11 +125,10 @@ extension Processor {
     // Initialize registers from stored starting state
     self.registers = program.registers
 
-    self.storedCaptures = program.storedCaptures
-
     _checkInvariants()
   }
 
+  @inline(always)
   mutating func reset(
     currentPosition: Position,
     searchBounds: Range<Position>
@@ -145,10 +144,6 @@ extension Processor {
       self.savePoints.removeAll(keepingCapacity: true)
     }
 
-    for idx in storedCaptures.indices {
-      storedCaptures[idx] = .init()
-    }
-
     self.state = .inProgress
     self.failureReason = nil
 
@@ -162,7 +157,7 @@ extension Processor {
     _checkInvariants()
     guard self.controller == Controller(pc: 0),
           self.savePoints.isEmpty,
-          self.storedCaptures.allSatisfy({ $0.range == nil }),
+          !self.registers.isDirty,
           self.state == .inProgress,
           self.failureReason == nil
     else {
@@ -377,38 +372,58 @@ extension Processor {
       state = .fail
       return
     }
-    let (pc, pos, capEnds, intRegisters, posRegisters): (
-      pc: InstructionAddress,
-      pos: Position?,
-      captureEnds: [_StoredCapture],
-      intRegisters: [Int],
-      PositionRegister: [Input.Index]
-    )
 
     let idx = savePoints.index(before: savePoints.endIndex)
 
-    // If we have a quantifier save point, move the next range position into
-    // pos instead of removing it
+    // If we have a quantifier save point, pop the next range position
+    // instead of removing it
+    let sp: SavePoint
+    let resumePosition: Position?
     if savePoints[idx].isQuantified {
-      savePoints[idx].takePositionFromQuantifiedRange(input)
-      (pc, pos, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+      resumePosition = savePoints[idx].popQuantifiedPosition(input)
+      sp = savePoints[idx]
     } else {
-      (pc, pos, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
+      sp = savePoints.removeLast()
+      resumePosition = sp.pos
     }
 
-    assert(capEnds.count == storedCaptures.count)
+    controller.pc = sp.pc
+    currentPosition = resumePosition ?? currentPosition
 
-    controller.pc = pc
-    currentPosition = pos ?? currentPosition
-    registers.ints = intRegisters
-    registers.positions = posRegisters
+    registers.ints.undo(to: Int(sp.intLogEnd))
+    registers.positions.undo(to: Int(sp.positionLogEnd))
+    registers.isDirty = true
 
     if !preservingCaptures {
-      // Reset all capture information
-      storedCaptures = capEnds
+      registers.storedCaptures.undo(to: Int(sp.captureLogEnd))
     }
+    // If preserving captures, leave the capture log entries recorded since
+    // this save point untouched (rather than replaying or discarding them):
+    // `storedCaptures` keeps the values from the successful sub-match, and
+    // the log entries remain available so that an older, still-live save
+    // point can still correctly undo them on its own future backtrack.
 
     metrics.addBacktrack()
+  }
+
+  // MARK: Capture mutation
+
+  mutating func setCapture(_ capNum: Int, startingAt pos: Position) {
+    updateRegister(at: CaptureRegister(capNum)) {
+      $0.startCapture(pos)
+    }
+  }
+
+  mutating func setCapture(_ capNum: Int, endingAt pos: Position) {
+    updateRegister(at: CaptureRegister(capNum)) {
+      $0.endCapture(pos)
+    }
+  }
+
+  mutating func setCaptureValue(_ capNum: Int, _ value: Any) {
+    updateRegister(at: CaptureRegister(capNum)) {
+      $0.registerValue(value)
+    }
   }
 
   mutating func abort(_ e: Error? = nil) {
@@ -459,12 +474,11 @@ extension Processor {
       let (imm, reg) = payload.pairedImmediateInt
       let int = Int(asserting: imm)
       assert(int == imm)
-
-      registers[reg] = int
+      updateRegister(at: reg, to: int)
       controller.step()
     case .moveCurrentPosition:
       let reg = payload.position
-      registers[reg] = currentPosition
+      updateRegister(at: reg, to: currentPosition)
       controller.step()
     case .restorePosition:
       let reg = payload.position
@@ -478,7 +492,9 @@ extension Processor {
       if registers[int] == 0 {
         controller.pc = addr
       } else {
-        registers[int] -= 1
+        // Only reached when `registers[int] != 0`, so this can never
+        // underflow in practice.
+        updateRegister(at: int) { $0 &-= 1 }
         controller.step()
       }
     case .condBranchSamePosition:
@@ -622,7 +638,7 @@ extension Processor {
           signalFailure()
           return
         }
-        registers[valReg] = val
+        updateRegister(at: valReg, to: val)
         resume(at: nextIdx)
         controller.step()
       } catch {
@@ -634,13 +650,13 @@ extension Processor {
       let (isScalarMode, capture) = payload.captureAndMode
       let capNum = Int(
         asserting: capture.rawValue)
-      guard capNum < storedCaptures.count else {
+      guard capNum < registers.storedCaptures.count else {
         fatalError("Should this be an assert?")
       }
       // TODO:
       //   Should we assert it's not finished yet?
       //   What's the behavior there?
-      let cap = storedCaptures[capNum]
+      let cap = registers.storedCaptures[capture]
       guard let range = cap.range else {
         signalFailure()
         return
@@ -652,13 +668,13 @@ extension Processor {
     case .beginCapture:
       let capNum = Int(
         asserting: payload.capture.rawValue)
-      storedCaptures[capNum].startCapture(currentPosition)
+      setCapture(capNum, startingAt: currentPosition)
       controller.step()
 
     case .endCapture:
       let capNum = Int(
         asserting: payload.capture.rawValue)
-      storedCaptures[capNum].endCapture(currentPosition)
+      setCapture(capNum, endingAt: currentPosition)
       controller.step()
 
     case .transformCapture:
@@ -668,11 +684,11 @@ extension Processor {
 
       do {
         // FIXME: Pass input or the slice?
-        guard let value = try transform(input, storedCaptures[capNum]) else {
+        guard let value = try transform(input, registers.storedCaptures[cap]) else {
           signalFailure()
           return
         }
-        storedCaptures[capNum].registerValue(value)
+        setCaptureValue(capNum, value)
         controller.step()
       } catch {
         abort(error)
@@ -683,7 +699,7 @@ extension Processor {
       let (val, cap) = payload.pairedValueCapture
       let value = registers[val]
       let capNum = Int(asserting: cap.rawValue)
-      storedCaptures[capNum].registerValue(value)
+      setCaptureValue(capNum, value)
       controller.step()
     }
   }
