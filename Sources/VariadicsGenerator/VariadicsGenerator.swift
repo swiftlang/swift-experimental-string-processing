@@ -99,8 +99,11 @@ func outputForEach<C: Collection>(
 }
 
 struct StandardErrorStream: TextOutputStream {
+  // A nonisolated version of the C `stderr`, since we're only single-threaded here.
+  nonisolated(unsafe) private static let stderrFile = stderr
+  
   func write(_ string: String) {
-    fputs(string, stderr)
+    fputs(string, Self.stderrFile)
   }
 }
 nonisolated(unsafe) var standardError = StandardErrorStream()
