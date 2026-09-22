@@ -12,15 +12,7 @@
 // swift run VariadicsGenerator --max-arity 10 > Sources/RegexBuilder/Variadics.swift
 
 import ArgumentParser
-#if os(macOS)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#elseif os(Windows)
-import CRT
-#elseif canImport(Bionic)
-import Bionic
-#endif
+import Foundation
 
 // (T), (T)
 // (T), (T, T)
@@ -99,11 +91,8 @@ func outputForEach<C: Collection>(
 }
 
 struct StandardErrorStream: TextOutputStream {
-  // A nonisolated version of the C `stderr`, since we're only single-threaded here.
-  nonisolated(unsafe) private static let stderrFile = stderr
-  
   func write(_ string: String) {
-    fputs(string, Self.stderrFile)
+    FileHandle.standardError.write(Data(string.utf8))
   }
 }
 nonisolated(unsafe) var standardError = StandardErrorStream()
