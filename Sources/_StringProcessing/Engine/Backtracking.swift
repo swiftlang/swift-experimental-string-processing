@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
+
 extension Processor {
   struct SavePoint {
     /// The current position in the instruction list.
