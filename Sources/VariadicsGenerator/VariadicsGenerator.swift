@@ -103,7 +103,7 @@ struct StandardErrorStream: TextOutputStream {
     fputs(string, stderr)
   }
 }
-var standardError = StandardErrorStream()
+nonisolated(unsafe) var standardError = StandardErrorStream()
 
 typealias Counter = Int64
 let regexComponentProtocolName = "RegexComponent"

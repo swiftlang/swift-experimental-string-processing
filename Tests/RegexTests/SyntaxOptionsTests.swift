@@ -14,11 +14,11 @@
 import XCTest
 
 
-private let dplus = oneOrMore(
+nonisolated(unsafe) private let dplus = oneOrMore(
   of: atom(.escaped(.decimalDigit)))
-private let dotAST = concat(
+nonisolated(unsafe) private let dotAST = concat(
   dplus, ".", dplus, ".", dplus, ".", dplus)
-private let dotASTQuoted = concat(
+nonisolated(unsafe) private let dotASTQuoted = concat(
   dplus, quote("."), dplus, quote("."), dplus, quote("."), dplus)
 
 extension RegexTests {

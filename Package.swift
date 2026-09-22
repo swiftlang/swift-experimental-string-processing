@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -31,6 +31,7 @@ let availabilityDefinition = PackageDescription.SwiftSetting.unsafeFlags([
 let privateStdlibSettings: [PackageDescription.SwiftSetting] = [
     .unsafeFlags(["-Xfrontend", "-disable-implicit-concurrency-module-import"]),
     .unsafeFlags(["-Xfrontend", "-disable-implicit-string-processing-module-import"]),
+    .enableUpcomingFeature("MemberImportVisibility"),
 ]
 
 /// Swift settings for building a user-facing stdlib-like module.
@@ -38,6 +39,7 @@ let publicStdlibSettings: [PackageDescription.SwiftSetting] = [
     .unsafeFlags(["-enable-library-evolution"]),
     .unsafeFlags(["-Xfrontend", "-disable-implicit-concurrency-module-import"]),
     .unsafeFlags(["-Xfrontend", "-disable-implicit-string-processing-module-import"]),
+    .enableUpcomingFeature("MemberImportVisibility"),
     availabilityDefinition
 ]
 

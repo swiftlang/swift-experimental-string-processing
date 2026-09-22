@@ -115,7 +115,7 @@ func _compileRegex(
 }
 
 @_spi(RegexBenchmark)
-public struct _CompileOptions: OptionSet {
+public struct _CompileOptions: OptionSet, Sendable {
   public let rawValue: Int
   public init(rawValue: Int) {
     self.rawValue = rawValue

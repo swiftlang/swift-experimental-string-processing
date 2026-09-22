@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 extension Unicode.Scalar {
-  public struct AllScalars: RandomAccessCollection {
+  public struct AllScalars: RandomAccessCollection, Sendable {
     // Unicode scalar values are in two discontiguous blocks:
     // 0...0xD7FF and 0xE000...0x10FFFF
     internal static var lowerSectionFirstValue: Int { 0 }

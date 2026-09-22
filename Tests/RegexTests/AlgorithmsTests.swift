@@ -17,7 +17,7 @@ class RegexConsumerTests: XCTestCase {
 
 }
 
-var enablePrinting = false
+let enablePrinting = false
 func output<T>(_ s: @autoclosure () -> T) {
   if enablePrinting {
     print(s())
@@ -33,12 +33,12 @@ func makeSingleUseSequence<T>(element: T, count: Int) -> UnfoldSequence<T, Void>
 }
 
 struct CountedOptionSet: OptionSet {
-  static var arrayLiteralCreationCount = 0
+  nonisolated(unsafe) static var arrayLiteralCreationCount = 0
   
   var rawValue: Int
   
-  static var one = Self(rawValue: 1)
-  static var two = Self(rawValue: 1)
+  static let one = Self(rawValue: 1)
+  static let two = Self(rawValue: 1)
 }
 
 extension CountedOptionSet {

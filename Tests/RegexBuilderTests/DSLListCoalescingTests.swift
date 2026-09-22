@@ -401,7 +401,7 @@ class DSLListCoalescingTests: XCTestCase {
 }
 
 
-extension DSLTree.Node: @retroactive Equatable {
+extension DSLTree.Node: Equatable {
   public static func == (lhs: DSLTree.Node, rhs: DSLTree.Node) -> Bool {
     switch (lhs, rhs) {
     case (.concatenation(let l), .concatenation(let r)): return l == r

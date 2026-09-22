@@ -14,6 +14,10 @@ import XCTest
 import RegexBuilder
 import TestSupport
 
+// Module-local conformances for testing
+extension Regex: @unchecked Sendable {}
+extension Regex.Match: @unchecked Sendable {}
+
 @available(SwiftStdlib 5.7, *)
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<MatchType>(
@@ -1643,7 +1647,7 @@ class RegexDSLTests: XCTestCase {
       var label: String
       init(_ label: String) { self.label = label }
       
-      static var traceOutput = ""
+      nonisolated(unsafe) static var traceOutput = ""
       
       func consuming(_ input: String, startingAt index: String.Index, in bounds: Range<String.Index>) throws -> (upperBound: String.Index, output: Void)? {
         print("Matching '\(label)'", to: &Self.traceOutput)

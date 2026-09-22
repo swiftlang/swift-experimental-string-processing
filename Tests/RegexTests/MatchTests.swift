@@ -14,6 +14,10 @@ import XCTest
 @testable @_spi(RegexBenchmark) @_spi(Foundation) import _StringProcessing
 import TestSupport
 
+// Module-local conformances for testing
+extension Regex: @unchecked Sendable {}
+extension Regex.Match: @unchecked Sendable {}
+
 struct MatchError: Error {
   var message: String
   init(_ message: String) {
