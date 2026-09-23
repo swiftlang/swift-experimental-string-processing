@@ -32,21 +32,21 @@ internal protocol _BuiltinRegexComponent: RegexComponent {
 // MARK: - Primitive regex components
 
 @available(SwiftStdlib 5.7, *)
-extension String: @retroactive RegexComponent {
+extension String: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> { .init(verbatim: self) }
 }
 
 @available(SwiftStdlib 5.7, *)
-extension Substring: @retroactive RegexComponent {
+extension Substring: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> { String(self).regex }
 }
 
 @available(SwiftStdlib 5.7, *)
-extension Character: @retroactive RegexComponent {
+extension Character: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
@@ -55,7 +55,7 @@ extension Character: @retroactive RegexComponent {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension UnicodeScalar: @retroactive RegexComponent {
+extension UnicodeScalar: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {

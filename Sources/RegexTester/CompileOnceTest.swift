@@ -15,14 +15,14 @@ import _StringProcessing
 import Foundation
 
 @available(SwiftStdlib 5.8, *)
-let litPattern = #/a+bcd(?:g*)ab+?c?de(?:(?:(?i:f)))hij|zzz++a|3|2|1/#
+nonisolated(unsafe) let litPattern = #/a+bcd(?:g*)ab+?c?de(?:(?:(?i:f)))hij|zzz++a|3|2|1/#
 @available(SwiftStdlib 5.8, *)
-let strPattern = try! Regex("a+bcd(?:g*)ab+?c?de(?:(?:(?i:f)))hij|zzz++a|3|2|1")
+nonisolated(unsafe) let strPattern = try! Regex("a+bcd(?:g*)ab+?c?de(?:(?:(?i:f)))hij|zzz++a|3|2|1")
 
 @available(SwiftStdlib 5.8, *)
 struct CompileOnceTest: ParsableCommand {
-  static let litPattern = #/a+bcd(?:g*)ab+?c?de(?:(?:(?i:f)))hij|zzz++a|3|2|1/#
-  static let strPattern = try! Regex("a+bcd(?:g*)ab+?c?de(?:(?:(?i:f)))hij|zzz++a|3|2|1")
+  nonisolated(unsafe) static let litPattern = #/a+bcd(?:g*)ab+?c?de(?:(?:(?i:f)))hij|zzz++a|3|2|1/#
+  nonisolated(unsafe) static let strPattern = try! Regex("a+bcd(?:g*)ab+?c?de(?:(?:(?i:f)))hij|zzz++a|3|2|1")
   
   var N: Int { 10_000 }
   var testString = "zzzzzzzzza"

@@ -329,7 +329,7 @@ public enum RegexComponentBuilder {
   /// recording its source location.
   public static func buildExpression<R: RegexComponent>(
     _ regex: R, 
-    file: String = #file, 
+    file: String = #filePath, 
     function: String = #function, 
     line: Int = #line,
     column: Int = #column
@@ -478,7 +478,7 @@ public enum AlternationBuilder {
   /// recording its source location.
   public static func buildExpression<R: RegexComponent>(
     _ regex: R, 
-    file: String = #file, 
+    file: String = #filePath, 
     function: String = #function, 
     line: Int = #line,
     column: Int = #column

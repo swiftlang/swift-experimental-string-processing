@@ -335,9 +335,11 @@ func consumeCharacterWithSingleScalar(
 func consumeFunction(
   for opts: MatchingOptions
 ) -> (@escaping ScalarPredicate) -> MEProgram.ConsumeFunction {
-  opts.semanticLevel == .graphemeCluster
-    ? consumeCharacterWithLeadingScalar
-    : consumeScalar
+  if opts.semanticLevel == .graphemeCluster {
+    consumeCharacterWithLeadingScalar
+  } else {
+    consumeScalar
+  }
 }
 
 extension AST.Atom.CharacterProperty {

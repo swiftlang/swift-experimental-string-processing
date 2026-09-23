@@ -14,6 +14,10 @@ import XCTest
 @testable @_spi(RegexBenchmark) @_spi(Foundation) import _StringProcessing
 import TestSupport
 
+// Module-local conformances for testing
+extension Regex: @unchecked Sendable {}
+extension Regex.Match: @unchecked Sendable {}
+
 struct MatchError: Error {
   var message: String
   init(_ message: String) {
@@ -27,7 +31,7 @@ struct MatchError: Error {
 func _roundTripLiteral(
   _ regexStr: String,
   syntax: SyntaxOptions,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) throws -> Regex<AnyRegexOutput>? {
   guard let pattern = try Regex(regexStr, syntax: syntax)._literalPattern else {
@@ -45,7 +49,7 @@ func _firstMatch(
   validateOptimizations: Bool,
   semanticLevel: RegexSemanticLevel = .graphemeCluster,
   syntax: SyntaxOptions = .traditional,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) throws -> (String, [String?])? {
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
@@ -182,7 +186,7 @@ func flatCaptureTest(
   xfail: Bool = false,
   validateOptimizations: Bool = true,
   semanticLevel: RegexSemanticLevel = .graphemeCluster,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   for (test, expect) in tests {
@@ -244,7 +248,7 @@ func matchTest(
   xfail: Bool = false,
   validateOptimizations: Bool = true,
   semanticLevel: RegexSemanticLevel = .graphemeCluster,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   for (test, expect) in tests {
@@ -2831,7 +2835,7 @@ extension RegexTests {
   func expectCompletion(
     regex: String,
     in target: String,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     let expectation = XCTestExpectation(description: "Run the given regex to completion")

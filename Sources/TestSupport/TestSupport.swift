@@ -23,7 +23,7 @@ public func XCTExpectFailure(
 
 /// Guards certain tests to make sure we have a new stdlib available.
 public func ensureNewStdlib(
-  file: StaticString = #file, line: UInt = #line
+  file: StaticString = #filePath, line: UInt = #line
 ) -> Bool {
   guard #available(SwiftStdlib 5.7, *) else {
     XCTExpectFailure { XCTFail("Unsupported stdlib", file: file, line: line) }

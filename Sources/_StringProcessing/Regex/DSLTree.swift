@@ -416,7 +416,7 @@ extension DSLTree.Node {
 
 @_spi(RegexBuilder)
 public struct ReferenceID: Hashable {
-  private static var counter: Int = 0
+  nonisolated(unsafe) private static var counter: Int = 0
   var base: Int
 
   public var _raw: Int {

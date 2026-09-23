@@ -19,7 +19,7 @@ func diagnose(
   expecting expected: ParseError,
   _ syntax: SyntaxOptions = .traditional,
   _ f: (inout Parser) -> (),
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   var parser = Parser(Source(input), syntax: syntax)

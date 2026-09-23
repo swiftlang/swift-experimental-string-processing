@@ -152,7 +152,7 @@ extension RegexTests {
 
   private func testCompilationEquivalence(
     _ equivs: [String],
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) throws {
     assert(!equivs.isEmpty)
@@ -179,7 +179,7 @@ extension RegexTests {
 
   private func testCompileError(
     _ regex: String, _ error: RegexCompilationError,
-    file: StaticString = #file, line: UInt = #line
+    file: StaticString = #filePath, line: UInt = #line
   ) {
     do {
       _ = try _compileRegex(regex)
@@ -266,7 +266,7 @@ extension RegexTests {
     func expectInitialOptions<T>(
       _ regex: Regex<T>,
       _ optionSequence: AST.MatchingOptionSequence,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) throws {
       var options = MatchingOptions()
@@ -280,7 +280,7 @@ extension RegexTests {
     func expectInitialOptions(
       _ pattern: String,
       _ optionSequence: AST.MatchingOptionSequence,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) throws {
       let regex = try Regex(pattern)
@@ -322,7 +322,7 @@ extension RegexTests {
     semanticLevel: RegexSemanticLevel? = nil,
     contains targets: Set<DecodedInstr> = [],
     doesNotContain invalid: Set<DecodedInstr> = [],
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     do {
@@ -562,7 +562,7 @@ extension RegexTests {
     func expectCanOnlyMatchAtStart(
       _ regexStr: String,
       _ expectTrue: Bool,
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) throws {
       let regex = try Regex(regexStr)
