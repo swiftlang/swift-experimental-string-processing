@@ -137,4 +137,62 @@ class UndoableArrayTests: XCTestCase {
     }
     XCTAssertEqual(a.logCount, 0)
   }
+
+  func testDiscardLogKeepsCurrentValues() {
+    var a = UndoableArray<IntRegister, Int>(repeating: 0, count: 2)
+    a.set(IntRegister(0), to: 1, logging: true)
+    a.set(IntRegister(1), to: 2, logging: true)
+    XCTAssertEqual(a.logCount, 2)
+
+    a.discardLog()
+
+    XCTAssertEqual(a.logCount, 0)
+    XCTAssertEqual(a[IntRegister(0)], 1)
+    XCTAssertEqual(a[IntRegister(1)], 2)
+  }
+
+  // The log keeps its storage when it's truncated, so new entries overwrite
+  // stale ones. Make sure a later undo only replays the live entries.
+  func testLogStorageIsReusedAfterTruncation() {
+    var a = UndoableArray<IntRegister, Int>(repeating: 0, count: 2)
+
+    a.set(IntRegister(0), to: 1, logging: true)
+    a.set(IntRegister(1), to: 2, logging: true)
+    a.set(IntRegister(0), to: 3, logging: true)
+    XCTAssertEqual(a.logCount, 3)
+
+    a.undo(to: 0)
+    XCTAssertEqual(a[IntRegister(0)], 0)
+    XCTAssertEqual(a[IntRegister(1)], 0)
+
+    // Reuse the three stale log slots, plus one fresh one.
+    a.set(IntRegister(1), to: 10, logging: true)
+    let mark = a.logCount
+    a.set(IntRegister(0), to: 20, logging: true)
+    a.set(IntRegister(1), to: 30, logging: true)
+    a.set(IntRegister(0), to: 40, logging: true)
+    XCTAssertEqual(a.logCount, 4)
+
+    a.undo(to: mark)
+    XCTAssertEqual(a[IntRegister(0)], 0)
+    XCTAssertEqual(a[IntRegister(1)], 10)
+
+    a.undo(to: 0)
+    XCTAssertEqual(a[IntRegister(0)], 0)
+    XCTAssertEqual(a[IntRegister(1)], 0)
+  }
+
+  func testUndoAfterDiscardLogOnlyReplaysNewEntries() {
+    var a = UndoableArray<IntRegister, Int>(repeating: 0, count: 1)
+    a.set(IntRegister(0), to: 1, logging: true)
+    a.discardLog()
+
+    let mark = a.logCount
+    a.set(IntRegister(0), to: 2, logging: true)
+    a.undo(to: mark)
+
+    // The discarded entry is gone, so `1` is the restored value, not `0`.
+    XCTAssertEqual(a[IntRegister(0)], 1)
+    XCTAssertEqual(a.logCount, 0)
+  }
 }
