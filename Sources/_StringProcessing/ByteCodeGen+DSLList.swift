@@ -585,9 +585,7 @@ fileprivate extension Compiler.ByteCodeGen {
     // we have an unbounded quantification
     let startPosition: PositionRegister?
     // FIXME: forward progress check?!
-    let emitPositionChecking =
-      (!optimizationsEnabled || !guaranteesForwardProgress(list))
-        && maxExtraTrips == nil
+    let emitPositionChecking = !optimizationsEnabled || !guaranteesForwardProgress(list)
 
     if emitPositionChecking {
       startPosition = builder.makePositionRegister()
