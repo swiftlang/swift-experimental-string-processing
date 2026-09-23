@@ -390,9 +390,11 @@ extension Processor {
     controller.pc = sp.pc
     currentPosition = resumePosition ?? currentPosition
 
+    // Note: no need to mark the registers dirty here. `undo` only rewrites
+    // slots that were previously logged, and logging a slot goes through
+    // `updateRegister`, which already set `isDirty`.
     registers.ints.undo(to: Int(sp.intLogEnd))
     registers.positions.undo(to: Int(sp.positionLogEnd))
-    registers.isDirty = true
 
     if !preservingCaptures {
       registers.storedCaptures.undo(to: Int(sp.captureLogEnd))
