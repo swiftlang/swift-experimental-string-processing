@@ -98,6 +98,9 @@ extension Processor {
     registers.isDirty = true
   }
 
+  // NOTE: Value registers are deliberately never logged, matching the
+  // behavior from before the undo log was introduced. Values are only
+  // really read when consuming matches, so they don't need to be unwound.
   @inline(always)
   mutating func updateRegister(at i: ValueRegister, to newValue: Any) {
     registers.values.set(i, to: newValue, logging: false)
@@ -164,6 +167,17 @@ extension Processor.Registers {
     positions.reset(to: Processor.Registers.sentinelIndex)
     storedCaptures.reset(to: Processor._StoredCapture())
     isDirty = false
+  }
+
+  /// Discards every register's undo log, leaving the current values in place.
+  ///
+  /// Only valid when no save points remain, since the logged values can no
+  /// longer be reached by backtracking at that point.
+  @inline(__always)
+  mutating func discardUndoLogs() {
+    ints.discardLog()
+    positions.discardLog()
+    storedCaptures.discardLog()
   }
 }
 

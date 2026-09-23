@@ -398,14 +398,26 @@ extension Processor {
 
     if !preservingCaptures {
       registers.storedCaptures.undo(to: Int(sp.captureLogEnd))
+    } else {
+      // Leave the capture log entries recorded since this save point
+      // untouched (rather than replaying or discarding them):
+      // `storedCaptures` keeps the values from the successful sub-match, and
+      // the log entries remain available so that an older, still-live save
+      // point can still correctly undo them on its own future backtrack.
+      // Once there are no save points left, though, they're unreachable.
+      discardUnreachableUndoLogs()
     }
-    // If preserving captures, leave the capture log entries recorded since
-    // this save point untouched (rather than replaying or discarding them):
-    // `storedCaptures` keeps the values from the successful sub-match, and
-    // the log entries remain available so that an older, still-live save
-    // point can still correctly undo them on its own future backtrack.
 
     metrics.addBacktrack()
+  }
+
+  /// Drops the register undo logs once there are no save points left, since
+  /// nothing can backtrack into them any more.
+  @inline(__always)
+  mutating func discardUnreachableUndoLogs() {
+    if savePoints.isEmpty {
+      registers.discardUndoLogs()
+    }
   }
 
   // MARK: Capture mutation
@@ -452,6 +464,7 @@ extension Processor {
   mutating func clearThrough(_ address: InstructionAddress) {
     while let sp = savePoints.popLast() {
       if sp.pc == address {
+        discardUnreachableUndoLogs()
         controller.step()
         return
       }
@@ -526,6 +539,7 @@ extension Processor {
 
     case .clear:
       if let _ = savePoints.popLast() {
+        discardUnreachableUndoLogs()
         controller.step()
       } else {
         // TODO: What should we do here?

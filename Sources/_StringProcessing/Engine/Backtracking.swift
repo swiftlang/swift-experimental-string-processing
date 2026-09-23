@@ -35,6 +35,10 @@ extension Processor {
     // These properties store indices into the mutable `Processor.Registers`
     // undo logs. On backtrack, each log is unwound down to the point saved
     // here.
+    //
+    // NOTE: These are `UInt32` to keep `SavePoint` small. A log can only fill
+    // up if a single match attempt has 2^32 register mutations without
+    // clearing the registers, beyond what would already fill up memory.
 
     /// The length of the log of the `captures` register when this save point was created,
     /// for backtracking on failure.
