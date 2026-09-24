@@ -215,15 +215,21 @@ extension MEProgram.Builder {
   mutating func buildMatchAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) {
+    guard let bitset = makeAsciiBitset(b, indexLimit: Int(_payloadMask)) else {
+      fatalError("Bitset exceeded maximum count")
+    }
     instructions.append(.init(
-      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: false)))
+      .matchBitset, .init(bitset: bitset, isScalar: false)))
   }
 
   mutating func buildScalarMatchAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) {
+    guard let bitset = makeAsciiBitset(b, indexLimit: Int(_payloadMask)) else {
+      fatalError("Bitset exceeded maximum count")
+    }
     instructions.append(.init(
-      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: true)))
+      .matchBitset, .init(bitset: bitset, isScalar: true)))
   }
   
   mutating func buildMatchBuiltin(model: _CharacterClassModel) {
@@ -262,10 +268,14 @@ extension MEProgram.Builder {
     _ minTrips: Int,
     _ maxExtraTrips: Int?,
     isScalarSemantics: Bool
-  ) {
+  ) -> Bool {
+    guard let bitsetRegister = makeAsciiBitset(bitset, indexLimit: Int(QuantifyPayload.quantifyPayloadMask)) else {
+      return false
+    }
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(bitset: makeAsciiBitset(bitset), kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
+      .init(quantify: .init(bitset: bitsetRegister, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
+    return true
   }
 
   mutating func buildQuantify(
@@ -578,8 +588,10 @@ extension MEProgram.Builder {
   // registers without monotonicity required
 
   mutating func makeAsciiBitset(
-    _ b: DSLTree.CustomCharacterClass.AsciiBitset
-  ) -> AsciiBitsetRegister {
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset,
+    indexLimit: Int
+  ) -> AsciiBitsetRegister? {
+    guard asciiBitsets.count < indexLimit else { return nil }
     defer { asciiBitsets.append(b) }
     return AsciiBitsetRegister(asciiBitsets.count)
   }

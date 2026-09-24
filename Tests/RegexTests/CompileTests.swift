@@ -405,6 +405,21 @@ extension RegexTests {
       contains: [.consumeBy],
       doesNotContain: [.matchBuiltin, .matchBitset, .matchBitsetScalar])
 
+    // A bitset can be a payload in a quantify instruction...
+    expectProgram(
+      for: "[ab][ab][ab][ab][cd]+",
+      contains: [.matchBitset, .quantify],
+      doesNotContain: [.match, .consumeBy])
+    expectProgram(
+      for: String(repeating: "[ab]", count: 65534) + "[cd]+",
+      contains: [.matchBitset, .quantify],
+      doesNotContain: [.match, .consumeBy])
+    // ...But not if its register index is larger than a quantify payload
+    expectProgram(
+      for: String(repeating: "[ab]", count: 65535) + "[cd]+",
+      contains: [.matchBitset],
+      doesNotContain: [.match, .consumeBy, .quantify])
+
     // Must have new stdlib for character class ranges.
     guard ensureNewStdlib() else { return }
     
