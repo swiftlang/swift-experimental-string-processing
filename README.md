@@ -1,4 +1,4 @@
-# Declarative String Processing for Swift
+# Declarative String Processing for Swift 
 
 An early experimental general-purpose pattern matching engine for Swift.
 
