@@ -405,6 +405,148 @@ extension RegexTests {
       contains: [.consumeBy],
       doesNotContain: [.matchBuiltin, .matchBitset, .matchBitsetScalar])
 
+    // MARK: Nested classes
+
+    // A nested class folds into its parent's bitset.
+    expectProgram(
+      for: "[[abc]]",
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .matchBitsetScalar])
+    expectProgram(
+      for: "[[abc]d]",
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .matchBitsetScalar])
+    // An inverted class, nested or not, folds its inversion into the bitset
+    // rather than wrapping the match in save/clear/fail.
+    expectProgram(
+      for: "[^abc]",
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .save, .clear, .fail, .advance])
+    expectProgram(
+      for: "[^[abc]]",
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .save, .clear, .fail, .advance])
+    expectProgram(
+      for: "[[^abc]]",
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .save, .clear, .fail, .advance])
+
+    // MARK: Set operations
+    //
+    // ASCII-only, non-inverted classes can fold into a single bitset
+    // after algebraic operations. Otherwise, fall back to evaluating
+    // both sides in sequence, which shows up as the
+    // `.moveCurrentPosition`/`.restorePosition` pair.
+
+    for op in ["&&", "--", "~~"] {
+      // Folds: both operands are plain ASCII classes.
+      expectProgram(
+        for: "[a-z\(op)[aeiou]]",
+        contains: [.matchBitset],
+        doesNotContain: [
+          .consumeBy, .matchBitsetScalar,
+          .moveCurrentPosition, .restorePosition, .condBranchSamePosition])
+      // Folds: inverting the whole class only flips the bitset's own flag.
+      expectProgram(
+        for: "[^a-z\(op)[aeiou]]",
+        contains: [.matchBitset],
+        doesNotContain: [
+          .consumeBy, .matchBitsetScalar, .moveCurrentPosition,
+          .restorePosition, .save, .clear, .fail, .advance])
+      // Folds: operands may themselves be nested classes or quoted literals.
+      expectProgram(
+        for: "[[a-f]\(op)[c-z]]",
+        contains: [.matchBitset],
+        doesNotContain: [.consumeBy, .moveCurrentPosition, .restorePosition])
+      expectProgram(
+        for: #"[\Qab\E"# + op + "[ab]]",
+        contains: [.matchBitset],
+        doesNotContain: [.consumeBy, .moveCurrentPosition, .restorePosition])
+      // Folds: chained operators, which associate to the left.
+      expectProgram(
+        for: "[a-z\(op)[b-y]\(op)[c-x]]",
+        contains: [.matchBitset],
+        doesNotContain: [.consumeBy, .moveCurrentPosition, .restorePosition])
+      // Folds: a set operation unioned with sibling members.
+      expectProgram(
+        for: "[0-9[a-z\(op)[aeiou]]]",
+        contains: [.matchBitset],
+        doesNotContain: [.consumeBy, .moveCurrentPosition, .restorePosition])
+      expectProgram(
+        for: "[0-9\(op)[5-9]a-c]",
+        contains: [.matchBitset],
+        doesNotContain: [.consumeBy, .moveCurrentPosition, .restorePosition])
+      // Folds: case-insensitive matching is baked into the bitset.
+      expectProgram(
+        for: "(?i)[a-z\(op)[aeiou]]",
+        contains: [.matchBitset],
+        doesNotContain: [
+          .consumeBy, .matchCaseInsensitive, .matchScalarCaseInsensitive,
+          .moveCurrentPosition, .restorePosition])
+      // Folds, in scalar semantics, to the scalar bitset instruction.
+      expectProgram(
+        for: "[a-z\(op)[aeiou]]",
+        semanticLevel: .unicodeScalar,
+        contains: [.matchBitsetScalar],
+        doesNotContain: [
+          .consumeBy, .matchBitset,
+          .moveCurrentPosition, .restorePosition])
+
+      // Doesn't fold: an inverted operand. An inverted bitset also matches
+      // every non-ASCII scalar, so it can't be combined bit-wise.
+      expectProgram(
+        for: "[a-z\(op)[^aeiou]]",
+        contains: [.moveCurrentPosition, .restorePosition])
+      expectProgram(
+        for: "[[^a-z]\(op)[aeiou]]",
+        contains: [.moveCurrentPosition, .restorePosition])
+      // Doesn't fold: an inverted class nested inside an operand.
+      expectProgram(
+        for: "[a-z\(op)[[^b]]]",
+        contains: [.moveCurrentPosition, .restorePosition])
+      expectProgram(
+        for: "[a-z\(op)[b[^c]]]",
+        contains: [.moveCurrentPosition, .restorePosition])
+      // Doesn't fold: an operand that isn't ASCII-only.
+      expectProgram(
+        for: "[a-z\(op)[aeiou\u{f6}]]",
+        contains: [.moveCurrentPosition, .restorePosition])
+      // Doesn't fold: an operand holding a built-in character class, which
+      // isn't representable as an ASCII bitset.
+      expectProgram(
+        for: #"[a-z"# + op + #"[\w]]"#,
+        contains: [.moveCurrentPosition, .restorePosition])
+      expectProgram(
+        for: #"[\d"# + op + "[0-5]]",
+        contains: [.moveCurrentPosition, .restorePosition])
+      // Doesn't fold: trivia members. Conservative rather than required --
+      // the same is true of a non-set-operation class under (?xx).
+      expectProgram(
+        for: "(?xx)[ a \(op) ab ]",
+        contains: [.moveCurrentPosition, .restorePosition])
+
+      // MARK: Quantified set operations
+      //
+      // A foldable set operation can use the fused quantify instruction;
+      // one that can't fold has to run the general quantification loop.
+      expectProgram(
+        for: "[a-z\(op)[aeiou]]+",
+        contains: [.quantify],
+        doesNotContain: [.matchBitset, .moveCurrentPosition, .restorePosition])
+      expectProgram(
+        for: "[a-z\(op)[aeiou]]{2,4}",
+        contains: [.quantify],
+        doesNotContain: [.matchBitset, .moveCurrentPosition, .restorePosition])
+      expectProgram(
+        for: "[^a-z\(op)[aeiou]]+",
+        contains: [.quantify],
+        doesNotContain: [.matchBitset, .moveCurrentPosition, .restorePosition])
+      expectProgram(
+        for: "[a-z\(op)[^aeiou]]+",
+        contains: [.moveCurrentPosition, .restorePosition],
+        doesNotContain: [.quantify])
+    }
+
     // Must have new stdlib for character class ranges.
     guard ensureNewStdlib() else { return }
     

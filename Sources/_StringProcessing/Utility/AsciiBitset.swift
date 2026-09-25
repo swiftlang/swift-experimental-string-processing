@@ -13,8 +13,10 @@
 extension DSLTree.CustomCharacterClass {
   internal struct AsciiBitset {
     let isInverted: Bool
-    var a: UInt64 = 0
-    var b: UInt64 = 0
+
+    // The matched values as a 128-bit mask, always stored un-inverted.
+    fileprivate var a: UInt64 = 0
+    fileprivate var b: UInt64 = 0
 
     init(isInverted: Bool) {
       self.isInverted = isInverted
@@ -32,7 +34,7 @@ extension DSLTree.CustomCharacterClass {
       }
     }
 
-    internal init(
+    fileprivate init(
       a: UInt64,
       b: UInt64,
       isInverted: Bool
@@ -111,6 +113,58 @@ extension DSLTree.CustomCharacterClass {
         b: self.b | other.b,
         isInverted: self.isInverted
       )
+    }
+
+    // MARK: Set operations
+    //
+    // These are all preconditioned on the bitsets being non-inverted,
+    // since the operations are only valid on direct sets. An inverted ASCII
+    // set matches every non-ASCII character, so e.g. intersecting doesn't
+    // produce the actual intersection.
+
+    /// Returns a bitset matching the values matched by both `self` and
+    /// `other`.
+    ///
+    /// - Precondition: Neither bitset is inverted.
+    internal func intersection(_ other: AsciiBitset) -> AsciiBitset {
+      precondition(!self.isInverted && !other.isInverted)
+      return AsciiBitset(
+        a: self.a & other.a,
+        b: self.b & other.b,
+        isInverted: false
+      )
+    }
+
+    /// Returns a bitset matching the values matched by `self` but not by
+    /// `other`.
+    ///
+    /// - Precondition: Neither bitset is inverted.
+    internal func subtracting(_ other: AsciiBitset) -> AsciiBitset {
+      precondition(!self.isInverted && !other.isInverted)
+      return AsciiBitset(
+        a: self.a & ~other.a,
+        b: self.b & ~other.b,
+        isInverted: false
+      )
+    }
+
+    /// Returns a bitset matching the values matched by exactly one of `self`
+    /// and `other`.
+    ///
+    /// - Precondition: Neither bitset is inverted.
+    internal func symmetricDifference(_ other: AsciiBitset) -> AsciiBitset {
+      precondition(!self.isInverted && !other.isInverted)
+      return AsciiBitset(
+        a: self.a ^ other.a,
+        b: self.b ^ other.b,
+        isInverted: false
+      )
+    }
+
+    /// Returns this bitset with its inversion set to `isInverted`, for
+    /// applying the inversion of the class that encloses it.
+    internal func settingInversion(_ isInverted: Bool) -> AsciiBitset {
+      AsciiBitset(a: self.a, b: self.b, isInverted: isInverted)
     }
   }
 }

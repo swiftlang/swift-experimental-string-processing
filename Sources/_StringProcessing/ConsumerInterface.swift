@@ -174,8 +174,29 @@ extension DSLTree.CustomCharacterClass.Member {
         bitset = bitset.union(Bitset(ascii, isInverted, opts.isCaseInsensitive))
       }
       return bitset
+    case .custom(let ccc):
+      // A nested class contributes its members to the parent's bitset, but
+      // it has to carry the parent's inversion, not its own.
+      if let inner = ccc.asPositiveAsciiBitset(opts) {
+        return inner.settingInversion(isInverted)
+      }
+    case .intersection(let left, let right):
+      if let l = left.asPositiveAsciiBitset(opts),
+         let r = right.asPositiveAsciiBitset(opts) {
+        return l.intersection(r).settingInversion(isInverted)
+      }
+    case .subtraction(let left, let right):
+      if let l = left.asPositiveAsciiBitset(opts),
+         let r = right.asPositiveAsciiBitset(opts) {
+        return l.subtracting(r).settingInversion(isInverted)
+      }
+    case .symmetricDifference(let left, let right):
+      if let l = left.asPositiveAsciiBitset(opts),
+         let r = right.asPositiveAsciiBitset(opts) {
+        return l.symmetricDifference(r).settingInversion(isInverted)
+      }
     default:
-      return nil
+      break
     }
     return nil
   }
@@ -273,6 +294,18 @@ extension DSLTree.CustomCharacterClass {
         }
       }
     )
+  }
+
+  /// The ASCII values this class matches, or `nil` if this class is inverted or
+  /// isn't representable as an ASCII bitset.
+  func asPositiveAsciiBitset(_ opts: MatchingOptions) -> AsciiBitset? {
+    guard !isInverted else { return nil }
+    var result = AsciiBitset(isInverted: false)
+    for member in members {
+      guard let next = member.asAsciiBitset(opts, false) else { return nil }
+      result = result.union(next)
+    }
+    return result
   }
 }
 

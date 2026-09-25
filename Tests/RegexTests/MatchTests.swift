@@ -1461,6 +1461,181 @@ extension RegexTests {
     }
   }
 
+  // Set operations on custom character classes can be lowered to a single
+  // ASCII bitset, but only when nothing involved is inverted. This test
+  // covers inversion at every possible position, for each of the three operators.
+  func testCharacterClassSetOperationInversions() {
+    // MARK: Intersection
+
+    // vowels
+    firstMatchTests(
+      #"[a-z&&[aeiou]]"#,
+      ("a", "a"), ("b", nil), ("A", nil), ("1", nil), ("é", nil))
+    // not a vowel
+    firstMatchTests(
+      #"[^a-z&&[aeiou]]"#,
+      ("a", nil), ("b", "b"), ("A", "A"), ("1", "1"), ("é", "é"))
+    // lowercase consonants
+    firstMatchTests(
+      #"[a-z&&[^aeiou]]"#,
+      ("a", nil), ("b", "b"), ("A", nil), ("1", nil), ("é", nil))
+    // not a lowercase consonant
+    firstMatchTests(
+      #"[^a-z&&[^aeiou]]"#,
+      ("a", "a"), ("b", nil), ("A", "A"), ("1", "1"), ("é", "é"))
+    // not a letter a-z (vowels are a subset of a-z)
+    firstMatchTests(
+      #"[[^a-z]&&[^aeiou]]"#,
+      ("a", nil), ("b", nil), ("A", "A"), ("1", "1"), ("é", "é"))
+    // a-z
+    firstMatchTests(
+      #"[^[^a-z]&&[^aeiou]]"#,
+      ("a", "a"), ("b", "b"), ("A", nil), ("1", nil), ("é", nil))
+    // empty: no vowel is outside a-z
+    firstMatchTests(
+      #"[[^a-z]&&[aeiou]]"#,
+      ("a", nil), ("b", nil), ("A", nil), ("é", nil))
+    // everything
+    firstMatchTests(
+      #"[^[^a-z]&&[aeiou]]"#,
+      ("a", "a"), ("A", "A"), ("1", "1"), ("é", "é"))
+
+    // MARK: Subtraction
+
+    // lowercase consonants
+    firstMatchTests(
+      #"[a-z--[aeiou]]"#,
+      ("a", nil), ("b", "b"), ("A", nil), ("1", nil), ("é", nil))
+    // not a lowercase consonant
+    firstMatchTests(
+      #"[^a-z--[aeiou]]"#,
+      ("a", "a"), ("b", nil), ("A", "A"), ("1", "1"), ("é", "é"))
+    // a-z minus the non-vowels, i.e. the vowels
+    firstMatchTests(
+      #"[a-z--[^aeiou]]"#,
+      ("a", "a"), ("b", nil), ("A", nil), ("1", nil), ("é", nil))
+    // not a vowel
+    firstMatchTests(
+      #"[^a-z--[^aeiou]]"#,
+      ("a", nil), ("b", "b"), ("A", "A"), ("1", "1"), ("é", "é"))
+    // empty: everything outside a-z is also outside the vowels
+    firstMatchTests(
+      #"[[^a-z]--[^aeiou]]"#,
+      ("a", nil), ("b", nil), ("A", nil), ("é", nil))
+    // everything
+    firstMatchTests(
+      #"[^[^a-z]--[^aeiou]]"#,
+      ("a", "a"), ("A", "A"), ("1", "1"), ("é", "é"))
+    // lowercase consonants, reaching them from the other direction
+    firstMatchTests(
+      #"[[^aeiou]--[^a-z]]"#,
+      ("a", nil), ("b", "b"), ("A", nil), ("1", nil), ("é", nil))
+
+    // MARK: Symmetric difference
+
+    // lowercase consonants
+    firstMatchTests(
+      #"[a-z~~[aeiou]]"#,
+      ("a", nil), ("b", "b"), ("A", nil), ("1", nil), ("é", nil))
+    // not a lowercase consonant
+    firstMatchTests(
+      #"[^a-z~~[aeiou]]"#,
+      ("a", "a"), ("b", nil), ("A", "A"), ("1", "1"), ("é", "é"))
+    // vowels, plus everything outside a-z
+    firstMatchTests(
+      #"[a-z~~[^aeiou]]"#,
+      ("a", "a"), ("b", nil), ("A", "A"), ("1", "1"), ("é", "é"))
+    // lowercase consonants
+    firstMatchTests(
+      #"[^a-z~~[^aeiou]]"#,
+      ("a", nil), ("b", "b"), ("A", nil), ("1", nil), ("é", nil))
+    // symmetric difference is unchanged by inverting both operands
+    firstMatchTests(
+      #"[[^a-z]~~[^aeiou]]"#,
+      ("a", nil), ("b", "b"), ("A", nil), ("1", nil), ("é", nil))
+    firstMatchTests(
+      #"[^[^a-z]~~[^aeiou]]"#,
+      ("a", "a"), ("b", nil), ("A", "A"), ("1", "1"), ("é", "é"))
+
+    // MARK: Set operations unioned with sibling members
+
+    // digits and vowels
+    firstMatchTests(
+      #"[0-9[a-z&&[aeiou]]]"#,
+      ("a", "a"), ("5", "5"), ("b", nil), ("A", nil), ("é", nil))
+    firstMatchTests(
+      #"[^0-9[a-z&&[aeiou]]]"#,
+      ("a", nil), ("5", nil), ("b", "b"), ("A", "A"), ("é", "é"))
+    // digits and lowercase consonants
+    firstMatchTests(
+      #"[0-9[a-z&&[^aeiou]]]"#,
+      ("a", nil), ("5", "5"), ("b", "b"), ("A", nil), ("é", nil))
+    firstMatchTests(
+      #"[^0-9[a-z&&[^aeiou]]]"#,
+      ("a", "a"), ("5", nil), ("b", nil), ("A", "A"), ("é", "é"))
+
+    // MARK: Inversion nested inside an operand
+
+    // a-z except 'b'
+    firstMatchTests(
+      #"[a-z&&[[^b]]]"#,
+      ("a", "a"), ("b", nil), ("c", "c"), ("A", nil), ("é", nil))
+    firstMatchTests(
+      #"[^a-z&&[[^b]]]"#,
+      ("a", nil), ("b", "b"), ("A", "A"), ("1", "1"), ("é", "é"))
+    // the right-hand operand unions to everything, leaving a-z
+    firstMatchTests(
+      #"[a-z&&[b[^b]]]"#,
+      ("a", "a"), ("b", "b"), ("A", nil), ("é", nil))
+
+    // MARK: Case insensitive
+
+    firstMatchTests(
+      #"(?i)[a-z&&[aeiou]]"#,
+      ("a", "a"), ("A", "A"), ("b", nil), ("B", nil), ("é", nil))
+    firstMatchTests(
+      #"(?i)[^a-z&&[aeiou]]"#,
+      ("a", nil), ("A", nil), ("b", "b"), ("B", "B"), ("é", "é"))
+    firstMatchTests(
+      #"(?i)[a-z&&[^aeiou]]"#,
+      ("a", nil), ("A", nil), ("b", "b"), ("B", "B"), ("é", nil))
+    firstMatchTests(
+      #"(?i)[^a-z&&[^aeiou]]"#,
+      ("a", "a"), ("A", "A"), ("b", nil), ("B", nil), ("é", "é"))
+
+    // MARK: Chained operators, which associate to the left
+
+    // (a-z && not-b) ~~ c, i.e. a-z without 'b' or 'c'
+    firstMatchTests(
+      #"[a-z&&[^b]~~[c]]"#,
+      ("a", "a"), ("b", nil), ("c", nil), ("d", "d"), ("A", nil), ("é", nil))
+    firstMatchTests(
+      #"[^a-z&&[^b]~~[c]]"#,
+      ("a", nil), ("b", "b"), ("c", "c"), ("d", nil), ("A", "A"), ("é", "é"))
+
+    // MARK: Non-ASCII members, which can't use a bitset at all
+
+    // vowels; the non-ASCII members drop out of the intersection
+    firstMatchTests(
+      #"[a-zé&&[aeiouö]]"#,
+      ("a", "a"), ("b", nil), ("é", nil), ("ö", nil))
+    firstMatchTests(
+      #"[^a-zé&&[aeiouö]]"#,
+      ("a", nil), ("b", "b"), ("é", "é"), ("ö", "ö"))
+    // a-z, since no ASCII letter is 'é'
+    firstMatchTests(
+      #"[a-z&&[^é]]"#,
+      ("a", "a"), ("z", "z"), ("A", nil), ("é", nil))
+
+    // MARK: Quantified, which uses a separate instruction from single matches
+
+    firstMatchTest(#"[^a-z&&[aeiou]]+"#, input: "aeXYZi", match: "XYZ")
+    firstMatchTest(#"[a-z&&[^aeiou]]+"#, input: "aebcdi", match: "bcd")
+    firstMatchTest(#"[^a-z~~[^aeiou]]{2,3}"#, input: "aabcdee", match: "bcd")
+    firstMatchTest(#"[0-9[a-z&&[^aeiou]]]+"#, input: "aa12bc!", match: "12bc")
+    firstMatchTest(#"[a-z--[^aeiou]]+"#, input: "bcaeiXY", match: "aei")
+  }
+
   func testCharacterProperties() {
     // MARK: Character names.
 
