@@ -428,11 +428,9 @@ extension MEProgram.Builder {
       matcherFunctions: matcherFunctions,
       numInts: nextIntRegister.rawValue,
       numValues: nextValueRegister.rawValue,
-      numPositions: nextPositionRegister.rawValue
+      numPositions: nextPositionRegister.rawValue,
+      numCaptures: nextCaptureRegister.rawValue
     )
-
-    let storedCaps = Array(
-      repeating: Processor._StoredCapture(), count: nextCaptureRegister.rawValue)
 
     let meProgram = MEProgram(
       instructions: InstructionList(instructions),
@@ -443,8 +441,7 @@ extension MEProgram.Builder {
       referencedCaptureOffsets: referencedCaptureOffsets,
       initialOptions: initialOptions,
       canOnlyMatchAtStart: canOnlyMatchAtStart,
-      registers: regs,
-      storedCaptures: storedCaps)
+      registers: regs)
     return meProgram
   }
 

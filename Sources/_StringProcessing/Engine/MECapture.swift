@@ -11,25 +11,6 @@
 
 internal import _RegexParser
 
-/*
-
- TODO: Specialized data structure for all captures:
-
- - We want to be able to refer to COW prefixes for which
-   simple appends do not invalidate
- - We want a compact save-point representation
-
- TODO: Conjectures:
-
- - We should be able to remove the entire capture history,
-   lazily recomputing it on-request from the initial stored
-   save point
- - We should be able to keep these flat and simple, lazily
-   constructing structured types on-request
-
- */
-
-
 extension Processor {
   struct _StoredCapture {
     var range: Range<Position>? = nil
