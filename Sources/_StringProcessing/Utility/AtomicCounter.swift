@@ -14,26 +14,44 @@
 /// This is built on `_swift_stdlib_atomicFetchAddInt`, an underscored
 /// public entry point that the standard library has exported since ABI
 /// stability.
-final class AtomicCounter: @unchecked Sendable {
-  /// The counter's storage, on the heap to provide a stable address.
-  private let storage: UnsafeMutablePointer<Int>
-
-  init(startingAt value: Int = 0) {
-    storage = UnsafeMutablePointer<Int>.allocate(capacity: 1)
-    storage.initialize(to: value)
+struct AtomicCounter: @unchecked Sendable {
+  fileprivate var _storage: _AtomicInt
+  
+  init(startingValue: Int = 0) {
+    self._storage = .create(startingValue: startingValue)
   }
-
-  deinit {
-    storage.deallocate()
-  }
-
-  /// The current value.
+  
+  /// The counter's current value.
   var value: Int {
-    _swift_stdlib_atomicLoadInt(object: storage)
+    _storage.value
   }
-
+  
   /// Returns the current value and increments it.
   func next() -> Int {
-    _swift_stdlib_atomicFetchAddInt(object: storage, operand: 1)
+    _storage.next()
+  }
+}
+
+fileprivate final class _AtomicInt: ManagedBuffer<Void, Int> {
+  static func create(startingValue: Int) -> Self {
+    return super.create(minimumCapacity: 1) { buffer in
+      buffer.withUnsafeMutablePointerToElements { elements in
+        elements.initialize(to: startingValue)
+      }
+      return ()
+    } as! Self
+  }
+  
+  var value: Int {
+    withUnsafeMutablePointerToElements {
+      _swift_stdlib_atomicLoadInt(object: $0)
+    }
+  }
+  
+  /// Returns the current value and increments it.
+  func next() -> Int {
+    withUnsafeMutablePointerToElements {
+      _swift_stdlib_atomicFetchAddInt(object: $0, operand: 1)
+    }
   }
 }

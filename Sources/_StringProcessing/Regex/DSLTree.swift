@@ -416,7 +416,7 @@ extension DSLTree.Node {
 
 @_spi(RegexBuilder)
 public struct ReferenceID: Hashable {
-  private static let counter = AtomicCounter(startingAt: 0)
+  private static let counter = AtomicCounter()
   
   var base: Int
 
