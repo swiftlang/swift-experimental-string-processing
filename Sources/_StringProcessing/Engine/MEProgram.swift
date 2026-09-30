@@ -36,6 +36,8 @@ struct MEProgram {
   // processors can be spun up quicker (useful for running same regex
   // over many, many smaller inputs).
   var registers: Processor.Registers
+  var storedCaptures: [Processor._StoredCapture]
+
 }
 
 extension MEProgram: CustomStringConvertible {
@@ -43,18 +45,6 @@ extension MEProgram: CustomStringConvertible {
     // TODO: Re-instate better pretty-printing functionality
 
     var result = """
-    Capture list: \(captureList)
-    Instructions: \(instructions.count)
-    Register counts:
-      ints: \(registers.ints.count)
-      positions: \(registers.positions.count)
-      values: \(registers.values.count)
-      elements: \(registers.elements.count)
-      bitsets: \(registers.bitsets.count)
-      consumeFunctions: \(registers.consumeFunctions.count)
-      transformFunctions: \(registers.transformFunctions.count)
-      matcherFunctions: \(registers.matcherFunctions.count)
-    canOnlyMatchAtStart: \(canOnlyMatchAtStart)
 
     """
     // TODO: Extract into formatting code
