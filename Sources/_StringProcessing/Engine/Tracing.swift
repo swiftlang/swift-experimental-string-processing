@@ -115,17 +115,15 @@ extension Instruction: CustomStringConvertible {
 extension Processor.SavePoint {
   func describe(in input: String) -> String {
     let posStr: String
-    if let p = self.pos {
+    switch savedPosition {
+    case .position(let p):
       posStr = "\(input.distance(from: input.startIndex, to: p))"
-    } else {
-      if !isQuantified {
-        posStr = "<none>"
-      } else {
-        let range = quantifiedRange!
-        let startStr = "\(input.distance(from: input.startIndex, to: range.lowerBound))"
-        let endStr = "\(input.distance(from: input.startIndex, to: range.upperBound))"
-        posStr = "\(startStr)...\(endStr)"
-      }
+    case .range(let range, _):
+      let startStr = "\(input.distance(from: input.startIndex, to: range.lowerBound))"
+      let endStr = "\(input.distance(from: input.startIndex, to: range.upperBound))"
+      posStr = "\(startStr)...\(endStr)"
+    case .addressOnly:
+      posStr = "<none>"
     }
     return """
       pc: \(self.pc), pos: \(posStr)
