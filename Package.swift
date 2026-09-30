@@ -74,6 +74,7 @@ let package = Package(
         .target(
             name: "_RegexParser",
             dependencies: [],
+            packageAccess: false,
             swiftSettings: privateStdlibSettings),
         .testTarget(
             name: "MatchingEngineTests",
@@ -89,10 +90,12 @@ let package = Package(
               "_RegexParser",
               "_CUnicode",
             ],
+            packageAccess: false,
             swiftSettings: publicStdlibSettings),
         .target(
             name: "RegexBuilder",
             dependencies: ["_StringProcessing", "_RegexParser"],
+            packageAccess: false,
             swiftSettings: publicStdlibSettings),
         .target(name: "TestSupport",
                 swiftSettings: [availabilityDefinition]),
