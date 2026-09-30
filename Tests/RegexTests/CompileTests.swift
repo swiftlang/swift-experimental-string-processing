@@ -535,16 +535,16 @@ extension RegexTests {
     expectProgram(for: #"(?:(?!a)\d*)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
     expectProgram(for: #"(?:(?!\d)[0-9]*)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
 
-    // Bounded quantification, don't emit position checking
-    expectProgram(for: #"(?:(?=a)){1,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
-    expectProgram(for: #"(?:\b)?"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
-    expectProgram(for: #"(?:(?#comment)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
-    expectProgram(for: #"(?:|){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
-    expectProgram(for: #"(?:\w|){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
-    expectProgram(for: #"(?:\w|(?i-i:)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
-    expectProgram(for: #"(?:\w|(?#comment)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
-    expectProgram(for: #"(?:\w|(?#comment)(?i-i:)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
-    expectProgram(for: #"(?:\w|(?i)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    // Bounded quantification, position checking still needed to prevent runaway
+    expectProgram(for: #"(?:(?=a)){1,4}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\b)?"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:(?#comment)){,4}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:|){,4}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|){,4}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?i-i:)){,4}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?#comment)){,4}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?#comment)(?i-i:)){,4}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?i)){,4}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
   
     // Inner node is a quantification that does not guarantee forward progress
     expectProgram(for: #"(a*)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
