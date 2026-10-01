@@ -76,4 +76,18 @@ extension String {
   }
 }
 
-
+/// Converts a raw value into a single-byte enum without going through
+/// its checked initializer.
+///
+/// - Precondition: `rawValue` is the raw value of a case of `T`, and `T` is
+///   a no-payload enum laid out as a single byte.
+@inline(__always)
+//@unsafe
+internal func _uncheckedRawEnum<T: RawRepresentable>(
+  _ rawValue: UInt64, as _: T.Type = T.self
+) -> T where T.RawValue == UInt64 {
+  let result = unsafeBitCast(UInt8(truncatingIfNeeded: rawValue), to: T.self)
+  assert(result.rawValue == rawValue,
+         "\(T.self) is no longer laid out as its contiguous case index")
+  return result
+}
