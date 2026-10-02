@@ -674,7 +674,8 @@ fileprivate extension Compiler.ByteCodeGen {
       guard let bitset = ccc.asAsciiBitset(options) else {
         return false
       }
-      builder.buildQuantify(bitset: bitset, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
+      guard builder.buildQuantify(bitset: bitset, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
+      else { return false }
 
     case .atom(let atom):
       switch atom {
@@ -684,7 +685,8 @@ fileprivate extension Compiler.ByteCodeGen {
           guard let bitset = DSLTree.CustomCharacterClass(members: [.atom(atom)]).asAsciiBitset(options) else {
             return false
           }
-          builder.buildQuantify(bitset: bitset, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
+          guard builder.buildQuantify(bitset: bitset, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
+          else { return false }
         } else {
           // Uncased character OR case-sensitive matching; match as a single scalar ascii value character
           guard let val = c._singleScalarAsciiValue else {
