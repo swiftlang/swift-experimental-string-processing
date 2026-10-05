@@ -1458,6 +1458,29 @@ extension RegexTests {
         firstMatchTest(
           "(?i)[X-cD]", input: input, match: input, semanticLevel: semantics)
       }
+
+      // Boundary tests for case insensitive ASCII matching.
+      firstMatchTest(
+        "(?i)[@]", input: "@", match: "@", semanticLevel: semantics)
+      firstMatchTest(
+        "(?i)[@]", input: "`", match: nil, semanticLevel: semantics)
+      firstMatchTest(
+        "(?i)[`]", input: "`", match: "`", semanticLevel: semantics)
+      firstMatchTest(
+        "(?i)[`]", input: "@", match: nil, semanticLevel: semantics)
+      // A range that spans the "@"/"A" boundary folds "A" but not "@".
+      firstMatchTest(
+        "(?i)[?-A]", input: "a", match: "a", semanticLevel: semantics)
+      firstMatchTest(
+        "(?i)[?-A]", input: "`", match: nil, semanticLevel: semantics)
+      // The letter ends of each range still fold.
+      for (pattern, input) in [
+        ("(?i)[A]", "a"), ("(?i)[a]", "A"),
+        ("(?i)[Z]", "z"), ("(?i)[z]", "Z"),
+      ] {
+        firstMatchTest(
+          pattern, input: input, match: input, semanticLevel: semantics)
+      }
     }
   }
 
