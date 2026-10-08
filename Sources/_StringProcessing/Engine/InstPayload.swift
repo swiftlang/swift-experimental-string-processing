@@ -552,7 +552,7 @@ struct QuantifyPayload: RawRepresentable {
   }
 
   var builtinCC: _CharacterClassModel.Representation {
-    _CharacterClassModel.Representation(rawValue: self.rawValue & 0xFF)!
+    _uncheckedRawEnum(self.rawValue & 0xFF)
   }
   var builtinIsInverted: Bool {
     (self.rawValue >> 9) & 1 == 1
@@ -596,8 +596,7 @@ struct CharacterClassPayload: RawRepresentable {
     self.rawValue & CharacterClassPayload.scalarBit != 0
   }
   var cc: _CharacterClassModel.Representation {
-    _CharacterClassModel.Representation.init(
-      rawValue: self.rawValue & CharacterClassPayload.ccMask).unsafelyUnwrapped
+    _uncheckedRawEnum(self.rawValue & CharacterClassPayload.ccMask)
   }
 }
 
@@ -636,8 +635,7 @@ struct AssertionPayload: RawRepresentable {
   }
 
   var kind: DSLTree.Atom.Assertion {
-    return .init(
-      rawValue: self.rawValue & AssertionPayload.assertionKindMask).unsafelyUnwrapped
+    _uncheckedRawEnum(self.rawValue & AssertionPayload.assertionKindMask)
   }
   var anchorsMatchNewlines: Bool { self.rawValue & AssertionPayload.anchorBit != 0 }
   var usesSimpleUnicodeBoundaries: Bool {
