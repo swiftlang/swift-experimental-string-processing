@@ -108,3 +108,160 @@ jobs:
             ${{ runner.temp }}/${{ env.BASELINE_FILE }}
             ${{ runner.temp }}/${{ env.COMPARE_FILE }}
             ${{ runner.temp }}/${{ env.COMPARE_OUT_FILE }}
+  crossrepo:
+    name: Cross-Repo Validation
+    runs-on: ubuntu-latest
+    container:
+      image: swift:6.3-jammy
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+      - name: Install apt dependencies
+        run: apt-get -qq update && apt-get -qq -y install curl ninja-build
+      - name: Install CMake 3.30.2
+        run: |
+          ARCH=`uname -m`
+          curl -sL https://github.com/Kitware/CMake/releases/download/v3.30.2/cmake-3.30.2-linux-$ARCH.tar.gz -O
+          tar xzf cmake-3.30.2-linux-$ARCH.tar.gz
+          export PATH="`pwd`/cmake-3.30.2-linux-$ARCH/bin:$PATH"
+          echo "PATH=$PATH" >> $GITHUB_ENV
+          cmake --version
+      - name: Compare CMakeLists.txt against swiftlang/swift/Runtimes/Supplemental
+        id: compare
+        env:
+          UPSTREAM_DIR: https://raw.githubusercontent.com/swiftlang/swift/refs/heads/main/Runtimes/Supplemental/StringProcessing
+          MODULES: _StringProcessing _RegexParser
+        shell: bash
+        run: |
+          set -u
+
+          # `-f` so a file moving upstream reports a fetch error rather than
+          # diffing against a 404 page.
+          for module in $MODULES; do
+            if ! curl -fsSL "$UPSTREAM_DIR/$module/CMakeLists.txt" \
+                 -o "upstream-$module-CMakeLists.txt"; then
+              echo "result=fetch-failed" >> "$GITHUB_OUTPUT"
+              echo "Could not fetch $module/CMakeLists.txt from swiftlang/swift."
+              exit 1
+            fi
+          done
+
+          : > "$RUNNER_TEMP/cmake-diff.txt"
+          status=0
+          for module in $MODULES; do
+            if ! diff -u \
+                 --label "swiftlang/swift: Runtimes/Supplemental/StringProcessing/$module/CMakeLists.txt" \
+                 --label "this repo:       Sources/$module/CMakeLists.txt" \
+                 "upstream-$module-CMakeLists.txt" \
+                 "Sources/$module/CMakeLists.txt" \
+                 >> "$RUNNER_TEMP/cmake-diff.txt"; then
+              status=1
+            fi
+          done
+
+          if [ "$status" -eq 0 ]; then
+            echo "result=match" >> "$GITHUB_OUTPUT"
+            echo "Both CMakeLists.txt files match swiftlang/swift."
+          else
+            echo "result=differs" >> "$GITHUB_OUTPUT"
+            cat "$RUNNER_TEMP/cmake-diff.txt"
+          fi
+          exit "$status"
+      - name: Configure CMake
+        id: configure
+        if: ${{ !cancelled() }}
+        run: cmake -G Ninja -S Sources -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        id: build
+        if: ${{ !cancelled() }}
+        run: cmake --build build
+      - name: Verdict
+        if: ${{ always() }}
+        env:
+          COMPARE_OUTCOME: ${{ steps.compare.outcome }}
+          COMPARE_RESULT: ${{ steps.compare.outputs.result }}
+          CONFIGURE_OUTCOME: ${{ steps.configure.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        shell: bash
+        run: |
+          set -u
+
+          # Report to the step log and to the job summary page.
+          emit() { printf '%s\n' "$@" | tee -a "$GITHUB_STEP_SUMMARY"; }
+
+          failed=0
+
+          # --- the CMake build ---
+          if [ "$CONFIGURE_OUTCOME" = failure ] || [ "$BUILD_OUTCOME" = failure ]; then
+            failed=1
+            if [ "$CONFIGURE_OUTCOME" = failure ]; then
+              stage='CMake configuration'
+            else
+              stage='CMake build'
+            fi
+            emit \
+              "## :x: $stage failed" \
+              '' \
+              'The CMake build of `_RegexParser` and `_StringProcessing` is broken.' \
+              "See the \"$stage\" step above for the output." \
+              ''
+          fi
+
+          # --- the comparison against swiftlang/swift ---
+          case "${COMPARE_RESULT:-}" in
+            match)
+              ;;
+            differs)
+              failed=1
+              emit \
+                '## :warning: `CMakeLists.txt` differs from swiftlang/swift' \
+                '' \
+                '<details><summary>Diff to apply upstream</summary>' \
+                '' \
+                '```diff'
+              tee -a "$GITHUB_STEP_SUMMARY" < "$RUNNER_TEMP/cmake-diff.txt"
+              emit '```' '' '</details>' ''
+              ;;
+            fetch-failed)
+              failed=1
+              emit \
+                '## :x: Could not fetch the upstream `CMakeLists.txt` files'
+              ;;
+            *)
+              failed=1
+              emit \
+                "## :x: Comparison did not complete (outcome: ${COMPARE_OUTCOME:-unknown})"
+              ;;
+          esac
+
+          # --- all clear ---
+          if [ "$failed" -eq 0 ]; then
+            emit \
+              '## :white_check_mark: Cross-repo validation passed'
+          fi
+
+          exit "$failed"
+  required:
+    name: Required
+    runs-on: ubuntu-latest
+    needs:
+      - tests
+      - soundness
+      - bench
+    if: always()  # Runs even if previous jobs fail so it can evaluate them
+    steps:
+      - name: Install required tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends coreutils jq
+      - name: Check upstream job statuses
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          failed=$(printf '%s' "$NEEDS_JSON" | jq -r 'to_entries | map(select(.value.result != "success")) | .[] | "\(.key): \(.value.result)"')
+          if [ -n "$failed" ]; then
+            echo "The following required jobs did not succeed:"
+            printf '%s\n' "$failed"
+            exit 1
+          fi
+          echo "All required jobs succeeded."
