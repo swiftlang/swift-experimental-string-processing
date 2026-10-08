@@ -1319,6 +1319,11 @@ extension RegexTests {
     parseTest(#"\g{abc}"#, backreference(.named("abc")), throwsError: .invalidNamedReference("abc"))
     parseTest(#"(?P=abc)"#, backreference(.named("abc")), throwsError: .invalidNamedReference("abc"))
 
+    diagnosticTest(#"\65535"#, .invalidReference(65535))
+    diagnosticTest(#"\65536"#, .invalidReference(65536), .unsupported("too many backreferences"))
+    diagnosticTest(#"\65537"#, .invalidReference(65537), .unsupported("too many backreferences"))
+    diagnosticTest(String(repeating: "()", count: 65537) + #"\65537"#, .unsupported("too many backreferences"))
+    
     // Oniguruma recursion levels.
     parseTest(#"\k<bc-0>"#, backreference(.named("bc"), recursionLevel: 0),
               throwsError: .invalidNamedReference("bc"), unsupported: true)
