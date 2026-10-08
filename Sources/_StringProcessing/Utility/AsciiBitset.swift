@@ -46,7 +46,7 @@ extension DSLTree.CustomCharacterClass {
       setBit(val)
       if isCaseInsensitive {
         switch val {
-          case 64...90: setBit(val + 32)
+          case 65...90: setBit(val + 32)
           case 97...122: setBit(val - 32)
           default: break
         }
