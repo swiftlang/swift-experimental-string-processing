@@ -1,6 +1,4 @@
 // swift-tools-version:6.0
-// The swift-tools-version declares the minimum version of Swift required to build this package.
-
 import PackageDescription
 
 let availabilityDefinition = PackageDescription.SwiftSetting.unsafeFlags([
@@ -66,7 +64,6 @@ let publicStdlibSettings: [PackageDescription.SwiftSetting] = [
 let package = Package(
     name: "swift-experimental-string-processing",
     products: [
-        // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
             name: "_StringProcessing",
             targets: ["_StringProcessing"]),
@@ -89,11 +86,10 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.0.0"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-        // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "_RegexParser",
             dependencies: [],
+            exclude: ["CMakeLists.txt"],
             packageAccess: false,
             swiftSettings: privateStdlibSettings),
         .testTarget(
@@ -110,6 +106,7 @@ let package = Package(
               "_RegexParser",
               "_CUnicode",
             ],
+            exclude: ["CMakeLists.txt", "_CUnicode"],
             packageAccess: false,
             swiftSettings: publicStdlibSettings),
         .target(
