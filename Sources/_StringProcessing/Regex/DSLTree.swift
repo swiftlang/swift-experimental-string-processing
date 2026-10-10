@@ -546,7 +546,7 @@ struct CaptureTransform: Hashable, CustomStringConvertible {
 
 extension CaptureList.Builder {
   mutating func addCaptures(
-    in list: inout ArraySlice<DSLTree.Node>, optionalNesting nesting: OptionalNesting, visibleInTypedOutput: Bool
+    in list: inout Deque<DSLTree.Node>.SubSequence, optionalNesting nesting: OptionalNesting, visibleInTypedOutput: Bool
   ) {
     guard let node = list.popFirst() else { return }
     switch node {
@@ -652,7 +652,7 @@ extension Sequence<DSLTree.Node> {
 
 // MARK: Required first and last atoms
 
-private func _requiredAtomImpl(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTree.Atom?? {
+private func _requiredAtomImpl(_ list: inout Deque<DSLTree.Node>.SubSequence) -> DSLTree.Atom?? {
   guard let node = list.popFirst() else {
     return nil
   }
@@ -711,7 +711,7 @@ private func _requiredAtomImpl(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTre
   }
 }
 
-internal func requiredFirstAtom(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTree.Atom? {
+internal func requiredFirstAtom(_ list: inout Deque<DSLTree.Node>.SubSequence) -> DSLTree.Atom? {
   _requiredAtomImpl(&list) ?? nil
 }
 

@@ -59,7 +59,7 @@ extension PrettyPrinter {
   }
 
   private mutating func printAsPatternFromList(
-    _ list: inout ArraySlice<DSLTree.Node>,
+    _ list: inout Deque<DSLTree.Node>.SubSequence,
     isTopLevel: Bool = false
   ) {
     guard let node = list.popFirst() else { return }
@@ -216,7 +216,7 @@ extension PrettyPrinter {
   // adjacent chars/scalars into quotedLiteral nodes, no additional coalescing
   // is needed here — we just iterate the count children.
   private mutating func printConcatenationAsPatternFromList(
-    _ list: inout ArraySlice<DSLTree.Node>,
+    _ list: inout Deque<DSLTree.Node>.SubSequence,
     count: Int,
     isTopLevel: Bool
   ) {
