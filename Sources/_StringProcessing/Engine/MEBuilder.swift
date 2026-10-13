@@ -207,6 +207,17 @@ extension MEProgram.Builder {
     instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: false, boundaryCheck: boundaryCheck)))
   }
   
+  /// Match `s`, or the non-ASCII scalar canonically equivalent to it.
+  mutating func buildMatchScalarEither(
+    _ s: Unicode.Scalar,
+    orScalar other: Unicode.Scalar,
+    boundaryCheck: Bool
+  ) {
+    instructions.append(.init(
+      .matchScalarEither,
+      .init(scalar: s, orScalar: other, boundaryCheck: boundaryCheck)))
+  }
+
   mutating func buildMatchScalarCaseInsensitive(_ s: Unicode.Scalar, boundaryCheck: Bool) {
     instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: true, boundaryCheck: boundaryCheck)))
   }

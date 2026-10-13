@@ -80,6 +80,95 @@ extension UInt8 {
   }
 }
 
+extension UInt8 {
+  /// Whether this ASCII scalar is canonically equivalent to a non-ASCII
+  /// scalar.
+  ///
+  /// These three non-ASCII characters compare as canonically equivalent
+  /// to their respective ASCII counterparts:
+  ///
+  ///     U+037E GREEK QUESTION MARK  ==  ";"
+  ///     U+212A KELVIN SIGN          ==  "K"
+  ///     U+1FEF GREEK VARIA          ==  "`"
+  var _hasNonASCIICanonicalEquivalent: Bool {
+    assert(_isASCII)
+    return _nonASCIICanonicalEquivalent != nil
+  }
+
+  /// The non-ASCII scalar canonically equivalent to this ASCII byte, if there
+  /// is one.
+  var _nonASCIICanonicalEquivalent: Unicode.Scalar? {
+    switch self {
+    case UInt8(ascii: ";"): return "\u{037E}"  // GREEK QUESTION MARK
+    case UInt8(ascii: "K"): return "\u{212A}"  // KELVIN SIGN
+    case UInt8(ascii: "`"): return "\u{1FEF}"  // GREEK VARIA
+    default: return nil
+    }
+  }
+}
+
+extension Character {
+  /// Whether any of this character's scalars is an ASCII character that a
+  /// non-ASCII scalar is canonically equivalent to.
+  var _containsASCIIWithNonASCIIEquivalent: Bool {
+    unicodeScalars.contains {
+      $0.isASCII && UInt8($0.value)._hasNonASCIICanonicalEquivalent
+    }
+  }
+}
+
+extension String {
+  /// Whether this literal can be matched by comparing UTF-8 bytes directly.
+  func _canMatchUTF8Directly(usesCanonicalEquivalence: Bool) -> Bool {
+    !usesCanonicalEquivalence || _isDirectlyComparableASCII
+  }
+
+  /// Whether every character is ASCII with no non-ASCII canonical
+  /// equivalent, so each can be matched by comparing scalars directly,
+  /// even under canonical equivalence.
+  var _isDirectlyComparableASCII: Bool {
+    switch _isKnownASCII {
+    case (true, _):
+      return !utf8.contains(where: \._hasNonASCIICanonicalEquivalent)
+    case (false, true):
+      return false
+    case (false, false):
+      return allSatisfy(\.isASCII)
+        && !utf8.contains(where: \._hasNonASCIICanonicalEquivalent)
+    }
+  }
+  
+  var _isKnownASCII: (isASCII: Bool, isDefinitive: Bool) {
+#if _pointerBitWidth(_64)
+    precondition(MemoryLayout<String>.size == 16,
+      "unexpected String layout for this platform/ABI")
+    return withUnsafeBytes(of: self) { raw in
+      let word0 = raw.load(fromByteOffset: 0, as: UInt64.self) // _countAndFlagsBits
+      let word1 = raw.load(fromByteOffset: 8, as: UInt64.self) // discriminated object bits
+      let isSmall = (word1 & 0x2000_0000_0000_0000) != 0
+      if isSmall {
+        return ((word1 & 0x4000_0000_0000_0000) != 0, true)  // smallIsASCII bit
+      } else {
+        return ((word0 & 0x8000_0000_0000_0000) != 0, false)  // CountAndFlags.isASCIIMask
+      }
+    }
+#elseif _pointerBitWidth(_32)
+    precondition(MemoryLayout<String>.size == 12,
+      "unexpected 32-bit String layout")
+    let discriminator = raw.load(fromByteOffset: 9, as: UInt8.self)
+    let isSmall = (discriminator & 0x20) != 0
+    if isSmall {
+      return ((discriminator & 0x40) != 0, true)
+    } else {
+      let flags = raw.load(fromByteOffset: 10, as: UInt16.self)
+      return ((flags & 0x8000) != 0, false)
+    }
+#else
+    #error("Unsupported platform")
+#endif
+  }
+}
+
 extension String {
   /// TODO: better to take isScalarSemantics parameter, we can return more results
   /// and we can give the right `next` index, not requiring the caller to re-adjust it
@@ -168,6 +257,5 @@ extension String {
       return (next, asciiValue._asciiIsWord)
     }
   }
-
 }
 
