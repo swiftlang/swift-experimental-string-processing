@@ -694,7 +694,10 @@ fileprivate extension Compiler.ByteCodeGen {
           builder.buildQuantify(bitset: bitset, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
         } else {
           // Uncased character OR case-sensitive matching; match as a single scalar ascii value character
-          guard let val = c._singleScalarAsciiValue else {
+          guard let val = c._singleScalarAsciiValue,
+                !options.usesCanonicalEquivalence
+                  || !val._hasNonASCIICanonicalEquivalent
+          else {
             return false
           }
           builder.buildQuantify(asciiChar: val, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
