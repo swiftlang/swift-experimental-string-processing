@@ -424,7 +424,10 @@ fileprivate extension Compiler.ByteCodeGen {
     }
     switch (low, high) {
     case (_, 0):
-      try skipNode(&list)
+      // `{0}` / `{0,0}` never runs the operand. Drop the body, but still
+      // allocate any nested captures so they remain unset (nil) rather than
+      // recording an empty match at the current position.
+      try skipNode(&list, preservingCaptures: false, allocatingCaptures: true)
       return
     case let (n, m?) where n > m:
       // TODO: Should error out earlier, maybe DSL and parser
@@ -848,18 +851,25 @@ fileprivate extension Compiler.ByteCodeGen {
 extension Compiler.ByteCodeGen {
   mutating func skipNode(
     _ list: inout ArraySlice<DSLTree.Node>,
-    preservingCaptures: Bool = true
+    preservingCaptures: Bool = true,
+    allocatingCaptures: Bool = false
   ) throws {
     guard let node = list.popFirst() else { return }
     switch node {
     case let .orderedChoice(n):
       for _ in 0..<n {
-        try skipNode(&list, preservingCaptures: preservingCaptures)
+        try skipNode(
+          &list,
+          preservingCaptures: preservingCaptures,
+          allocatingCaptures: allocatingCaptures)
       }
 
     case let .concatenation(n):
       for _ in 0..<n {
-        try skipNode(&list, preservingCaptures: preservingCaptures)
+        try skipNode(
+          &list,
+          preservingCaptures: preservingCaptures,
+          allocatingCaptures: allocatingCaptures)
       }
 
     case let .capture(name, refId, _):
@@ -869,23 +879,47 @@ extension Compiler.ByteCodeGen {
       if preservingCaptures {
         let cap = builder.makeCapture(id: refId, name: name)
         builder.buildBeginCapture(cap)
-        try skipNode(&list, preservingCaptures: preservingCaptures)
+        try skipNode(
+          &list,
+          preservingCaptures: preservingCaptures,
+          allocatingCaptures: allocatingCaptures)
         builder.buildEndCapture(cap)
       } else {
-        try skipNode(&list, preservingCaptures: preservingCaptures)
+        // Capture registers are numbered sequentially from the AST. A group
+        // that never participates still needs a register, left at the default
+        // unset/nil state.
+        if allocatingCaptures {
+          _ = builder.makeCapture(id: refId, name: name)
+        }
+        try skipNode(
+          &list,
+          preservingCaptures: preservingCaptures,
+          allocatingCaptures: allocatingCaptures)
       }
       
     case .nonCapturingGroup:
-      try skipNode(&list, preservingCaptures: preservingCaptures)
+      try skipNode(
+        &list,
+        preservingCaptures: preservingCaptures,
+        allocatingCaptures: allocatingCaptures)
 
     case .ignoreCapturesInTypedOutput:
-      try skipNode(&list, preservingCaptures: preservingCaptures)
+      try skipNode(
+        &list,
+        preservingCaptures: preservingCaptures,
+        allocatingCaptures: allocatingCaptures)
       
     case .limitCaptureNesting:
-      try skipNode(&list, preservingCaptures: preservingCaptures)
+      try skipNode(
+        &list,
+        preservingCaptures: preservingCaptures,
+        allocatingCaptures: allocatingCaptures)
 
     case .quantification:
-      try skipNode(&list, preservingCaptures: preservingCaptures)
+      try skipNode(
+        &list,
+        preservingCaptures: preservingCaptures,
+        allocatingCaptures: allocatingCaptures)
 
     case .customCharacterClass, .atom, .quotedLiteral, .matcher:
       break
