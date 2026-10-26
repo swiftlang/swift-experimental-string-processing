@@ -3058,4 +3058,16 @@ extension RegexTests {
     XCTAssertNotNil("testS".wholeMatch(of: regex))
     XCTAssertNotNil("tesTs".wholeMatch(of: regex))
   }
+
+  func testLiteralAtSubCharacterEnd() throws {
+    let cafe = "cafe\u{301}"
+    let sub = cafe[..<cafe.unicodeScalars.index(before: cafe.endIndex)]
+    for regex in [#/afe/#, #/af./#] {
+      XCTAssertEqual(sub.firstMatch(of: regex)?.0, "afe")
+    }
+    XCTAssertNotNil(sub.firstRange(of: "afe"))
+    
+    // No match for a literal ending sub-character
+    XCTAssertNil(cafe.firstRange(of: Regex<Substring>(verbatim: "afe")))
+  }
 }
