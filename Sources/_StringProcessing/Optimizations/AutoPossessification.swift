@@ -12,11 +12,21 @@
 internal import _RegexParser
 
 extension DSLList {
+  /// Finds the required first atom of the node at `position`. On return,
+  /// `position` is always at the last node of that node's subtree, regardless
+  /// of how early the search stopped, so callers can safely advance to the
+  /// next sibling.
   private func _requiredAtomImpl(
     _ position: inout Int,
     options: inout MatchingOptions,
     allowOptionsChanges: Bool
   ) -> DSLTree.Atom?? {
+    let start = position
+    defer {
+      position = start
+      skipNode(&position)
+    }
+
     guard position < nodes.count else {
       return nil
     }
@@ -112,7 +122,11 @@ extension DSLList {
     // A quantification that doesn't require its child to exist can still
     // allow a start-only match. (e.g. `/(foo)?^bar/`)
     case .quantification(let amount, _):
-      if amount.requiresAtLeastOne {
+      // A quantification with a maximum of zero never matches anything and is
+      // skipped entirely during code generation, so it has no effect here.
+      if amount.ast.bounds.1 == 0 {
+        return nil
+      } else if amount.requiresAtLeastOne {
         position += 1
         return _requiredAtomImpl(&position, options: &options, allowOptionsChanges: allowOptionsChanges)
       } else {
@@ -155,6 +169,12 @@ extension DSLList {
       default:
         var innerPosition = position
         _ = autoPossessifyNextQuantification(&innerPosition, options: &options)
+
+        // Move past the whole quantification, since the recursive call may
+        // have stopped early inside the quantified node.
+        position = quantPosition
+        skipNode(&position)
+        position += 1
         return nil
       }
       
@@ -348,7 +368,11 @@ extension DSLTree.Atom.CharacterClass {
     case .digit:
       switch other {
       case .whitespace, .horizontalWhitespace, .verticalWhitespace, .newlineSequence,
-          .notWord, .notDigit: true
+          .notDigit: true
+      case .notWord:
+        // Digits are a subset of word characters, unless word characters are
+        // restricted to ASCII while digits are not.
+        !(options.usesASCIIWord && !options.usesASCIIDigits)
       default: false
       }
     case .notDigit:
