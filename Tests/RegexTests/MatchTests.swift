@@ -3084,4 +3084,27 @@ extension RegexTests {
     XCTAssertNotNil("testS".wholeMatch(of: regex))
     XCTAssertNotNil("tesTs".wholeMatch(of: regex))
   }
+
+  func testLiteralAtSubCharacterEnd() throws {
+    let cafe = "cafe\u{301}"
+    let sub = cafe[..<cafe.unicodeScalars.index(before: cafe.endIndex)]
+    for regex in [#/afe/#, #/af./#] {
+      XCTAssertEqual(sub.firstMatch(of: regex)?.0, "afe")
+    }
+    XCTAssertNotNil(sub.firstRange(of: "afe"))
+    
+    // No match for a literal ending sub-character
+    XCTAssertNil(cafe.firstRange(of: Regex<Substring>(verbatim: "afe")))
+  }
+  
+  func testAutoPossessificationSkippedNodes() throws {
+    firstMatchTest(#"(\w* {0})a"#, input: "a", match: "a")
+    firstMatchTest(#"((\w* {0})){1}()a"#, input: "a", match: "a")
+    firstMatchTest(#"(?:\w{1,}? *?)b"#, input: "bb", match: "bb")
+    firstMatchTest(#"(?i)]()*|A{,1}a{1}"#, input: "a", match: "a")
+    firstMatchTest(#"(b?W?)(?i)([B])"#, input: "b", match: "b")
+    
+    // Digits aren't a subset of word characters when only \w is ASCII-only.
+    firstMatchTest(#"(?W)\d{,1}\W"#, input: "\u{661}", match: "\u{661}")
+  }
 }
