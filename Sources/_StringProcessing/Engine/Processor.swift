@@ -767,7 +767,7 @@ extension String {
     let idx = unicodeScalars.index(after: pos)
     assert(idx <= end, "Input is a substring with a sub-scalar endIndex.")
 
-    if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
+    if boundaryCheck && idx != end && !isOnGraphemeClusterBoundary(idx) {
       return nil
     }
 
@@ -788,7 +788,7 @@ extension String {
 
     guard cur <= end else { return nil }
 
-    if boundaryCheck && !isOnGraphemeClusterBoundary(cur) {
+    if boundaryCheck && cur != end && !isOnGraphemeClusterBoundary(cur) {
       return nil
     }
 
