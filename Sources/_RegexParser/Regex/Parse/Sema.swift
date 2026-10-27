@@ -101,6 +101,9 @@ extension RegexValidator {
       if i >= captures.captures.count {
         error(.invalidReference(i), at: ref.innerLoc)
       }
+      if i > 0xFFFF {
+        error(.unsupported("too many backreferences"), at: ref.innerLoc)
+      }
     case .named(let name):
       // An empty name is already invalid, so don't bother validating.
       guard !name.isEmpty else { break }
