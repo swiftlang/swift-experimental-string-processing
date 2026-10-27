@@ -209,7 +209,7 @@ extension Parser {
     context.parseDepth += 1
     defer { context.parseDepth -= 1 }
     guard context.parseDepth <= ParsingContext.maxParseDepth else {
-      endParsingExcessiveNesting()
+      defer { endParsingExcessiveNesting() }
       return .empty(.init(loc(src.currentPosition)))
     }
 
