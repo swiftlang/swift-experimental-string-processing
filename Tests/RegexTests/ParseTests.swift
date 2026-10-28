@@ -3323,18 +3323,32 @@ extension RegexTests {
   }
 
   func testMaliciousNesting() {
+    func pattern(prefix: String, suffix: String, depth: Int) -> String {
+      String(repeating: prefix, count: depth)
+      + "a"
+      + String(repeating: suffix, count: depth)
+    }
+    
     // Excessively nested subpatterns is a common DOS attack
-    diagnosticTest(
-      String(repeating: "(", count: 500)
-      + "a"
-      + String(repeating: ")*", count: 500),
-      .nestingTooDeep)
+    for depth in [ParsingContext.maxParseDepth, 100, 1_000, 5_000] {
+      diagnosticTest(
+        pattern(prefix: "[", suffix: "]", depth: depth),
+        .nestingTooDeep)
+      diagnosticTest(
+        pattern(prefix: "(", suffix: ")*", depth: depth),
+        .nestingTooDeep)
+      diagnosticTest(
+        pattern(prefix: "(?:", suffix: ")*", depth: depth),
+        .nestingTooDeep)
+      diagnosticTest(
+        pattern(prefix: "[a-z&&", suffix: "]", depth: depth),
+        .nestingTooDeep)
+    }
 
-    diagnosticTest(
-      String(repeating: "(?:", count: 500)
-      + "a"
-      + String(repeating: ")*", count: 500),
-      .nestingTooDeep)
+    // Reasonable nesting is still fine.
+    for depth in [1, 10, 30, ParsingContext.maxParseDepth - 1] {
+      diagnosticTest(pattern(prefix: "[", suffix: "]", depth: depth))
+    }
   }
 
   func testDelimiterLexingErrors() {
