@@ -2536,6 +2536,35 @@ extension RegexTests {
     XCTAssertTrue("CaFe".contains(caseInsensitiveRegex))
   }
 
+  // https://github.com/swiftlang/swift-experimental-string-processing/issues/884
+  // Duplicate: https://github.com/swiftlang/swift-experimental-string-processing/issues/901
+  // `\b` with simple word boundaries and Unicode scalar semantics must treat
+  // digits as word characters, matching `\w` (letters, digits, underscore).
+  func testSimpleWordBoundaryDigitsWithUnicodeScalarSemantics() throws {
+    // Must have new stdlib for word boundaries.
+    guard ensureNewStdlib() else { return }
+
+    func both(_ pattern: String) throws -> Regex<AnyRegexOutput> {
+      try Regex(pattern).wordBoundaryKind(.simple).matchingSemantics(.unicodeScalar)
+    }
+
+    XCTAssertTrue(try "9".contains(both(#"9\b"#)))
+    XCTAssertTrue(try "e9".contains(both(#"(r|e)9\b"#)))
+    XCTAssertFalse(try "x5".contains(both(#"x\b"#)))
+    XCTAssertFalse(try "5x".contains(both(#"\bx"#)))
+    XCTAssertFalse(try "1pw2".contains(both(#"\bpwd?\b"#)))
+
+    // Letters and underscore remain word characters.
+    XCTAssertTrue(try "a".contains(both(#"a\b"#)))
+    XCTAssertTrue(try "_".contains(both(#"_\b"#)))
+    XCTAssertFalse(try "a5".contains(both(#"a\b"#)))
+    XCTAssertFalse(try "_5".contains(both(#"_\b"#)))
+
+    // Either option alone already classified digits as word characters.
+    XCTAssertTrue(try "9".contains(Regex(#"9\b"#).wordBoundaryKind(.simple)))
+    XCTAssertTrue(try "9".contains(Regex(#"9\b"#).matchingSemantics(.unicodeScalar)))
+  }
+
   // https://github.com/swiftlang/swift-experimental-string-processing/issues/768
   func testWordBoundaryCaching() throws {
     // This will first find word boundaries up til the middle before failing,
