@@ -952,6 +952,17 @@ extension RegexTests {
     firstMatchTest(
       #"(?S)\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
 
+    // \w in scalar semantics must match letters, digits, and underscore
+    // (matching the same definition used in grapheme-cluster semantics),
+    // not just alphabetics.
+    matchTest(
+      #"\w"#,
+      ("a", true),
+      ("1", true),
+      ("_", true),
+      (" ", false),
+      semanticLevel: .unicodeScalar)
+
     matchTest(
       #"[a]\u0301"#,
       ("a\u{301}", false),

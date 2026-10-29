@@ -382,7 +382,9 @@ extension String {
       }
     case .word:
       if isScalarSemantics {
-        matched = scalar.properties.isAlphabetic && asciiCheck
+        matched = (scalar.properties.isAlphabetic
+          || scalar.properties.numericType != nil
+          || scalar == "_") && asciiCheck
       } else {
         matched = char.isWordCharacter && asciiCheck
       }
