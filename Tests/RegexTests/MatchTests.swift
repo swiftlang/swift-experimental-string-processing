@@ -2079,6 +2079,27 @@ extension RegexTests {
       ("ac", [nil, "a"]),
       ("aab", ["aa", nil])
     )
+
+    // A group quantified `{0}` / `{0,0}` never participates, so its capture
+    // must be nil (not an empty match). See swiftlang/swift-experimental-string-processing#902.
+    flatCaptureTest(
+      #"(a){0}b"#,
+      ("b", [nil]),
+      ("ab", [nil]))
+    flatCaptureTest(
+      #"(a){0,0}b"#,
+      ("b", [nil]),
+      ("ab", [nil]))
+    // Nested captures inside a never-run `{0}` body must also stay nil,
+    // while a later capture still gets the correct register.
+    flatCaptureTest(
+      #"((a)){0}(b)"#,
+      ("b", [nil, nil, "b"]))
+    // `{0,1}` already reports nil when the group does not run.
+    flatCaptureTest(
+      #"(a){0,1}b"#,
+      ("b", [nil]),
+      ("ab", ["a"]))
   }
 
   func testMatchReferences() {
