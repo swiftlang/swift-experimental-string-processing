@@ -2917,6 +2917,32 @@ extension RegexTests {
     expectCompletion(regex: #"(?:(?=\d)\w*)*"#, in: "a")
     expectCompletion(regex: #"(?:(?!b)\d*)*"#, in: "a")
     expectCompletion(regex: #"(?:(?!\d)[0-9]*)*"#, in: "a")
+
+    // An empty alternative next to one that is a concatenation of more than
+    // one node.
+    // https://github.com/swiftlang/swift-experimental-string-processing/issues/897
+    expectCompletion(regex: #"(?:.c|)*x"#, in: "b")
+    expectCompletion(regex: #"(?:\sA|)*?x"#, in: "b")
+    expectCompletion(regex: #"(?:[ab]c|)*x"#, in: "b")
+    // https://github.com/swiftlang/swift-experimental-string-processing/issues/894
+    expectCompletion(regex: #"(?:.b|)+."#, in: "a")
+  }
+
+  func testEmptyAlternativeInQuantification() {
+    // https://github.com/swiftlang/swift-experimental-string-processing/issues/897
+    firstMatchTests(
+      #"(?:.c|)*x"#,
+      ("b", nil), ("x", "x"), ("bcx", "bcx"), ("acbcx", "acbcx"))
+    firstMatchTests(
+      #"(?:\sA|)*?x"#,
+      ("b", nil), ("x", "x"), (" Ax", " Ax"))
+    firstMatchTests(
+      #"(?:[ab]c|)*x"#,
+      ("b", nil), ("acbcx", "acbcx"))
+    // https://github.com/swiftlang/swift-experimental-string-processing/issues/894
+    firstMatchTests(
+      #"(?:.b|)+."#,
+      ("a", "a"), ("ab", "a"), ("abb", "abb"))
   }
 
   func testQuantifyOptimization() throws {

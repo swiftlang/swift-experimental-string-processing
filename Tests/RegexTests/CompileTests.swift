@@ -556,6 +556,24 @@ extension RegexTests {
     // Inner node is a quantification that guarantees forward progress
     expectProgram(for: #"(a+)*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
     expectProgram(for: #"(a{1,})*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+
+    // An empty alternative next to one that is a concatenation of more than
+    // one node. Deciding the concatenation takes only its first child, so the
+    // walk has to skip the rest of it to find the empty alternative.
+    // https://github.com/swiftlang/swift-experimental-string-processing/issues/897
+    expectProgram(for: #"(?:.c|)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\sA|)*?"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:[ab]c|)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    // https://github.com/swiftlang/swift-experimental-string-processing/issues/894
+    expectProgram(for: #"(?:.b|)+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    // Every alternative progresses, so no check is needed even though one of
+    // them is a concatenation.
+    expectProgram(for: #"(?:.c|b)*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:.c|b|[de]f)*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    // A concatenation progresses as soon as one of its children does, wherever
+    // in the concatenation that child is.
+    expectProgram(for: #"(?:(?=a)\b.)*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:(?=a)\b(?:))*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
   }
   
   func testCanOnlyMatchAtStart() throws {
