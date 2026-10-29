@@ -14,7 +14,7 @@ import Testing
 @testable import _RegexParser
 
 @Suite struct OptimizationTests {
-  @available(macOS 9999, *)
+  @available(macOS 26, *)
   @Test(arguments: [#/a/#, #/a+/#, #/(?:a+)/#, #/(?:a)+/#, #/(?m)a+/#, #/ab?c/#, #/(?:a+)+$/#, #/(?:(?:a+b)+b)/#])
   func requiredFirstAtom(pattern: Regex<Substring>) throws {
     let list = pattern.program.list
@@ -22,7 +22,7 @@ import Testing
     #expect(atom?.literalCharacterValue == "a", "Missing first character atom in '\(pattern._literalPattern!)'")
   }
   
-  @available(macOS 9999, *)
+  @available(macOS 26, *)
   @Test(arguments: [#/a?/#, #/(?:a|b)/#, #/[a]/#, #/a?bc/#])
   func noRequiredFirstAtom(pattern: Regex<Substring>) throws {
     let list = pattern.program.list
@@ -30,8 +30,8 @@ import Testing
     #expect(atom == nil, "Unexpected required first atom in '\(pattern._literalPattern!)'")
   }
   
-  @available(macOS 9999, *)
-  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#, #/\d+a/#, #/a+A/#])
+  @available(macOS 26, *)
+  @Test(arguments: [#/a+b/#, #/a*b/#, #/\w+\s/#, #/(?:a+b|b+a)/#, #/\d+a/#, #/a+A/#, #/(?:x|a+b)/#])
   func autoPossessify(pattern: Regex<Substring>) throws {
     var list = pattern.program.list
     list.autoPossessify()
@@ -46,7 +46,7 @@ import Testing
     }
   }
 
-  @available(macOS 9999, *)
+  @available(macOS 26, *)
   @Test(arguments: [
     #/a?/#, #/a+a/#, #/a+(?:b|c)/#, #/(?:a+|b+)/#, #/[a]/#, #/a?a/#,
     #/(?i)a+A/#, #/(?i:a+A)/#,  // case insensitivity when checking exclusion
@@ -69,7 +69,7 @@ import Testing
 
   /// The number of quantifications in `pattern` that auto-possessification
   /// converts to possessive, and the total number of quantifications.
-  @available(macOS 9999, *)
+  @available(macOS 26, *)
   func possessificationCounts(
     in pattern: String
   ) throws -> (possessive: Int, total: Int) {
@@ -92,7 +92,7 @@ import Testing
   /// subtree anyway. Losing track of it possessifies the wrong quantification,
   /// which drops matches, or stops the traversal short, which silently gives
   /// up the optimization.
-  @available(macOS 9999, *)
+  @available(macOS 26, *)
   @Test func partialAutoPossessify() throws {
     // pattern, expected possessive count, expected quantification count
     let expectations: [(String, Int, Int)] = [
@@ -117,5 +117,62 @@ import Testing
         counts == (possessive, total),
         "Unexpected possessification in '\(pattern)'")
     }
+  }
+
+  @available(macOS 26, *)
+  @Test(arguments: [
+    #"(\w* {1})a"#, #"(\w* {2})a"#, #"(\w* {0} {1})a"#, #"(\w*)\s"#, #"((\w+)) b"#,
+    #"(\w{1,} +)b"#, #"(?:\w* {1})a"#, #"\d{,1}\W"#,
+  ])
+  func autoPossessifyFirstQuantification(pattern: String) throws {
+    // Valid possessification near skipped/zero-width nodes must still happen.
+    var list = try Regex(pattern).program.list
+    list.autoPossessify()
+    let first = list.nodes.first {
+      if case .quantification = $0 { return true } else { return false }
+    }
+    guard case .quantification(_, let kind)? = first else {
+      Issue.record("No quantification in '\(pattern)'")
+      return
+    }
+    #expect(kind.isExplicit && kind.quantificationKind?.ast == .possessive,
+            "Expected possessification in '\(pattern)'")
+  }
+
+  @available(macOS 26, *)
+  @Test(arguments: [#"(\w* {0})a"#, #"((\w* {0})){1}()a"#, #"(\w*)(?: {0})a"#,
+    // `\s*` can be possessified, but an optional quantifier hides what follows `\w*`
+    #"\w*(?:\s*)a"#,
+  ])
+  func noAutoPossessifyAcrossSkippedNode(pattern: String) throws {
+    // The zero-width quantification doesn't hide the `a` that follows `\w*`.
+    var list = try Regex(pattern).program.list
+    list.autoPossessify()
+    let first = list.nodes.first {
+      if case .quantification = $0 { return true } else { return false }
+    }
+    guard case .quantification(_, let kind)? = first else {
+      Issue.record("No quantification in '\(pattern)'")
+      return
+    }
+    #expect(kind.quantificationKind?.ast != .possessive,
+            "Unexpected possessification in '\(pattern)'")
+  }
+
+  @available(macOS 26, *)
+  @Test func digitWordExclusionDependsOnOptions() throws {
+    func firstIsPossessive(_ regex: Regex<AnyRegexOutput>) -> Bool {
+      var list = regex.program.list
+      list.autoPossessify()
+      for case .quantification(_, let kind) in list.nodes {
+        return kind.quantificationKind?.ast == .possessive
+      }
+      return false
+    }
+    // Digits are always word characters, so `\d?` can't give up input `\W` needs.
+    #expect(firstIsPossessive(try Regex(#"\d?\W"#)))
+    #expect(firstIsPossessive(try Regex(#"\d?\W"#).asciiOnlyDigits().asciiOnlyWordCharacters()))
+    // Unless only `\w` is ASCII-only: then non-ASCII digits are `\W`.
+    #expect(!firstIsPossessive(try Regex(#"\d?\W"#).asciiOnlyWordCharacters()))
   }
 }

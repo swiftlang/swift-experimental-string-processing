@@ -116,7 +116,11 @@ extension DSLList {
     // A quantification that doesn't require its child to exist can still
     // allow a start-only match. (e.g. `/(foo)?^bar/`)
     case .quantification(let amount, _):
-      if amount.requiresAtLeastOne {
+      // A quantification with a maximum of zero never matches anything and is
+      // skipped entirely during code generation, so it has no effect here.
+      if amount.ast.bounds.1 == 0 {
+        return nil
+      } else if amount.requiresAtLeastOne {
         position += 1
         return _requiredAtomImpl(&position, options: &options, allowOptionsChanges: allowOptionsChanges)
       } else {
@@ -160,7 +164,13 @@ extension DSLList {
     defer { position = endOfSubtree }
 
     switch nodes[position] {
-    case .quantification(_, _):
+    case .quantification(let amount, _):
+      // A quantification with a maximum of zero never matches anything and is
+      // skipped entirely during code generation, so it can be skipped here.
+      if amount.ast.bounds.1 == 0 {
+        return nil
+      }
+
       let quantPosition = position
       position += 1
       
@@ -359,7 +369,11 @@ extension DSLTree.Atom.CharacterClass {
     case .digit:
       switch other {
       case .whitespace, .horizontalWhitespace, .verticalWhitespace, .newlineSequence,
-          .notWord, .notDigit: true
+          .notDigit: true
+      case .notWord:
+        // Digits are a subset of word characters, unless word characters are
+        // restricted to ASCII while digits are not.
+        !(options.usesASCIIWord && !options.usesASCIIDigits)
       default: false
       }
     case .notDigit:

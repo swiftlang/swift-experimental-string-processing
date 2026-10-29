@@ -351,9 +351,20 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
+  /// Returns whether the node at `position` is guaranteed to consume input,
+  /// leaving `position` just past that node's entire subtree, so that a caller
+  /// walking a list of nodes reads the next sibling.
+  ///
+  /// Some of the cases below stop looking at children as soon as the answer is
+  /// known, and others don't look at them at all, so the end of the subtree is
+  /// found up front rather than left to the traversal to reach.
   func _guaranteesForwardProgressImpl(_ list: ArraySlice<DSLTree.Node>, position: inout Int) -> Bool {
     guard position < list.endIndex else { return false }
     let node = list[position]
+    var endOfSubtree = position
+    list.skipNode(&endOfSubtree)
+    endOfSubtree += 1
+    defer { position = endOfSubtree }
     position += 1
     switch node {
     case .orderedChoice(let count):
@@ -369,8 +380,6 @@ fileprivate extension Compiler.ByteCodeGen {
     case .nonCapturingGroup(let kind):
       switch kind.ast {
       case .lookahead, .negativeLookahead, .lookbehind, .negativeLookbehind:
-        list.skipNode(&position)
-        position += 1
         return false
       default:
         return _guaranteesForwardProgressImpl(list, position: &position)
@@ -396,8 +405,6 @@ fileprivate extension Compiler.ByteCodeGen {
       if let atLeast, atLeast > 0 {
         return _guaranteesForwardProgressImpl(list, position: &position)
       } else {
-        list.skipNode(&position)
-        position += 1
         return false
       }
     case .limitCaptureNesting, .ignoreCapturesInTypedOutput:

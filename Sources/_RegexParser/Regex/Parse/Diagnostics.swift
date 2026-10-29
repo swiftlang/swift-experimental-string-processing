@@ -87,7 +87,7 @@ enum ParseError: Error, Hashable {
 
   case expectedCalloutArgument
 
-  // Excessively nested groups (i.e. recursion)
+  // Excessively nested groups or character classes (i.e. recursion)
   case nestingTooDeep
 
   // MARK: Semantic Errors
@@ -246,7 +246,7 @@ extension ParseError: CustomStringConvertible {
       return "expression is not quantifiable"
 
     case .nestingTooDeep:
-      return "group is too deeply nested"
+      return "group or character class is too deeply nested"
     }
   }
 }

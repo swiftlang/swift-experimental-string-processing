@@ -91,7 +91,7 @@ struct ParsingContext {
     }
   }
 
-  fileprivate var maxParseDepth: Int { 64 }
+  internal static var maxParseDepth: Int { 64 }
 
   init(syntax: SyntaxOptions) {
     self.syntax = syntax
@@ -186,6 +186,17 @@ extension Parser {
     return .init(ast, globalOptions: opts, diags: diags)
   }
 
+  /// Diagnose excessive nesting and stop parsing.
+  ///
+  /// Excessive nesting isn't recoverable and can lead to excessive work
+  /// downstream, so we stop parsing immediately on this type of error
+  /// by just consuming the remainder of the input.
+  mutating func endParsingExcessiveNesting() {
+    self.errorAtCurrentPosition(.nestingTooDeep)
+    diags.suppressFurtherDiagnostics = true
+    src.bounds = src.bounds.upperBound ..< src.bounds.upperBound
+  }
+
   /// Parse a regular expression node. This should be used instead of `parse()`
   /// for recursive calls.
   ///
@@ -197,13 +208,8 @@ extension Parser {
     // our recursion.
     context.parseDepth += 1
     defer { context.parseDepth -= 1 }
-    guard context.parseDepth < context.maxParseDepth else {
-      self.errorAtCurrentPosition(.nestingTooDeep)
-
-      // This is not generally recoverable and further errors will be
-      // incorrect
-      diags.suppressFurtherDiagnostics = true
-
+    guard context.parseDepth <= ParsingContext.maxParseDepth else {
+      defer { endParsingExcessiveNesting() }
       return .empty(.init(loc(src.currentPosition)))
     }
 
@@ -523,6 +529,15 @@ extension Parser {
   mutating func parseCustomCharacterClass(
     _ start: Source.Located<CustomCC.Start>
   ) -> CustomCC {
+    // Excessively nested character classes are subject to the same recursion
+    // limit as groups.
+    context.parseDepth += 1
+    defer { context.parseDepth -= 1 }
+    guard context.parseDepth <= ParsingContext.maxParseDepth else {
+      endParsingExcessiveNesting()
+      return CustomCC(start, [], loc(start.location.start))
+    }
+
     let alreadyInCCC = context.isInCustomCharacterClass
     context.isInCustomCharacterClass = true
     defer { context.isInCustomCharacterClass = alreadyInCCC }
