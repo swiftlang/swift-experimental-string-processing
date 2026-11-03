@@ -168,6 +168,31 @@ extension Instruction.Payload {
     return (scalar, caseInsensitive: caseInsensitive, boundaryCheck: boundaryCheck)
   }
 
+  /// Two scalars plus a boundary-check flag.
+  ///
+  /// The first scalar occupies the low 21 bits, as in `scalarPayload`; the
+  /// second goes in bits 32-52, which that layout leaves free. The
+  /// boundary-check flag stays at bit 54 so it lines up with `scalarPayload`.
+  init(
+    scalar: Unicode.Scalar,
+    orScalar other: Unicode.Scalar,
+    boundaryCheck: Bool
+  ) {
+    let raw = UInt64(scalar.value)
+      | (UInt64(other.value) << 32)
+      | (boundaryCheck ? 1 << 54 : 0)
+    self.init(raw)
+  }
+  var scalarPairPayload: (
+    Unicode.Scalar, Unicode.Scalar, boundaryCheck: Bool
+  ) {
+    let boundaryCheck = (self.rawValue >> 54) & 1 == 1
+    let first = Unicode.Scalar(_value: UInt32(self.rawValue & 0x1F_FFFF))
+    let second = Unicode.Scalar(
+      _value: UInt32((self.rawValue >> 32) & 0x1F_FFFF))
+    return (first, second, boundaryCheck: boundaryCheck)
+  }
+
   init(utf8: UTF8Register, boundaryCheck: Bool) {
     self.init(boundaryCheck ? 1 : 0, utf8)
   }

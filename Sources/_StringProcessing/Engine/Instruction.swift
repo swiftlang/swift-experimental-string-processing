@@ -112,6 +112,13 @@ extension Instruction {
     /// Operands: Scalar value to match against and booleans
     case matchScalar
 
+    /// Match against one of two scalars, and possibly perform a boundary check.
+    ///
+    ///     matchScalarPair(_: Unicode.Scalar, _: Unicode.Scalar, boundaryCheck: Bool)
+    ///
+    /// Operands: the two scalar values to match against and a boolean
+    case matchScalarPair
+
     /// Match directly (binary semantics) against a series of UTF-8 bytes
     ///
     /// NOTE: Compiler should ensure to only emit this instruction when normalization

@@ -37,6 +37,8 @@ enum DecodedInstr {
   case matchScalarCaseInsensitiveUnchecked
   case matchScalarCaseInsensitive
   case matchScalarUnchecked
+  case matchScalarPair
+  case matchScalarPairUnchecked
   case matchBitsetScalar
   case matchAnyNonNewline
   case matchBitset
@@ -98,6 +100,9 @@ extension DecodedInstr {
       } else {
         return .match
       }
+    case .matchScalarPair:
+      let (_, _, boundaryCheck) = payload.scalarPairPayload
+      return boundaryCheck ? .matchScalarPair : .matchScalarPairUnchecked
     case .matchScalar:
       let (_, caseInsensitive, boundaryCheck) = payload.scalarPayload
       if caseInsensitive {
@@ -422,7 +427,7 @@ extension RegexTests {
     // all ascii quoted literal -> elide boundary checks
     expectProgram(
       for: "abcd",
-      contains: [.matchScalar, .matchScalarUnchecked],
+      contains: [.matchUTF8],
       doesNotContain: [.match, .consumeBy])
     // ascii character -> matchScalar with boundary check
     expectProgram(
@@ -438,7 +443,7 @@ extension RegexTests {
     expectProgram(
       for: "abcd",
       semanticLevel: .unicodeScalar,
-      contains: [.matchScalarUnchecked],
+      contains: [.matchUTF8],
       doesNotContain: [.match, .consumeBy, .matchScalar])
     expectProgram(
       for: "a",
@@ -472,13 +477,42 @@ extension RegexTests {
       doesNotContain: [.matchUTF8, .consumeBy])
   }
   
+  func testCanonicalEquivalentASCIICompilation() {
+    for literal in [";", "K", "`"] {
+      expectProgram(
+        for: literal,
+        semanticLevel: .graphemeCluster,
+        contains: [.matchScalarPair],
+        doesNotContain: [
+          .match, .matchUTF8, .matchScalar, .matchScalarUnchecked,
+        ])
+      expectProgram(
+        for: literal,
+        semanticLevel: .unicodeScalar,
+        contains: [.matchScalarUnchecked],
+        doesNotContain: [.match, .matchScalarPair, .matchScalarPairUnchecked])
+      // Long literals are split around the K`; characters under grapheme semantics
+      expectProgram(
+        for: "abcdef\(literal)ghijkl",
+        semanticLevel: .graphemeCluster,
+        contains: [.matchUTF8, .matchScalarPair],
+        doesNotContain: [.match])
+      // Under scalar semantics the whole literal compares bytewise
+      expectProgram(
+        for: "abcdef\(literal)ghijkl",
+        semanticLevel: .unicodeScalar,
+        contains: [.matchUTF8],
+        doesNotContain: [.match, .matchScalarPair])
+    }
+  }
+
   func testCaseInsensitivityCompilation() {
     // quoted literal is all ascii -> match scalar case insensitive and skip
     // boundary checks
     expectProgram(
       for: "(?i)abcd",
-      contains: [.matchScalarCaseInsensitiveUnchecked, .matchScalarCaseInsensitive],
-      doesNotContain: [.match, .matchCaseInsensitive, .matchScalar, .matchScalarUnchecked])
+      contains: [.matchScalarPairUnchecked, .matchScalarPair],
+      doesNotContain: [.match, .matchCaseInsensitive, .matchScalar, .matchScalarUnchecked, .matchScalarCaseInsensitive, .matchScalarCaseInsensitiveUnchecked])
     // quoted literal is all non-cased ascii -> emit match scalar instructions
     expectProgram(
       for: "(?i)&&&&",
@@ -493,9 +527,16 @@ extension RegexTests {
       contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive],
       doesNotContain: [.matchScalarCaseInsensitiveUnchecked, .match, .matchScalar])
     // same as before but contains ascii non cased characters -> emit matchScalar for them
+    // ";" is special: U+037E GREEK QUESTION MARK is canonically equivalent to
+    // it, so under grapheme semantics it compiles to `matchScalarPair`, which
+    // accepts either scalar, rather than a plain `matchScalar`. See
+    // UInt8._nonASCIICanonicalEquivalent.
     expectProgram(
       for: "(?i)abcd\u{301};.'!",
-      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive, .matchScalar],
+      contains: [
+        .matchCaseInsensitive, .matchScalarCaseInsensitive, .matchScalar,
+        .matchScalarPair,
+      ],
       doesNotContain: [.matchScalarCaseInsensitiveUnchecked, .match])
     // contains non-ascii non-cased characters -> emit match
     expectProgram(

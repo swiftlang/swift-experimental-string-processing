@@ -97,31 +97,69 @@ extension Compiler.ByteCodeGen {
   }
 
   mutating func emitQuotedLiteral(_ s: String) {
-    // ASCII is normalization-invariant, so is the safe subset for
-    // us to optimize
+    guard !s.isEmpty else { return }
+
+    // Matching bytes directly is only safe when matching case sensitively
+    // and one of the following is true:
+    // - we're using unicodeScalar semantics, or
+    // - the literal is ASCII with no non-ASCII scalar equivalents
     if optimizationsEnabled,
-       !options.usesCanonicalEquivalence || s.utf8.allSatisfy(\._isASCII),
-       !s.isEmpty
+       !options.isCaseInsensitive,
+       s._canMatchUTF8Directly(
+         usesCanonicalEquivalence: options.usesCanonicalEquivalence)
     {
-
-      // TODO: Make an optimizations configuration struct, where
-      // we can enable/disable specific optimizations and change
-      // thresholds
-      let longThreshold = 5
-
-      // Longer content will be matched against UTF-8 in contiguous
-      // memory
-      //
-      // TODO: case-insensitive variant (just add/subtract from
-      // ASCII value)
-      if s.utf8.count >= longThreshold, !options.isCaseInsensitive {
-        let boundaryCheck = options.semanticLevel == .graphemeCluster
-        builder.buildMatchUTF8(Array(s.utf8), boundaryCheck: boundaryCheck)
-        return
-      }
+      let boundaryCheck = options.semanticLevel == .graphemeCluster
+      builder.buildMatchUTF8(Array(s.utf8), boundaryCheck: boundaryCheck)
+      return
     }
 
-    guard options.semanticLevel == .graphemeCluster else {
+    // Special case: the literal is ASCII, but contains at least one character
+    // that a non-ASCII scalar is equivalent to. Here we can split around the
+    // special characters: for example, `"...TIKEUT..."` is emitted as:
+    //
+    // - `matchUTF8("...TI")`
+    // - `matchScalarPair("K", "\u{212A}")`
+    // - `matchUTF8("EUT...")`
+    if optimizationsEnabled,
+       !options.isCaseInsensitive,
+       s.utf8.allSatisfy(\._isASCII)
+    {
+      assert(options.usesCanonicalEquivalence)
+      assert(s.utf8.contains(where: \._hasNonASCIICanonicalEquivalent))
+      let longThreshold = 5
+      
+      var run: [UInt8] = []
+      func flushRun() {
+        if run.count >= longThreshold {
+          builder.buildMatchUTF8(run, boundaryCheck: true)
+        } else {
+          // Only the last byte needs a boundary check, since the run is all ASCII.
+          for byte in run.dropLast() {
+            builder.buildMatchScalar(
+              Unicode.Scalar(byte), boundaryCheck: false)
+          }
+          if let byte = run.last {
+            builder.buildMatchScalar(
+              Unicode.Scalar(byte), boundaryCheck: true)
+          }
+        }
+        run = []
+      }
+      
+      for byte in s.utf8 {
+        if byte._hasNonASCIICanonicalEquivalent {
+          flushRun()
+          emitCharacter(Character(Unicode.Scalar(byte)))
+        } else {
+          run.append(byte)
+        }
+      }
+      flushRun()
+      return
+    }
+
+    // Naive path for unicodeScalar semantics
+    guard options.usesCanonicalEquivalence else {
       for char in s {
         for scalar in char.unicodeScalars {
           emitMatchScalar(scalar)
@@ -131,15 +169,23 @@ extension Compiler.ByteCodeGen {
     }
 
     // Fast path for eliding boundary checks for an all ascii quoted literal
-    if optimizationsEnabled && s.allSatisfy(\.isASCII) && !s.isEmpty {
-      let lastIdx = s.unicodeScalars.indices.last!
-      for idx in s.unicodeScalars.indices {
-        let boundaryCheck = idx == lastIdx
-        let scalar = s.unicodeScalars[idx]
+    if optimizationsEnabled,
+       s._isDirectlyComparableASCII
+    {
+      for scalar in s.unicodeScalars.dropLast() {
         if options.isCaseInsensitive && scalar.properties.isCased {
-          builder.buildMatchScalarCaseInsensitive(scalar, boundaryCheck: boundaryCheck)
+          let otherValue = scalar.value ^ 32
+          builder.buildMatchScalarPair(scalar, orScalar: UnicodeScalar(otherValue)!, boundaryCheck: false)
         } else {
-          builder.buildMatchScalar(scalar, boundaryCheck: boundaryCheck)
+          builder.buildMatchScalar(scalar, boundaryCheck: false)
+        }
+      }
+      if let scalar = s.unicodeScalars.last {
+        if options.isCaseInsensitive && scalar.properties.isCased {
+          let otherValue = scalar.value ^ 32
+          builder.buildMatchScalarPair(scalar, orScalar: UnicodeScalar(otherValue)!, boundaryCheck: true)
+        } else {
+          builder.buildMatchScalar(scalar, boundaryCheck: true)
         }
       }
       return
@@ -227,14 +273,28 @@ extension Compiler.ByteCodeGen {
       return
     }
     
-    if optimizationsEnabled && c.isASCII {
+    if optimizationsEnabled, c.isASCII,
+       !c._containsASCIIWithNonASCIIEquivalent {
       let lastIdx = c.unicodeScalars.indices.last!
       for idx in c.unicodeScalars.indices {
         builder.buildMatchScalar(c.unicodeScalars[idx], boundaryCheck: idx == lastIdx)
       }
       return
     }
-      
+
+    // An ASCII character with a non-ASCII scalar canonically equivalent to it
+    // can still be matched as a scalar, by accepting either one, rather than
+    // falling back to materializing and comparing `Character`s.
+    if optimizationsEnabled,
+       let ascii = c._singleScalarAsciiValue,
+       let equivalent = ascii._nonASCIICanonicalEquivalent {
+      builder.buildMatchScalarPair(
+        Unicode.Scalar(ascii),
+        orScalar: equivalent,
+        boundaryCheck: true)
+      return
+    }
+
     builder.buildMatch(c, isCaseInsensitive: false)
   }
 

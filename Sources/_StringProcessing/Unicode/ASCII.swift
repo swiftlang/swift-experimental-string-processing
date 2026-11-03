@@ -80,6 +80,58 @@ extension UInt8 {
   }
 }
 
+extension UInt8 {
+  /// Whether this ASCII scalar is canonically equivalent to a non-ASCII
+  /// scalar.
+  ///
+  /// These three non-ASCII characters compare as canonically equivalent
+  /// to their respective ASCII counterparts:
+  ///
+  ///     U+037E GREEK QUESTION MARK  ==  ";"
+  ///     U+212A KELVIN SIGN          ==  "K"
+  ///     U+1FEF GREEK VARIA          ==  "`"
+  var _hasNonASCIICanonicalEquivalent: Bool {
+    assert(_isASCII)
+    return _nonASCIICanonicalEquivalent != nil
+  }
+
+  /// The non-ASCII scalar canonically equivalent to this ASCII byte, if there
+  /// is one.
+  var _nonASCIICanonicalEquivalent: Unicode.Scalar? {
+    switch self {
+    case UInt8(ascii: ";"): return "\u{037E}"  // GREEK QUESTION MARK
+    case UInt8(ascii: "K"): return "\u{212A}"  // KELVIN SIGN
+    case UInt8(ascii: "`"): return "\u{1FEF}"  // GREEK VARIA
+    default: return nil
+    }
+  }
+}
+
+extension Character {
+  /// Whether any of this character's scalars is an ASCII character that a
+  /// non-ASCII scalar is canonically equivalent to.
+  var _containsASCIIWithNonASCIIEquivalent: Bool {
+    unicodeScalars.contains {
+      $0.isASCII && UInt8($0.value)._hasNonASCIICanonicalEquivalent
+    }
+  }
+}
+
+extension StringProtocol {
+  /// Whether this literal can be matched by comparing UTF-8 bytes directly.
+  func _canMatchUTF8Directly(usesCanonicalEquivalence: Bool) -> Bool {
+    !usesCanonicalEquivalence || _isDirectlyComparableASCII
+  }
+
+  /// Whether every character is ASCII with no non-ASCII canonical
+  /// equivalent, so each can be matched by comparing scalars directly,
+  /// even under canonical equivalence.
+  var _isDirectlyComparableASCII: Bool {
+    allSatisfy(\.isASCII)
+      && !utf8.contains(where: \._hasNonASCIICanonicalEquivalent)
+  }
+}
+
 extension String {
   /// TODO: better to take isScalarSemantics parameter, we can return more results
   /// and we can give the right `next` index, not requiring the caller to re-adjust it

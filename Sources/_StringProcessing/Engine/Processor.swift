@@ -294,6 +294,24 @@ extension Processor {
     return true
   }
 
+  mutating func matchScalarPair(
+    _ first: Unicode.Scalar,
+    _ second: Unicode.Scalar,
+    boundaryCheck: Bool
+  ) -> Bool {
+    guard let next = input.matchScalarPair(
+      first, second,
+      at: currentPosition,
+      limitedBy: end,
+      boundaryCheck: boundaryCheck
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = next
+    return true
+  }
+
   mutating func matchScalar(
     _ s: Unicode.Scalar,
     boundaryCheck: Bool,
@@ -587,6 +605,14 @@ extension Processor {
         controller.step()
       }
 
+    case .matchScalarPair:
+      let (first, second, boundaryCheck) = payload.scalarPairPayload
+      if matchScalarPair(
+        first, second, boundaryCheck: boundaryCheck
+      ) {
+        controller.step()
+      }
+
     case .matchUTF8:
       let (utf8Reg, boundaryCheck) = payload.matchUTF8Payload
       let utf8Content = registers[utf8Reg]
@@ -773,6 +799,28 @@ extension String {
 
     guard cur <= end else { return nil }
     return cur
+  }
+
+  /// Matches either `first` or `second` as a single scalar.
+  func matchScalarPair(
+    _ first: Unicode.Scalar,
+    _ second: Unicode.Scalar,
+    at pos: Index,
+    limitedBy end: String.Index,
+    boundaryCheck: Bool
+  ) -> Index? {
+    guard pos < end else { return nil }
+    let curScalar = unicodeScalars[pos]
+    guard curScalar == first || curScalar == second else { return nil }
+
+    let idx = unicodeScalars.index(after: pos)
+    assert(idx <= end, "Input is a substring with a sub-scalar endIndex.")
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
+      return nil
+    }
+
+    return idx
   }
 
   func matchScalar(
