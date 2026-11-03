@@ -186,7 +186,7 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///     the regex.
   ///   - maxReplacements: A number specifying how many occurrences of
   ///     the regex to replace.
-  ///   - content: A closure that returns the collection to search for
+  ///   - content: A closure that returns the regex to search for
   ///     and replace.
   /// - Returns: A new collection in which all matches for regex in `subrange`
   ///   are replaced by `replacement`, using `content` to create the regex.
@@ -208,7 +208,7 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///     each match for the regex, using `content` to create the regex.
   ///   - maxReplacements: A number specifying how many occurrences of regex
   ///     to replace.
-  ///   - content: A closure that returns the collection to search for
+  ///   - content: A closure that returns the regex to search for
   ///     and replace.
   /// - Returns: A new collection in which all matches for regex in `subrange`
   ///   are replaced by `replacement`, using `content` to create the regex.
@@ -229,7 +229,7 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///     each match for the regex, using `content` to create the regex.
   ///   - maxReplacements: A number specifying how many occurrences of
   ///     the regex to replace.
-  ///   - content: A closure that returns the collection to search for
+  ///   - content: A closure that returns the regex to search for
   ///     and replace.
   @available(SwiftStdlib 5.7, *)
   public mutating func replace<Replacement: Collection>(
@@ -249,7 +249,7 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///     regex, using `content` to create the regex.
   ///   - maxReplacements: A number specifying how many occurrences of
   ///     the regex to replace.
-  ///   - content: A closure that returns the collection to search for
+  ///   - content: A closure that returns the regex to search for
   ///     and replace.
   ///   - replacement: A closure that receives the full match information,
   ///     including captures, and returns a replacement collection.
@@ -273,7 +273,7 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   /// - Parameters:
   ///   - maxReplacements: A number specifying how many occurrences of
   ///     the regex to replace, using `content` to create the regex.
-  ///   - content: A closure that returns the collection to search for
+  ///   - content: A closure that returns the regex to search for
   ///     and replace.
   ///   - replacement: A closure that receives the full match information,
   ///     including captures, and returns a replacement collection.
@@ -295,7 +295,7 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   /// - Parameters:
   ///   - maxReplacements: A number specifying how many occurrences of
   ///     the regex to replace, using `content` to create the regex.
-  ///   - content: A closure that returns the collection to search for
+  ///   - content: A closure that returns the regex to search for
   ///     and replace.
   ///   - replacement: A closure that receives the full match information,
   ///     including captures, and returns a replacement collection.
