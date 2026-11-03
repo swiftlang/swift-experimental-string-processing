@@ -85,49 +85,54 @@ extension DSLTree.Node {
   }
 }
 
+// MARK: Walking the flat node list
+//
+// A `DSLList` stores a tree in preorder: each node is followed by the subtrees
+// of its children, with the number of children given by `directChildren`.
+// Methods that walk the list with an `Int` cursor must all follow the same
+// contract: on return, the cursor is just past the initial position's entire
+// subtree, no matter what path the walk took. This way a caller can keep
+// reading siblings without additional bookkeeping.
+
 extension ArraySlice<DSLTree.Node> {
-  internal func skipNode(_ position: inout Int) {
-    guard position < endIndex else {
-      return
+  /// Returns the index just past the subtree rooted at the node at `position`.
+  internal func indexAfterNode(at position: Int) -> Int {
+    precondition(
+      UInt(truncatingIfNeeded: position) <= endIndex,
+      "Can't find index after out-of-bounds node")
+    var index = position
+    // The number of subtrees still to be read, starting with the one rooted
+    // at `position`. Each node replaces itself with its children.
+    var pending = 1
+    while pending > 0 && index < endIndex {
+      pending += self[index].directChildren - 1
+      index += 1
     }
-    switch self[position] {
-    case let .orderedChoice(n):
-      for _ in 0..<n {
-        position += 1
-        skipNode(&position)
-      }
-      
-    case let .concatenation(n):
-      for _ in 0..<n {
-        position += 1
-        skipNode(&position)
-      }
-      
-    case .capture, .nonCapturingGroup, .ignoreCapturesInTypedOutput,
-        .limitCaptureNesting, .quantification:
-      position += 1
-      skipNode(&position)
-      
-    case .customCharacterClass, .atom, .quotedLiteral, .matcher, .conditional,
-        .absentFunction, .consumer, .characterPredicate, .trivia, .empty:
-      break
-    }
+    return index
+  }
+
+  /// Removes the first node and its entire subtree.
+  ///
+  /// This is the consuming counterpart of `indexAfterNode(at:)`, for walkers
+  /// that read the list by dropping nodes from the front.
+  internal mutating func dropFirstSubtree() {
+    self = self[indexAfterNode(at: startIndex)...]
   }
 }
 
 extension DSLList {
-  internal func skipNode(_ position: inout Int) {
-    nodes[...].skipNode(&position)
+  /// Returns the index just past the subtree rooted at the node at `position`.
+  internal func indexAfterNode(at position: Int) -> Int {
+    nodes[...].indexAfterNode(at: position)
   }
-  
+
   func indexOfCoalescableAtom(startingAt position: Int, findLast: Bool = false) -> Int? {
     switch nodes[position] {
     case .concatenation(let count):
       var position = position + 1
       if findLast {
         for _ in (0..<count).dropLast() {
-          skipNode(&position)
-          position += 1
+          position = indexAfterNode(at: position)
         }
       }
       return indexOfCoalescableAtom(startingAt: position, findLast: findLast)

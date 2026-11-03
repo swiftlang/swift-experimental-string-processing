@@ -31,9 +31,7 @@ extension DSLList {
       return nil
     }
 
-    var endOfSubtree = position
-    skipNode(&endOfSubtree)
-    endOfSubtree += 1
+    let endOfSubtree = indexAfterNode(at: position)
     defer { position = endOfSubtree }
 
     switch nodes[position] {
@@ -158,9 +156,7 @@ extension DSLList {
       return nil
     }
 
-    var endOfSubtree = position
-    skipNode(&endOfSubtree)
-    endOfSubtree += 1
+    let endOfSubtree = indexAfterNode(at: position)
     defer { position = endOfSubtree }
 
     switch nodes[position] {
