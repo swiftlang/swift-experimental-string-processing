@@ -748,6 +748,28 @@ extension RegexTests {
       "a+(?:(?i)A)",
       ("aaaaA", "aaaaA"),
       ("aaaaa", "aaaaa"))
+    // - a quantification that can match nothing must not be mistaken for the
+    //   atom that follows the quantification being tested (issue #898)
+    firstMatchTests(
+      #"(?i)(?:a*\+*)A{2}"#,
+      ("aA", "aA"))
+    firstMatchTests(
+      #"(?i)(a*\+*)A{2}"#,
+      ("aA", "aA"))
+    firstMatchTests(
+      #"(b{1,3}\s?)b"#,
+      ("bb", "bb"))
+    firstMatchTests(
+      #"(?:a+a?|a*|\+.\+)[ab]*."#,
+      ("a", "a"))
+    // - a component with no determinable required first atom rules out
+    //   possessifying an earlier quantification, at any nesting level
+    firstMatchTests(
+      "(?:a*[ab])b",
+      ("aab", "aab"))
+    firstMatchTests(
+      "(?:(?:a*[ab])x?)b",
+      ("aab", "aab"))
 
     // XFAIL'd possessive tests
     firstMatchTests(

@@ -12,25 +12,30 @@
 internal import _RegexParser
 
 extension DSLList {
-  /// Finds the required first atom of the node at `position`. On return,
-  /// `position` is always at the last node of that node's subtree, regardless
-  /// of how early the search stopped, so callers can safely advance to the
-  /// next sibling.
+  /// Returns the required first atom of the node at `position`, leaving
+  /// `position` just past that node's entire subtree, so that a caller walking
+  /// a list of nodes reads the next sibling.
+  ///
+  /// A `nil` result means this node has no effect on what has to match first,
+  /// and `.some(nil)` means that no required first atom can be determined.
+  ///
+  /// Some of the cases below stop looking at children as soon as the answer is
+  /// known, and others don't look at them at all, so the end of the subtree is
+  /// found up front rather than left to the traversal to reach.
   private func _requiredAtomImpl(
     _ position: inout Int,
     options: inout MatchingOptions,
     allowOptionsChanges: Bool
   ) -> DSLTree.Atom?? {
-    let start = position
-    defer {
-      position = start
-      skipNode(&position)
-    }
-
     guard position < nodes.count else {
       return nil
     }
-    
+
+    var endOfSubtree = position
+    skipNode(&endOfSubtree)
+    endOfSubtree += 1
+    defer { position = endOfSubtree }
+
     switch nodes[position] {
     case .atom(let atom):
       switch atom {
@@ -46,26 +51,15 @@ extension DSLList {
         return atom
       }
 
-    // In a concatenation, the first definitive child provides the answer,
-    // and then we need to skip past (in some cases at least) the remaining
-    // concatenation elements.
+    // In a concatenation, the first definitive child provides the answer.
     case .concatenation(let count):
-      var result: DSLTree.Atom?? = nil
-      var i = 0
-      while i < count {
-        i += 1
-        position += 1
+      position += 1
+      for _ in 0..<count {
         if let r = _requiredAtomImpl(&position, options: &options, allowOptionsChanges: allowOptionsChanges) {
-          result = r
-          break
+          return r
         }
       }
-
-      for _ in i..<count {
-        position += 1
-        skipNode(&position)
-      }
-      return result
+      return nil
 
     // For a quoted literal, we can look at the first char
     // TODO: matching semantics???
@@ -145,6 +139,17 @@ extension DSLList {
     return _requiredAtomImpl(&position, options: &options, allowOptionsChanges: allowOptionsChanges) ?? nil
   }
 
+  /// Auto-possessifies the quantifications inside the node at `position`,
+  /// leaving `position` just past that node's entire subtree, so that a caller
+  /// walking a list of nodes reads the next sibling.
+  ///
+  /// Returns a single-atom quantification that ends the node at `position`, if
+  /// there is one, so that an enclosing concatenation can try to possessify it
+  /// against whatever follows.
+  ///
+  /// Some of the cases below stop looking at children as soon as the answer is
+  /// known, and others don't look at them at all, so the end of the subtree is
+  /// found up front rather than left to the traversal to reach.
   internal mutating func autoPossessifyNextQuantification(
     _ position: inout Int,
     options: inout MatchingOptions
@@ -152,9 +157,20 @@ extension DSLList {
     guard position < nodes.count else {
       return nil
     }
-    
+
+    var endOfSubtree = position
+    skipNode(&endOfSubtree)
+    endOfSubtree += 1
+    defer { position = endOfSubtree }
+
     switch nodes[position] {
-    case .quantification(_, _):
+    case .quantification(let amount, _):
+      // A quantification with a maximum of zero never matches anything and is
+      // skipped entirely during code generation, so it can be skipped here.
+      if amount.ast.bounds.1 == 0 {
+        return nil
+      }
+
       let quantPosition = position
       position += 1
       
@@ -167,63 +183,49 @@ extension DSLList {
       case .atom(let atom) where atom.isMatchable:
         return (quantPosition, atom)
       default:
-        var innerPosition = position
-        _ = autoPossessifyNextQuantification(&innerPosition, options: &options)
-
-        // Move past the whole quantification, since the recursive call may
-        // have stopped early inside the quantified node.
-        position = quantPosition
-        skipNode(&position)
-        position += 1
+        _ = autoPossessifyNextQuantification(&position, options: &options)
         return nil
       }
       
     case .concatenation(let count):
-      // If we find a valid quantification among this concatenation's components,
-      // we must look for a required atom in the sibling. If a definitive result
-      // is not found, pop up the recursion stack to find a sibling at a higher
-      // level.
-      var foundQuantification: (Int, DSLTree.Atom)? = nil
-      var foundNextAtom: DSLTree.Atom? = nil
-      var i = 0
+      // A quantification found among this concatenation's components can be
+      // possessified against the first component after it that has a required
+      // first atom. If no component provides a definitive answer, pop up the
+      // recursion stack to find a sibling at a higher level.
+      var pendingQuantification: (Int, DSLTree.Atom)? = nil
       position += 1
-      while i < count {
-        i += 1
+      for _ in 0..<count {
+        if let (quantIndex, quantAtom) = pendingQuantification {
+          // Look for a required atom in this component without consuming it,
+          // so that its own quantifications still get possessified below.
+          var lookahead = position
+          switch _requiredAtomImpl(&lookahead, options: &options, allowOptionsChanges: false) {
+          case .some(.some(let nextAtom)):
+            // We found a quantifier with a required first atom and a required
+            // following atom. If the second is excluded by the first, we can
+            // safely convert the quantifier to possessive.
+            if quantAtom.excludes(nextAtom, options: options),
+                case .quantification(let amount, _) = nodes[quantIndex]
+            {
+              nodes[quantIndex] = .quantification(amount, .explicit(.possessive))
+            }
+            pendingQuantification = nil
+          case .some(nil):
+            // Nothing is known about what has to match here, so the pending
+            // quantification can't be possessified at any level.
+            pendingQuantification = nil
+          case nil:
+            // This component doesn't match anything on its own; keep looking.
+            break
+          }
+        }
+
         if let result = autoPossessifyNextQuantification(&position, options: &options) {
-          foundQuantification = result
-          break
+          pendingQuantification = result
         }
       }
 
-      while i < count {
-        i += 1
-        position += 1
-        if let result = _requiredAtomImpl(&position, options: &options, allowOptionsChanges: false) {
-          foundNextAtom = result
-          break
-        }
-      }
-
-      for _ in i..<count {
-        position += 1
-        skipNode(&position)
-      }
-      
-      guard let (quantIndex, firstAtom) = foundQuantification,
-            let nextAtom = foundNextAtom
-      else { return foundQuantification }
-      
-      // We found a quantifier with a required first atom and a required
-      // following atom. If the second is excluded by the first, we can
-      // safely convert the quantifier to possessive.
-      
-      if firstAtom.excludes(nextAtom, options: options),
-          case .quantification(let amount, _) = nodes[quantIndex]
-      {
-        nodes[quantIndex] = .quantification(amount, .explicit(.possessive))
-      }
-      
-      return nil
+      return pendingQuantification
       
     // For alternations, we need to explore / auto-possessify in the different
     // branches, but quantifications inside an alternation don't
@@ -260,7 +262,6 @@ extension DSLList {
       return autoPossessifyNextQuantification(&position, options: &options)
 
     case .atom(let atom):
-      position += 1
       switch atom {
       case .changeMatchingOptions(let seq):
         options.apply(seq.ast)
@@ -271,10 +272,10 @@ extension DSLList {
     default:
       // Multi-child nodes are handled above, just handle 0 and 1 here.
       let childCount = nodes[position].directChildren
-      position += 1
 
       assert(childCount <= 1)
       if childCount == 1 {
+        position += 1
         return autoPossessifyNextQuantification(&position, options: &options)
       }
     }
