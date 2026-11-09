@@ -368,6 +368,17 @@ extension AnyRegexOutput {
   internal init(input: String, elements: [ElementRepresentation]) {
     self.init(input: input, _elements: elements)
   }
+
+  /// Creates an output containing only the given substring of its base string,
+  /// as the sole, whole-match element.
+  internal init(_ substring: Substring) {
+    self.init(input: substring.base, elements: [
+      .init(
+        optionalDepth: 0,
+        content: (substring.startIndex..<substring.endIndex, substring),
+        visibleInTypedOutput: true)
+    ])
+  }
 }
 
 @available(SwiftStdlib 5.7, *)

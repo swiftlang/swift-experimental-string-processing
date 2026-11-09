@@ -175,11 +175,36 @@ public struct _RegexFactory {
     component.regex.prepending(.orderedChoice(1))
   }
   
+  /// Wraps the component in a capture. Capturing a `Regex<AnyRegexOutput>`
+  /// produces `AnyRegexOutput` as the captured type, but the engine records only
+  /// a `Substring` for the capture. In that case, convert the captured substring
+  /// and hide any inner captures from the typed output, which has room for just
+  /// the one.
+  private func capture<Output>(
+    _ component: some RegexComponent,
+    reference: ReferenceID?,
+    transform: CaptureTransform?,
+    capturesAnyRegexOutput: Bool
+  ) -> Regex<Output> {
+    var transform = transform
+    var inner = Regex<Substring>(list: component.regex.program.list)
+    if capturesAnyRegexOutput {
+      inner = inner.prepending(.ignoreCapturesInTypedOutput)
+      transform = transform ?? CaptureTransform(
+        argumentType: Substring.self,
+        resultType: AnyRegexOutput.self,
+        closure: .substringNonfailable { AnyRegexOutput($0) })
+    }
+    return inner.prepending(.capture(reference: reference, transform))
+  }
+  
   @available(SwiftStdlib 5.7, *)
   public func capture<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
-    component.regex.prepending(.capture())
+    capture(
+      component, reference: nil, transform: nil,
+      capturesAnyRegexOutput: Output.self == (Substring, AnyRegexOutput).self)
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -187,7 +212,9 @@ public struct _RegexFactory {
     _ component: some RegexComponent,
     _ reference: Int
   ) -> Regex<Output> {
-    component.regex.prepending(.capture(reference: ReferenceID(reference)))
+    capture(
+      component, reference: ReferenceID(reference), transform: nil,
+      capturesAnyRegexOutput: Output.self == (Substring, AnyRegexOutput).self)
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -196,11 +223,10 @@ public struct _RegexFactory {
     _ reference: Int? = nil,
     _ transform: @escaping (W) throws -> NewCapture
   ) -> Regex<Output> {
-    component.regex.prepending(
-      .capture(
-        reference: reference.map { ReferenceID($0) },
-        CaptureTransform(transform)
-      ))
+    capture(
+      component, reference: reference.map { ReferenceID($0) },
+      transform: CaptureTransform(transform),
+      capturesAnyRegexOutput: W.self == AnyRegexOutput.self)
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -209,10 +235,9 @@ public struct _RegexFactory {
     _ reference: Int? = nil,
     _ transform: @escaping (W) throws -> NewCapture?
   ) -> Regex<Output> {
-    component.regex.prepending(
-      .capture(
-        reference: reference.map { ReferenceID($0) },
-        CaptureTransform(transform)
-      ))
+    capture(
+      component, reference: reference.map { ReferenceID($0) },
+      transform: CaptureTransform(transform),
+      capturesAnyRegexOutput: W.self == AnyRegexOutput.self)
   }
 }

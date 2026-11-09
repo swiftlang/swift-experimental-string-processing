@@ -1990,6 +1990,54 @@ extension RegexDSLTests {
     XCTAssertNotNil(clip2.contains(pattern))
   }
   
+  func testCaptureOfDynamicRegex() throws {
+    // rdar://143139425: Capturing a `Regex<AnyRegexOutput>` crashed with a
+    // failed existential cast when accessing the output.
+    let r = Regex {
+      Capture {
+        try! Regex("req")
+      }
+    }
+    let match = try XCTUnwrap(r.firstMatch(in: "req"))
+    XCTAssertEqual(match.output.0, "req")
+    XCTAssertEqual(match.output.1[0].substring, "req")
+    XCTAssertEqual(match.1.count, 1)
+
+    // Inner captures are not part of the typed output.
+    let inner = Regex {
+      "a"
+      Capture {
+        try! Regex("(b)(c)")
+      }
+    }
+    let innerMatch = try XCTUnwrap(inner.firstMatch(in: "abc"))
+    XCTAssertEqual(innerMatch.output.1[0].substring, "bc")
+
+    // Transforms receive the captured text as `AnyRegexOutput`, too.
+    let transformed = Regex {
+      Capture {
+        try! Regex("req")
+      } transform: { (out: AnyRegexOutput) in out[0].substring!.count }
+    }
+    XCTAssertEqual(try XCTUnwrap(transformed.firstMatch(in: "req")).1, 3)
+
+    // The same goes for references and transforms of dynamic regexes that
+    // have captures of their own.
+    let ref = Reference(AnyRegexOutput.self)
+    let referenced = Regex {
+      Capture(try! Regex("(r)(e)q"), as: ref)
+    }
+    let refMatch = try XCTUnwrap(referenced.firstMatch(in: "req"))
+    XCTAssertEqual(refMatch[ref][0].substring, "req")
+
+    let tryTransformed = Regex {
+      TryCapture {
+        try! Regex("(r)(e)q")
+      } transform: { (out: AnyRegexOutput) -> Int? in out[0].substring?.count }
+    }
+    XCTAssertEqual(try XCTUnwrap(tryTransformed.firstMatch(in: "req")).1, 3)
+  }
+
   func testIssue83022() throws {
     // Original report from https://github.com/swiftlang/swift/issues/83022
     // rdar://155710126

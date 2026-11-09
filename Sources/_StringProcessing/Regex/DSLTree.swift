@@ -454,6 +454,20 @@ struct CaptureTransform: Hashable, CustomStringConvertible {
     self.closure = closure
   }
 
+  /// Converts a captured value to the transform's argument type.
+  ///
+  /// A capture of a `Regex<AnyRegexOutput>` component is typed as
+  /// `AnyRegexOutput`, but the engine only records the captured substring.
+  private static func argument<Argument>(_ value: Any) -> Argument {
+    if #available(SwiftStdlib 5.7, *),
+       Argument.self == AnyRegexOutput.self,
+       let substring = value as? Substring
+    {
+      return AnyRegexOutput(substring) as! Argument
+    }
+    return value as! Argument
+  }
+
   init<Argument, Result>(
     _ userSpecifiedTransform: @escaping (Argument) throws -> Result
   ) {
@@ -463,7 +477,7 @@ struct CaptureTransform: Hashable, CustomStringConvertible {
       closure = .substringNonfailable(substringTransform)
     } else {
       closure = .nonfailable {
-        try userSpecifiedTransform($0 as! Argument) as Any
+        try userSpecifiedTransform(Self.argument($0)) as Any
       }
     }
     self.init(
@@ -481,7 +495,7 @@ struct CaptureTransform: Hashable, CustomStringConvertible {
       closure = .substringFailable(substringTransform)
     } else {
       closure = .failable {
-        try userSpecifiedTransform($0 as! Argument) as Any?
+        try userSpecifiedTransform(Self.argument($0)) as Any?
       }
     }
     self.init(
