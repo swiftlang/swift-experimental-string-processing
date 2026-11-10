@@ -435,8 +435,10 @@ extension Processor {
   }
 
   mutating func setCaptureValue(_ capNum: Int, _ value: Any) {
+    let index = registers.customValues.count
+    registers.customValues.append(value)
     updateRegister(at: CaptureRegister(capNum)) {
-      $0.registerValue(value)
+      $0.registerValue(at: index)
     }
   }
 
@@ -696,15 +698,18 @@ extension Processor {
     case .transformCapture:
       let (cap, trans) = payload.pairedCaptureTransform
       let transform = registers[trans]
-      let capNum = Int(asserting: cap.rawValue)
 
       do {
         // FIXME: Pass input or the slice?
-        guard let value = try transform(input, registers.storedCaptures[cap]) else {
+        let stored = registers.storedCaptures[cap]
+        guard let value = try transform(
+          input, stored.range, stored.value(in: registers.customValues)
+        ) else {
           signalFailure()
           return
         }
-        setCaptureValue(capNum, value)
+        // The result replaces the capture's value, which it was computed from.
+        setCaptureValue(Int(asserting: cap.rawValue), value)
         controller.step()
       } catch {
         abort(error)

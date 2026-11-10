@@ -224,6 +224,43 @@ extension Concat: BidirectionalCollection {
 class CustomRegexComponentTests: XCTestCase {
   // TODO: Refactor below into more exhaustive, declarative
   // tests.
+  func testCustomValuesSurviveBacktracking() throws {
+    // Captured custom-matcher values must follow the capture across
+    // backtracking and be what a capture transform receives.
+    let r = Regex {
+      OneOrMore {
+        Capture(Numbler()) { $0 * 10 }
+      }
+      "!"
+    }
+    XCTAssertEqual(try r.wholeMatch(in: "123!")?.1, 30)
+
+    let choice = Regex {
+      ChoiceOf {
+        Regex { Capture(Numbler()); "a" }
+        Regex { Capture(Numbler()); "b" }
+      }
+    }
+    let b = try XCTUnwrap(choice.wholeMatch(in: "7b"))
+    XCTAssertNil(b.1)
+    XCTAssertEqual(b.2, 7)
+    let a = try XCTUnwrap(choice.wholeMatch(in: "8a"))
+    XCTAssertEqual(a.1, 8)
+    XCTAssertNil(a.2)
+
+    // A failable transform of a custom matcher's value, and a non-failable one.
+    let tried = Regex {
+      OneOrMore {
+        TryCapture(Numbler()) { (n: Int) -> Int? in n > 5 ? n * 2 : nil }
+      }
+      Capture(Numbler()) { (n: Int) in n + 100 }
+    }
+    let tm = try XCTUnwrap(tried.wholeMatch(in: "793"))
+    XCTAssertEqual(tm.1, 18)
+    XCTAssertEqual(tm.2, 103)
+    XCTAssertNil(try tried.wholeMatch(in: "3"))
+  }
+
   func testCustomRegexComponents() throws {
     customTest(
       Regex {

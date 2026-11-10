@@ -17,8 +17,10 @@ extension Executor {
     _ program: MEProgram,
     matchRange: Range<String.Index>,
     storedCaptures: [Processor._StoredCapture],
+    customValues: [Any],
+    input: String,
     wholeMatchValue: Any?
-  ) -> [AnyRegexOutput.ElementRepresentation] {
+  ) throws -> [AnyRegexOutput.ElementRepresentation] {
     let capList = program.captureList
     let capOffsets = program.referencedCaptureOffsets
 
@@ -37,9 +39,18 @@ extension Executor {
     for (i, (cap, meStored)) in zip(
       capList.captures.dropFirst(), storedCaptures
     ).enumerated() {
+      var content = meStored.deconstructed(customValues: customValues)
+      // A failable transform already ran while matching, and its result is the
+      // capture's value. Any other transform needs to run now that matching has
+      // succeeded.
+      if let reg = program.captureTransforms[i], content != nil {
+        let transform = program.registers[reg]
+        let value = try transform(input, meStored.range, content?.value)
+        content?.value = value
+      }
       let element = AnyRegexOutput.ElementRepresentation(
         optionalDepth: cap.optionalDepth,
-        content: meStored.deconstructed,
+        content: content,
         name: cap.name,
         referenceID: capOffsets.first { $1 == i }?.key,
         visibleInTypedOutput: cap.visibleInTypedOutput

@@ -49,6 +49,9 @@ extension Processor {
 
     var storedCaptures: UndoableArray<CaptureRegister, Processor._StoredCapture>
 
+    /// Values produced by custom matchers and `TryCapture` transforms.
+    var customValues: [Any] = []
+
     var isDirty = false
     
     init(
@@ -166,6 +169,7 @@ extension Processor.Registers {
     values.reset(to: SentinelValue())
     positions.reset(to: Processor.Registers.sentinelIndex)
     storedCaptures.reset(to: Processor._StoredCapture())
+    customValues.removeAll(keepingCapacity: true)
     isDirty = false
   }
 

@@ -15,22 +15,35 @@ extension Processor {
   struct _StoredCapture {
     var range: Range<Position>? = nil
 
-    var value: Any? = nil
+    /// The index in `Registers.customValues` of this capture's value, if
+    /// already created.
+    ///
+    /// The value at `valueIndex` is produced by a custom matcher, is the
+    /// transformed result of a custom matcher, or is the result of a
+    /// `TryCapture` failable transform. Non-failable transforms aren't run
+    /// until a match is complete.
+    var valueIndex: Int? = nil
 
     // An in-progress capture start
     var currentCaptureBegin: Position? = nil
 
     fileprivate func _invariantCheck() {
       if range == nil {
-        assert(value == nil)
+        assert(valueIndex == nil)
       }
     }
 
     // MARK: - IPI
 
-    var deconstructed: (range: Range<Position>, value: Any?)? {
+    func deconstructed(
+      customValues: [Any]
+    ) -> (range: Range<Position>, value: Any?)? {
       guard let r = range else { return nil }
-      return (r, value)
+      return (r, value(in: customValues))
+    }
+
+    func value(in customValues: [Any]) -> Any? {
+      valueIndex.map { customValues[$0] }
     }
 
     /// Start a new capture. If the previously started one was un-ended,
@@ -53,15 +66,15 @@ extension Processor {
       }
 
       range = low..<idx
-      value = nil // TODO: cleaner IPI around this...
+      valueIndex = nil
       currentCaptureBegin = nil
     }
 
-    mutating func registerValue(_ value: Any) {
+    mutating func registerValue(at index: Int) {
       _invariantCheck()
       defer { _invariantCheck() }
 
-      self.value = value
+      valueIndex = index
     }
   }
 }

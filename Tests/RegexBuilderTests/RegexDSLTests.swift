@@ -1990,6 +1990,60 @@ extension RegexDSLTests {
     XCTAssertNotNil(clip2.contains(pattern))
   }
   
+  func testLazyCaptureTransforms() throws {
+    struct TransformError: Error {}
+
+    // A throwing transform on a captured value still aborts the match.
+    let throwing = Regex {
+      Capture(OneOrMore(.digit)) { (s: Substring) -> Int in
+        if s == "13" { throw TransformError() }
+        return Int(s)!
+      }
+    }
+    XCTAssertEqual(try throwing.firstMatch(in: "a42")?.1, 42)
+    XCTAssertThrowsError(try throwing.firstMatch(in: "a13"))
+
+    // A failing `TryCapture` transform backtracks, and the transformed value
+    // of the final match is the one that's reported.
+    var calls = 0
+    let backtracking = Regex {
+      TryCapture(OneOrMore(.digit)) { (s: Substring) -> Int? in
+        calls += 1
+        return s.count == 2 ? Int(s) : nil
+      }
+      "x"
+    }
+    XCTAssertNil(try backtracking.wholeMatch(in: "123x"))
+    calls = 0
+    XCTAssertEqual(try backtracking.firstMatch(in: "1 12x")?.1, 12)
+    XCTAssertGreaterThan(calls, 0)
+
+    // A failable transform runs exactly once, and its result is the one
+    // that's reported, even if it isn't deterministic.
+    var counter = 0
+    let once = Regex {
+      TryCapture("a") { (_: Substring) -> Int? in
+        counter += 1
+        return counter
+      }
+    }
+    XCTAssertEqual(try XCTUnwrap(once.wholeMatch(in: "a")).1, 1)
+    XCTAssertEqual(counter, 1)
+
+    // Transforms of captures that don't participate aren't called, and
+    // captures within repetitions report the last iteration.
+    let repeated = Regex {
+      OneOrMore {
+        Capture(OneOrMore(.digit)) { Int($0)! }
+        ","
+      }
+      Optionally { Capture("z") { $0.count } }
+    }
+    let m = try XCTUnwrap(repeated.wholeMatch(in: "1,22,333,"))
+    XCTAssertEqual(m.1, 333)
+    XCTAssertNil(m.2)
+  }
+
   func testIssue83022() throws {
     // Original report from https://github.com/swiftlang/swift/issues/83022
     // rdar://155710126

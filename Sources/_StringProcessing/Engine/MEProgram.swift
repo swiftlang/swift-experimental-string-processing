@@ -15,8 +15,10 @@ struct MEProgram {
   typealias Input = String
 
   typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
+  /// Transforms a capture's range, and the custom matcher value for the
+  /// capture if there is one.
   typealias TransformFunction =
-    (Input, Processor._StoredCapture) throws -> Any?
+    (Input, Range<Input.Index>?, Any?) throws -> Any?
   typealias MatcherFunction =
     (Input, Input.Index, Range<Input.Index>) throws -> (Input.Index, Any)?
 
@@ -28,6 +30,10 @@ struct MEProgram {
   
   let captureList: CaptureList
   let referencedCaptureOffsets: [ReferenceID: Int]
+
+  /// The registers of non-failable capture transforms, by capture index.
+  /// Failable transforms run while matching, and aren't included.
+  let captureTransforms: [Int: TransformRegister]
   
   var initialOptions: MatchingOptions
   var canOnlyMatchAtStart: Bool
