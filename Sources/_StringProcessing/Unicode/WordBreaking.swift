@@ -28,8 +28,11 @@ extension Processor {
         return c.isWordCharacter && (c.isASCII || !usesAsciiWord)
       case .unicodeScalar:
         // TODO: needs benchmark coverage
+        // Same word-character predicate as `\w` / Character.isWordCharacter
+        // (letter, digit/number, or underscore). `isAlphabetic` alone misses
+        // digits (issues #884, #901).
         let c = input.unicodeScalars[i]
-        return (c.properties.isAlphabetic || c == "_") && (c.isASCII || !usesAsciiWord)
+        return Character(c).isWordCharacter && (c.isASCII || !usesAsciiWord)
       }
     }
     
