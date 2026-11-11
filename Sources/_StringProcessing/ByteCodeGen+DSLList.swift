@@ -779,25 +779,33 @@ fileprivate extension Compiler.ByteCodeGen {
       if let value {
         builder.buildMove(value, into: cap)
       }
-      // If there's a capture transform, apply it now.
+      // If there's a capture transform, apply it only after matching.
+      // A failable transform needs to run during matching, so that a
+      // `nil` result can backtrack –– its result is cached with the capture
+      // and used when the match is complete.
       if let transform = transform {
-        let fn = builder.makeTransformFunction { input, cap in
+        let fn: MEProgram.TransformFunction = { input, range, customValue in
           // If it's a substring capture with no custom value, apply the
           // transform directly to the substring to avoid existential traffic.
           //
           // FIXME: separate out this code path. This is fragile,
           // slow, and these are clearly different constructs
-          if let range = cap.range, cap.value == nil {
+          if let range, customValue == nil {
             return try transform(input[range])
           }
           
           let value = constructExistentialOutputComponent(
             from: input,
-            component: cap.deconstructed,
+            component: range.map { ($0, customValue) },
             optionalCount: 0)
           return try transform(value)
         }
-        builder.buildTransformCapture(cap, fn)
+        let reg = builder.makeTransformFunction(fn)
+        if transform.isFailable {
+          builder.buildTransformCapture(cap, reg)
+        } else {
+          builder.captureTransforms[cap.rawValue] = reg
+        }
       }
       
     case let .nonCapturingGroup(kind):

@@ -490,6 +490,14 @@ struct CaptureTransform: Hashable, CustomStringConvertible {
       closure: closure)
   }
 
+  /// Whether a `nil` result from this transform means the capture failed.
+  var isFailable: Bool {
+    switch closure {
+    case .failable, .substringFailable: return true
+    case .nonfailable, .substringNonfailable: return false
+    }
+  }
+
   func callAsFunction(_ input: Any) throws -> Any? {
     switch closure {
     case .nonfailable(let transform):

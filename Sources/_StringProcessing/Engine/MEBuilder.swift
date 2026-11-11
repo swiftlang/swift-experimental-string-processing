@@ -25,6 +25,7 @@ extension MEProgram {
     var asciiBitsets: [DSLTree.CustomCharacterClass.AsciiBitset] = []
     var consumeFunctions: [ConsumeFunction] = []
     var transformFunctions: [TransformFunction] = []
+    var captureTransforms: [Int: TransformRegister] = [:]
     var matcherFunctions: [MatcherFunction] = []
 
     // Map tokens to actual addresses
@@ -439,6 +440,7 @@ extension MEProgram.Builder {
       enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
+      captureTransforms: captureTransforms,
       initialOptions: initialOptions,
       canOnlyMatchAtStart: canOnlyMatchAtStart,
       registers: regs)

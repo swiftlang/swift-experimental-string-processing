@@ -198,10 +198,12 @@ extension Executor {
     } else {
       wholeMatchValue = nil
     }
-    let aroElements = Executor.createExistentialElements(
+    let aroElements = try Executor.createExistentialElements(
       program,
       matchRange: startPosition..<endIdx,
       storedCaptures: cpu.registers.storedCaptures.values,
+      customValues: cpu.registers.customValues,
+      input: cpu.input,
       wholeMatchValue: wholeMatchValue)
 
     let anyRegexOutput = AnyRegexOutput(
