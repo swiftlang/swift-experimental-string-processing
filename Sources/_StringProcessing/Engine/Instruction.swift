@@ -279,9 +279,9 @@ extension Instruction {
 
   var opcode: OpCode {
     get {
-      OpCode(
-        rawValue: (rawValue & _opcodeMask) &>> 56
-      ).unsafelyUnwrapped
+      // Every instruction is built from a real case, with the payload inside 56 bits,
+      // so the opcode byte is always a valid case index.
+      _uncheckedRawEnum(rawValue &>> 56)
     }
     set {
       assert(newValue != .invalid, "consider hoisting this")
