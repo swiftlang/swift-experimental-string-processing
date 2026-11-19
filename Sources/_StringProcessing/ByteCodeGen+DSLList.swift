@@ -48,6 +48,10 @@ fileprivate extension Compiler.ByteCodeGen {
   ///
   /// In particular, non-required groups and option-setting groups are
   /// inconclusive about where they can match.
+  ///
+  /// Because this method shortcuts on a `false` result, the `list`
+  /// parameter can be left at any point in the tree. No assumptions
+  /// should be made about its position after calling.
   private mutating func _canOnlyMatchAtStartImpl(
     _ list: inout ArraySlice<DSLTree.Node>
   ) -> Bool? {
@@ -96,7 +100,7 @@ fileprivate extension Compiler.ByteCodeGen {
       // in the concatenation.
       while i < count {
         i += 1
-        try? skipNode(&list, preservingCaptures: false)
+        list.dropFirstSubtree()
       }
       return found
 
@@ -104,7 +108,7 @@ fileprivate extension Compiler.ByteCodeGen {
     case .nonCapturingGroup(let kind):
       // Don't let a negative lookahead affect this - need to continue to next sibling
       if kind.isNegativeLookahead {
-        try? skipNode(&list, preservingCaptures: false)
+        list.dropFirstSubtree()
         return nil
       }
       options.beginScope()
@@ -126,7 +130,7 @@ fileprivate extension Compiler.ByteCodeGen {
       if amount.requiresAtLeastOne {
         return _canOnlyMatchAtStartImpl(&list)
       } else {
-        try? skipNode(&list, preservingCaptures: false)
+        list.dropFirstSubtree()
         return nil
       }
 
@@ -361,9 +365,7 @@ fileprivate extension Compiler.ByteCodeGen {
   func _guaranteesForwardProgressImpl(_ list: ArraySlice<DSLTree.Node>, position: inout Int) -> Bool {
     guard position < list.endIndex else { return false }
     let node = list[position]
-    var endOfSubtree = position
-    list.skipNode(&endOfSubtree)
-    endOfSubtree += 1
+    let endOfSubtree = list.indexAfterNode(at: position)
     defer { position = endOfSubtree }
     position += 1
     switch node {
@@ -431,7 +433,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
     switch (low, high) {
     case (_, 0):
-      try skipNode(&list)
+      try emitSkippedNode(&list)
       return
     case let (n, m?) where n > m:
       // TODO: Should error out earlier, maybe DSL and parser
@@ -853,50 +855,44 @@ fileprivate extension Compiler.ByteCodeGen {
 // MARK: Skip node
 
 extension Compiler.ByteCodeGen {
-  mutating func skipNode(
-    _ list: inout ArraySlice<DSLTree.Node>,
-    preservingCaptures: Bool = true
+  /// Consumes the first node of `list` and its entire subtree without
+  /// emitting code for it, as for a quantification that can never match, while
+  /// still allocating its captures and emitting their (empty) begin/end
+  /// instructions so that capture numbering and output stay correct.
+  ///
+  /// Throws for nodes that can't be compiled at all. To simply drop a subtree
+  /// from the list, use `dropFirstSubtree()`.
+  mutating func emitSkippedNode(
+    _ list: inout ArraySlice<DSLTree.Node>
   ) throws {
     guard let node = list.popFirst() else { return }
     switch node {
     case let .orderedChoice(n):
       for _ in 0..<n {
-        try skipNode(&list, preservingCaptures: preservingCaptures)
+        try emitSkippedNode(&list)
       }
 
     case let .concatenation(n):
       for _ in 0..<n {
-        try skipNode(&list, preservingCaptures: preservingCaptures)
+        try emitSkippedNode(&list)
       }
 
     case let .capture(name, refId, _):
       options.beginScope()
       defer { options.endScope() }
 
-      if preservingCaptures {
-        let cap = builder.makeCapture(id: refId, name: name)
-        builder.buildBeginCapture(cap)
-        try skipNode(&list, preservingCaptures: preservingCaptures)
-        builder.buildEndCapture(cap)
-      } else {
-        try skipNode(&list, preservingCaptures: preservingCaptures)
-      }
-      
-    case .nonCapturingGroup:
-      try skipNode(&list, preservingCaptures: preservingCaptures)
+      let cap = builder.makeCapture(id: refId, name: name)
+      builder.buildBeginCapture(cap)
+      try emitSkippedNode(&list)
+      builder.buildEndCapture(cap)
 
-    case .ignoreCapturesInTypedOutput:
-      try skipNode(&list, preservingCaptures: preservingCaptures)
-      
-    case .limitCaptureNesting:
-      try skipNode(&list, preservingCaptures: preservingCaptures)
-
-    case .quantification:
-      try skipNode(&list, preservingCaptures: preservingCaptures)
+    case .nonCapturingGroup, .ignoreCapturesInTypedOutput,
+        .limitCaptureNesting, .quantification:
+      try emitSkippedNode(&list)
 
     case .customCharacterClass, .atom, .quotedLiteral, .matcher:
       break
-      
+
     case .conditional:
       throw Unsupported("Conditionals")
     case .absentFunction:
@@ -905,10 +901,9 @@ extension Compiler.ByteCodeGen {
       throw Unsupported("consumer")
     case .characterPredicate:
       throw Unsupported("character predicates")
-      
+
     case .trivia, .empty:
       break
     }
   }
-
 }
