@@ -15,7 +15,10 @@ internal import _RegexParser
 import Swift
 
 extension UInt8 {
-  /// Whether this is the starting byte of a sub-300 (i.e. pre-combining scalar) scalars
+  /// Whether this is the starting byte of a sub-0x300 (i.e. pre-combining scalar) scalars.
+  ///
+  /// Note that all UTF-8 continuation bytes return `true` for this value as well. Only
+  /// the starting bytes of scalars that are 0x300 and higher return `false`.
   var _isSub300StartingByte: Bool { self < 0xCC }
 }
 
